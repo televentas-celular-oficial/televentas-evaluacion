@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Televentas · Sistema de Evaluación · Mayo 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+    line-height: 1.55;
+    padding: 0;
+  }
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 24px 30px;
+    background: #fff;
+  }
+  /* Salto de página solo entre secciones grandes, no después de cada div */
+  .page + .page { margin-top: 8px; }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding-bottom: 16px;
+    border-bottom: 3px solid #fed7aa;
+    margin-bottom: 20px;
+  }
+  .logo {
+    font-size: 28px;
+    font-weight: 900;
+    color: #ea580c;
+    margin-bottom: 2px;
+    letter-spacing: -0.5px;
+  }
+  .tagline {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .title-main {
+    font-size: 24px;
+    font-weight: 900;
+    color: #0f172a;
+    margin-top: 12px;
+    line-height: 1.2;
+  }
+  .subtitle {
+    font-size: 15px;
+    color: #475569;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+  .badge-mayo {
+    display: inline-block;
+    background: linear-gradient(135deg, #ea580c, #f97316);
+    color: #fff;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    margin-top: 14px;
+  }
+
+  /* SECCIONES */
+  h2 {
+    font-size: 20px;
+    font-weight: 900;
+    color: #ea580c;
+    margin-top: 22px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #fff7ed;
+  }
+  h3 {
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 14px;
+    margin-bottom: 6px;
+  }
+  p {
+    font-size: 13px;
+    color: #334155;
+    margin-bottom: 10px;
+  }
+
+  /* CAJA MENSAJE PERSONAL */
+  .mensaje-personal {
+    background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+    border: 2px solid #fed7aa;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: 0 4px 16px rgba(234, 88, 12, 0.08);
+  }
+  .mensaje-personal p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #334155;
+    margin-bottom: 10px;
+  }
+  .mensaje-personal p:last-child { margin-bottom: 0; }
+  .mensaje-personal strong { color: #9a3412; font-weight: 800; }
+  .mensaje-personal ul {
+    margin: 12px 0 12px 20px;
+    padding: 0;
+  }
+  .mensaje-personal li {
+    font-size: 14px;
+    color: #334155;
+    margin-bottom: 8px;
+    list-style: none;
+    padding-left: 18px;
+    position: relative;
+  }
+  .mensaje-personal li::before {
+    content: "•";
+    color: #ea580c;
+    font-weight: 900;
+    position: absolute;
+    left: 0;
+  }
+
+  /* CAJA INFO */
+  .info-box {
+    background: #f8fafc;
+    border-left: 4px solid #ea580c;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 14px 0;
+  }
+  .info-box.green { border-left-color: #10b981; background: #f0fdf4; }
+  .info-box.yellow { border-left-color: #eab308; background: #fefce8; }
+  .info-box.purple { border-left-color: #a855f7; background: #faf5ff; }
+  .info-box.red { border-left-color: #dc2626; background: #fef2f2; }
+
+  /* TABLA INDICADORES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+  th {
+    background: #ea580c;
+    color: #fff;
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+    color: #334155;
+    background: #fff;
+  }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 700; color: #0f172a; }
+  td.peso {
+    font-weight: 800;
+    color: #ea580c;
+    text-align: right;
+  }
+
+  /* PREMIO CARDS */
+  .premio-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .premio-card {
+    background: linear-gradient(135deg, #fff7ed, #fff);
+    border: 2px solid #fed7aa;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+  .premio-card.gold {
+    background: linear-gradient(135deg, #fef9c3, #fff);
+    border-color: #fde047;
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
+  }
+  .premio-card.green {
+    background: linear-gradient(135deg, #ecfdf5, #fff);
+    border-color: #6ee7b7;
+  }
+  .premio-card.yellow {
+    background: linear-gradient(135deg, #fffbeb, #fff);
+    border-color: #fde68a;
+  }
+  .premio-icon { font-size: 26px; margin-bottom: 4px; }
+  .premio-titulo {
+    font-size: 10px;
+    font-weight: 800;
+    color: #9a3412;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+  .premio-monto {
+    font-size: 19px;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1;
+    margin: 4px 0;
+  }
+  .premio-letras {
+    font-size: 10px;
+    font-weight: 700;
+    color: #92400e;
+    margin-top: 3px;
+  }
+  .premio-desc {
+    font-size: 11px;
+    color: #475569;
+    margin-top: 6px;
+    line-height: 1.35;
+  }
+
+  /* COMPARATIVA antes/después */
+  .comparativa {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .compara-card {
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .compara-card.antes {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+  }
+  .compara-card.despues {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+  }
+  .compara-card .label {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .compara-card.antes .label { color: #dc2626; }
+  .compara-card.despues .label { color: #059669; }
+  .compara-card .texto { font-size: 13px; color: #334155; }
+
+  /* HIGHLIGHT */
+  .highlight {
+    background: linear-gradient(135deg, #fef9c3, #fffbeb);
+    border: 2px solid #fde047;
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin: 18px 0;
+    text-align: center;
+  }
+  .highlight .titulo {
+    font-size: 13px;
+    font-weight: 800;
+    color: #854d0e;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+  .highlight .frase {
+    font-size: 17px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.4;
+  }
+
+  /* FIRMA */
+  .firma {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 2px solid #fed7aa;
+  }
+  .firma .saludo {
+    font-size: 14px;
+    color: #475569;
+    margin-bottom: 8px;
+  }
+  .firma .equipo {
+    font-size: 18px;
+    font-weight: 900;
+    color: #ea580c;
+  }
+  .firma .fecha {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  /* INDICADOR ROW (custom) */
+  .ind-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    margin-bottom: 6px;
+  }
+  .ind-emoji { font-size: 22px; flex-shrink: 0; }
+  .ind-info { flex: 1; }
+  .ind-nombre { font-size: 14px; font-weight: 800; color: #0f172a; }
+  .ind-descripcion { font-size: 11px; color: #64748b; margin-top: 1px; }
+  .ind-peso {
+    font-size: 16px;
+    font-weight: 900;
+    color: #ea580c;
+    flex-shrink: 0;
+  }
+
+  /* PRINT STYLES */
+  @media print {
+    body { background: #fff; }
+    .page {
+      padding: 14px 22px;
+      box-shadow: none;
+      max-width: 100%;
+    }
+    .mensaje-personal { box-shadow: none; }
+    /* No quiero forzar saltos. Que fluya naturalmente */
+    .page { page-break-inside: avoid; }
+    .page + .page { margin-top: 0; }
+    /* Evitar que ciertos bloques se partan */
+    .premio-card, .ind-row, .info-box, .compara-card, .highlight, .mensaje-personal {
+      page-break-inside: avoid;
+    }
+    h2 { page-break-after: avoid; }
+    h3 { page-break-after: avoid; }
+  }
+  @page { margin: 12mm; }
+
+  /* Pequeño detalle gráfico */
+  .stars {
+    text-align: center;
+    margin: 8px 0;
+    font-size: 18px;
+    letter-spacing: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PÁGINA 1 — PORTADA + MENSAJE PERSONAL                        -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header">
+    <div class="logo">⚡ Televentas</div>
+    <div class="tagline">Sistema de evaluación · Boletín de calificación</div>
+    <div class="title-main">Cambios para Mayo 2026</div>
+    <div class="subtitle">Un sistema más justo, más motivador, mejor para todas</div>
+    <div class="badge-mayo">📅 ACTUALIZACIÓN — MAYO 2026</div>
+  </div>
+
+  <div class="mensaje-personal">
+    <p><strong>Chicas,</strong></p>
+    <p>Les cuento los detalles del nuevo sistema. Saben lo mucho que las valoramos. Este proyecto nació con una intención muy clara: <strong>premiar el esfuerzo que ustedes hacen todos los días en cada tienda</strong>.</p>
+    <p>Estamos en mayo, segundo mes del trimestre. Recuerden cómo se ponderan las notas: <strong>abril vale 20%, mayo 30% y junio 50%</strong>. Esto significa dos cosas importantes:</p>
+    <ul>
+      <li>Si abril no fue su mejor mes, todavía hay tiempo de remontar — el 80% del trimestre está por delante.</li>
+      <li>Si abril les fue bien, no se relajen — el premio se gana siendo consistentes los tres meses.</li>
+    </ul>
+    <p>Estos cambios son parte de algo más grande. Ya estamos preparando una <strong>aplicación nueva para que controlen el inventario en tiempo real</strong> desde sus tiendas y sepan qué productos hay disponibles en cualquier momento. Estamos invirtiendo en mejores datos y en que Televentas sea aún más sólida de lo que ya es.</p>
+    <p>Contamos con cada una de ustedes, y queremos verlas ganar a todas — porque es algo perfectamente posible.</p>
+  </div>
+
+  <div class="stars">⭐ ⭐ ⭐</div>
+
+  <h3 style="text-align:center; color:#475569; font-weight:600; margin-top:20px;">Sigue leyendo para conocer todos los detalles 👇</h3>
+</div>
+
+<!-- ============================================================ -->
+<!-- PÁGINA 2 — POR QUÉ + INDICADORES                             -->
+<!-- ============================================================ -->
+<div class="page">
+  <h2>🎯 ¿Por qué cambiamos las cosas?</h2>
+  <p>Después de un mes completo evaluando con el sistema anterior, miramos los datos reales con detalle. Descubrimos dos cosas importantes:</p>
+
+  <div class="comparativa">
+    <div class="compara-card antes">
+      <div class="label">Algunos eran muy permisivos</div>
+      <div class="texto">Permitían que ciertas faltas no se notaran lo suficiente en la nota final.</div>
+    </div>
+    <div class="compara-card despues">
+      <div class="label">Otros, demasiado estrictos</div>
+      <div class="texto">Hundían la nota mensual por hechos puntuales, sin considerar el esfuerzo del mes completo.</div>
+    </div>
+  </div>
+
+  <p>Por eso ajustamos el sistema. <strong>Buscamos que sea más justo, más motivador y que premie el esfuerzo real</strong>.</p>
+
+  <h2>📋 Los 5 indicadores que evaluamos en mayo</h2>
+  <p>A partir del 1 de mayo, evaluamos así. Cada indicador vale 10% y los 5 suman <strong>50% de tu nota</strong>. El otro <strong>50% son tus ventas</strong>.</p>
+
+  <div class="ind-row" style="border-left: 4px solid #3b82f6;">
+    <div class="ind-emoji">⏰</div>
+    <div class="ind-info">
+      <div class="ind-nombre">Puntualidad</div>
+      <div class="ind-descripcion">Llegar a tiempo a la tienda, todos los días</div>
+    </div>
+    <div class="ind-peso">10%</div>
+  </div>
+
+  <div class="ind-row" style="border-left: 4px solid #eab308;">
+    <div class="ind-emoji">⭐</div>
+    <div class="ind-info">
+      <div class="ind-nombre">Reseñas</div>
+      <div class="ind-descripcion">Reseñas de Google que dejan los clientes</div>
+    </div>
+    <div class="ind-peso">10%</div>
+  </div>
+
+  <div class="ind-row" style="border-left: 4px solid #10b981;">
+    <div class="ind-emoji">🏪</div>
+    <div class="ind-info">
+      <div class="ind-nombre">Tienda</div>
+      <div class="ind-descripcion">Tienda ordenada + uniforme correcto + depósito de dinero a tiempo</div>
+    </div>
+    <div class="ind-peso">10%</div>
+  </div>
+
+  <div class="ind-row" style="border-left: 4px solid #a855f7;">
+    <div class="ind-emoji">📋</div>
+    <div class="ind-info">
+      <div class="ind-nombre">Planilla</div>
+      <div class="ind-descripcion">Llenar bien las planillas diarias de ventas</div>
+    </div>
+    <div class="ind-peso">10%</div>
+  </div>
+
+  <div class="ind-row" style="border-left: 4px solid #ec4899;">
+    <div class="ind-emoji">💪</div>
+    <div class="ind-info">
+      <div class="ind-nombre">Actitud <span style="background:#fef3c7; color:#92400e; font-size:9px; padding:2px 6px; border-radius:6px; margin-left:4px;">NUEVO</span></div>
+      <div class="ind-descripcion">Disposición con clientes + manejo del celular + colaboración con eventos y videos</div>
+    </div>
+    <div class="ind-peso">10%</div>
+  </div>
+
+  <div class="ind-row" style="border-left: 4px solid #ea580c; background: linear-gradient(135deg, #fff7ed, #fff); border-color:#fed7aa;">
+    <div class="ind-emoji">💰</div>
+    <div class="ind-info">
+      <div class="ind-nombre">Ventas</div>
+      <div class="ind-descripcion">$ vendidos vs meta del mes — el indicador más importante</div>
+    </div>
+    <div class="ind-peso">50%</div>
+  </div>
+
+  <div class="info-box yellow">
+    <strong>🔍 Cambios en la lista:</strong> Quitamos "Uniforme" y "Celular" como indicadores propios. Uniforme ahora es parte de Tienda, y el manejo del celular pasa a ser parte de Actitud (porque es un tema de profesionalismo, no de "tener celular").
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PÁGINA 3 — CAMBIOS QUE BENEFICIAN Y CAMBIOS QUE EXIGEN MÁS   -->
+<!-- ============================================================ -->
+<div class="page">
+  <h2>✅ Cambios que las benefician (suavizamos)</h2>
+
+  <h3>Reseñas — ya no se evalúan día por día</h3>
+  <p>Antes, si un día no traían reseña les bajaba la nota fuerte. Ahora contamos todas las reseñas que hicieron en el mes y las comparamos con los días que trabajaron. <strong>Si un día no traen reseña, el sistema entiende que en otros días pueden compensar.</strong></p>
+  <div class="info-box green">
+    <strong>Ejemplo:</strong> Si trabajaste 22 días y trajiste 22 reseñas en el mes, tu nota es 5.00 — aunque algunos días no hayas traído ninguna y otros sí varias.
+  </div>
+
+  <h3>Ventas — ahora se premia superar la meta</h3>
+  <p>Antes, llegar al 100% de la meta era el techo. Si vendías más, no había premio extra. <strong>Ahora si superas la meta, recibes puntos extra que pueden subir tu nota incluso por encima de 5.</strong></p>
+
+  <h2>⚡ Cambios que exigen más (endurecimos)</h2>
+
+  <h3>Puntualidad — los retardos pesan más</h3>
+  <p>Antes, llegar 49 minutos tarde un día casi no afectaba la nota mensual porque se "diluía" entre los días buenos. Ahora hay <strong>doble penalty</strong>:</p>
+  <div class="info-box red">
+    <strong>Por cada día con retraso de 10 minutos o más:</strong> resta 0.30 puntos a tu nota mensual.<br>
+    <strong>Por cada día con cualquier retraso (aunque sea poco):</strong> resta 0.05 puntos.
+  </div>
+  <p>El sistema ahora <strong>ve mejor los hábitos</strong>. Llegar tarde muchos días, aunque sean pocos minutos, también se nota.</p>
+
+  <h3>Indicadores que casi siempre estaban "bien"</h3>
+  <p>Algunos indicadores casi nunca se marcaban como problema. Eso significaba que ese 30% de la nota estaba "dormido" y no diferenciaba a nadie. Por eso los reorganizamos en menos categorías que sí van a discriminar el esfuerzo real.</p>
+
+  <h2>🎯 Sistema más justo y enfocado en hábitos</h2>
+  <p>El sistema ahora <strong>prioriza los hábitos de comportamiento</strong>: reconoce cuando una vendedora es consistente todos los días, no solo cuando tiene un buen día puntual. Y todos los pesos se calculan de forma exacta y transparente.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- PÁGINA 4 — PREMIOS                                           -->
+<!-- ============================================================ -->
+<div class="page">
+  <h2>🏆 Los premios — ¡ahora son MÁS y MEJORES!</h2>
+
+  <div class="comparativa">
+    <div class="compara-card antes">
+      <div class="label">Antes</div>
+      <div class="texto">Solo había <strong>1 ganadora segura</strong> a nivel nacional. Las demás solo ganaban si su nota llegaba a 4.50.</div>
+    </div>
+    <div class="compara-card despues">
+      <div class="label">Ahora</div>
+      <div class="texto"><strong>2 ganadoras seguras</strong> cada trimestre (una de cada ciudad). Y se suman todas las que pasen 4.50, sin importar cuántas sean.</div>
+    </div>
+  </div>
+
+  <p style="margin-top:18px;">Estos son los premios que se entregan al cierre de cada trimestre:</p>
+
+  <div class="premio-grid">
+    <div class="premio-card green">
+      <div class="premio-icon">🏆</div>
+      <div class="premio-titulo">Mejor de Medellín</div>
+      <div class="premio-monto">$1.000.000</div>
+      <div class="premio-letras">Un millón de pesos</div>
+      <div class="premio-desc">Para la #1 de MED, sin importar la nota.</div>
+    </div>
+    <div class="premio-card yellow">
+      <div class="premio-icon">🏆</div>
+      <div class="premio-titulo">Mejor de Bogotá</div>
+      <div class="premio-monto">$1.000.000</div>
+      <div class="premio-letras">Un millón de pesos</div>
+      <div class="premio-desc">Para la #1 de BOG, sin importar la nota.</div>
+    </div>
+  </div>
+
+  <div class="premio-card" style="text-align:center;">
+    <div class="premio-icon">⭐</div>
+    <div class="premio-titulo">Premio por Excelencia (≥4.50)</div>
+    <div class="premio-monto">$1.000.000 cada una</div>
+    <div class="premio-letras">Un millón de pesos por cada vendedora</div>
+    <div class="premio-desc">Cada vendedora con nota trimestral igual o superior a 4.50 — sin importar la ciudad — recibe su propio premio.</div>
+  </div>
+
+  <div class="premio-card gold" style="text-align:center; margin-top:14px;">
+    <div class="premio-icon">🌟</div>
+    <div class="premio-titulo">Bonus #1 Nacional</div>
+    <div class="premio-monto">+$1.000.000 EXTRA</div>
+    <div class="premio-letras">Un millón de pesos adicional</div>
+    <div class="premio-desc">Si dos o más vendedoras superan 4.50 en el trimestre, la mejor de ellas recibe este bonus extra encima de su premio.</div>
+  </div>
+
+  <div class="highlight">
+    <div class="titulo">🎉 Lo más importante</div>
+    <div class="frase">Ahora MÍNIMO 2 personas ganan cada trimestre.<br>Y pueden ser muchas más si todas se esfuerzan.</div>
+  </div>
+
+  <div class="info-box">
+    <strong>📌 Recuerden:</strong> El premio máximo que UNA vendedora puede ganar en un trimestre es $2.000.000 (Mejor de su ciudad + Bonus Nacional). Pero cada una de las que pase 4.50 gana su propio millón.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PÁGINA 5 — ABRIL, BETA, SWITCH, CIERRE                       -->
+<!-- ============================================================ -->
+<div class="page">
+  <h2>📅 Sobre abril</h2>
+  <p>Su nota de abril se conserva con el sistema anterior — eso es lo justo, porque ese mes ya estaba en marcha cuando hicimos los cambios. <strong>En los próximos días verán abril cerrado oficialmente</strong>, y aparecerá un sello "🔒 MES CERRADO" en la app.</p>
+  <p>Cuando vean ese sello, su nota de abril queda definitiva y no se modifica más.</p>
+  <div class="info-box green">
+    <strong>✅ Nada cambia retroactivamente.</strong> Los cambios del nuevo sistema solo aplican desde el 1 de mayo en adelante. Abril es abril.
+  </div>
+
+  <h2>🔄 Sobre la visibilidad del ranking</h2>
+  <p>El ranking <strong>se va a publicar de forma intermitente</strong> — algunos días de la semana lo verán abierto, otros días verán un mensaje motivacional en su lugar.</p>
+  <p>¿Por qué? Porque las ventas se actualizan semanalmente, y queremos que cuando vean su ranking esté siempre con datos al día. <strong>Cuando se publique nuevamente, se los avisamos.</strong></p>
+  <div class="info-box yellow">
+    <strong>💡 Consejo:</strong> Cuando entren a la app y vean el mensaje motivacional, sigan dando lo mejor — su esfuerzo se está midiendo igual, aunque el ranking no esté visible en ese momento.
+  </div>
+
+  <h2>🧪 Esto es BETA</h2>
+  <p>Lo decimos sin rodeos: <strong>este sistema es BETA</strong>. Vamos a seguir mejorándolo mes a mes según los datos reales y según lo que ustedes nos compartan.</p>
+  <p>Pueden venir más ajustes en los próximos meses. La intención siempre va a ser la misma: que sea lo más justo posible y que premie de verdad el esfuerzo.</p>
+  <div class="info-box purple">
+    <strong>🗣️ Su opinión cuenta.</strong> Si encuentran algo que les parece injusto o tienen una sugerencia, háganla saber. Esto se construye en equipo.
+  </div>
+
+  <div class="highlight" style="margin-top:32px;">
+    <div class="titulo">⚡ El mensaje final</div>
+    <div class="frase">No se trata solo de competir.<br>Se trata de que cada una de ustedes brille al máximo.<br>Y queremos verlas a todas en el podio.</div>
+  </div>
+
+  <div class="firma">
+    <div class="saludo">Con cariño y aprecio,</div>
+    <div class="equipo">Equipo Televentas</div>
+    <div class="fecha">Mayo 2026</div>
+  </div>
+</div>
+
+</body>
+</html>

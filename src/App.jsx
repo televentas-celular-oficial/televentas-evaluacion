@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   VENDEDORAS_DEFAULT, COLOR_CIUDAD, LABEL_CIUDAD, COLOR_VENTAS,
   getIndicadores, esFormulaV2,
@@ -198,24 +198,24 @@ export default function App() {
   const bloqueado = guardado && !editando;
   const mesEstaCerrado = !!snapshots[claveMesActual];
 
-  // Detectar transición false→true del switch ranking — disparar confetti solo si estás en pantalla de visualización
-  // Usamos null como "no inicializado" para no disparar en la carga inicial
-  const prevRankingVisible = useRef(null);
+  // Confetti: se muestra UNA SOLA VEZ por cada publicación nueva del ranking.
+  // - Cada vez que el admin prende el switch, genera un nuevo `publicacionId` (timestamp)
+  // - El navegador guarda qué publicación ya vio
+  // - Solo se muestra confetti si es una publicación NUEVA y la vendedora está viendo el ranking/boletin/trimestre
   useEffect(() => {
     if (!cargado) return;
+    if (!config.rankingVisible) return;
+    if (!config.publicacionId) return;
     const pantallasViz = ["ranking", "boletin", "trimestre"];
-    // Primer render: solo guardar el valor sin disparar nada
-    if (prevRankingVisible.current === null) {
-      prevRankingVisible.current = config.rankingVisible;
-      return;
-    }
-    // Detectar transición false→true real
-    if (prevRankingVisible.current === false && config.rankingVisible === true && pantallasViz.includes(pantalla)) {
+    if (!pantallasViz.includes(pantalla)) return;
+    try {
+      const visto = localStorage.getItem("televentas_confetti_visto");
+      if (String(visto) === String(config.publicacionId)) return; // ya lo vio para esta publicación
+      localStorage.setItem("televentas_confetti_visto", String(config.publicacionId));
       setConfetti(true);
       setTimeout(() => setConfetti(false), 4000);
-    }
-    prevRankingVisible.current = config.rankingVisible;
-  }, [config.rankingVisible, pantalla, cargado]);
+    } catch { /* ignorar errores de localStorage */ }
+  }, [config.rankingVisible, config.publicacionId, pantalla, cargado]);
 
   // Estilos centrales
   const S = makeStyles();
@@ -1260,8 +1260,12 @@ export default function App() {
 
     function toggleRanking() {
       const nuevoEstado = !config.rankingVisible;
-      saveConfig({ ...config, rankingVisible: nuevoEstado });
-      // El confetti se dispara automáticamente en Ranking/Trimestre cuando detecten el cambio
+      const nuevoConfig = { ...config, rankingVisible: nuevoEstado };
+      // Si se prende, generar un nuevo ID de publicación para que cada vendedora vea confetti UNA VEZ
+      if (nuevoEstado) {
+        nuevoConfig.publicacionId = Date.now();
+      }
+      saveConfig(nuevoConfig);
       flash(nuevoEstado ? "🔓 Ranking VISIBLE para vendedoras" : "🔒 Ranking OCULTO para vendedoras");
     }
 
