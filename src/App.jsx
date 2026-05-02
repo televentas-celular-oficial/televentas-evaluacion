@@ -717,7 +717,11 @@ export default function App() {
           {guardado && !editando && (
             <div style={{ marginTop: 9, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>✅ Día guardado</span>
-              <button style={S.btnS} onClick={() => setEditando(true)}>Editar</button>
+              {esAdmin(user) ? (
+                <button style={S.btnS} onClick={() => setEditando(true)}>Editar</button>
+              ) : (
+                <span style={{ fontSize: 10, color: "#94a3b8", fontStyle: "italic" }}>Solo admin puede editar</span>
+              )}
             </div>
           )}
         </div>
