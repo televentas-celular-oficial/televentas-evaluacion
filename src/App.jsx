@@ -846,15 +846,8 @@ export default function App() {
           <div style={{ textAlign: "center", fontSize: 12, color: "#475569", marginTop: 10 }}>Toca "Editar" para corregir</div>
         )}
         {guardado && !editando && !esAdmin(user) && (
-          <div style={{ textAlign: "center", fontSize: 12, color: "#475569", marginTop: 10 }}>Para corregir el día, contacta a Luis (admin)</div>
+          <div style={{ textAlign: "center", fontSize: 12, color: "#475569", marginTop: 10 }}>Para corregir el día, contacta al admin</div>
         )}
-
-        {/* Botón cerrar sesión al final */}
-        <div style={{ ...S.card, marginTop: 14, background: "#f8fafc" }}>
-          <div style={{ fontSize: 11, color: "#475569", marginBottom: 6 }}>Sesión actual:</div>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>{user?.email}</div>
-          <button style={{ ...S.btnP, background: "#f1f5f9", color: "#475569", boxShadow: "none" }} onClick={() => hacerLogout()}>🔒 Cerrar sesión</button>
-        </div>
       </div>
     );
   }
@@ -935,13 +928,6 @@ export default function App() {
           );
         })}
         <button disabled={cerrado} style={{ ...S.btnP, marginTop: 6, opacity: cerrado ? 0.5 : 1 }} onClick={guardar}>{ok ? "✅ Guardado" : "💾 Guardar ventas"}</button>
-
-        {/* Botón cerrar sesión al final */}
-        <div style={{ ...S.card, marginTop: 14, background: "#f8fafc" }}>
-          <div style={{ fontSize: 11, color: "#475569", marginBottom: 6 }}>Sesión actual:</div>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>{user?.email}</div>
-          <button style={{ ...S.btnP, background: "#f1f5f9", color: "#475569", boxShadow: "none" }} onClick={() => hacerLogout()}>🔒 Cerrar sesión</button>
-        </div>
       </div>
     );
   }
