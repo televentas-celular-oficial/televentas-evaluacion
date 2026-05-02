@@ -61,11 +61,31 @@ export function getIndicadores(año, mes) {
   return esFormulaV2(año, mes) ? INDICADORES_V2 : INDICADORES_V1;
 }
 
-// Claves de acceso
-export const CLAVE_INGRESO = "01546";
-export const CLAVE_EDITAR = "1717";
-export const CLAVE_VENTAS = "01546";
-export const CLAVE_ADMIN = "1717";
+// ===========================================
+// ROLES Y AUTENTICACIÓN (Firebase Auth)
+// ===========================================
+// Los emails autorizados están aquí. Las contraseñas están en Firebase
+// (no en este código). Las reglas de Firestore validan que solo estos
+// emails puedan modificar datos.
+export const EMAIL_ADMIN = "luisponce.tv@gmail.com";
+export const EMAIL_OFICINA = "info@televentas.com";
+
+// Devuelve el rol del usuario logueado
+export function rolDe(user) {
+  if (!user || !user.email) return null;
+  const e = user.email.toLowerCase();
+  if (e === EMAIL_ADMIN.toLowerCase()) return "admin";
+  if (e === EMAIL_OFICINA.toLowerCase()) return "oficina";
+  return "otro";
+}
+
+export const esAdmin = (user) => rolDe(user) === "admin";
+export const esOficina = (user) => rolDe(user) === "oficina";
+export const puedeIngresoVentas = (user) => {
+  const r = rolDe(user);
+  return r === "admin" || r === "oficina";
+};
+export const puedeAdmin = (user) => rolDe(user) === "admin";
 
 // Pesos del trimestre (mes 1, mes 2, mes 3)
 export const PESOS_TRIMESTRE = [0.20, 0.30, 0.50];

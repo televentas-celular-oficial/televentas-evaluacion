@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import {
   VENDEDORAS_DEFAULT, COLOR_CIUDAD, LABEL_CIUDAD, COLOR_VENTAS,
-  INDICADORES_V2, INDICADORES_V1, getIndicadores, esFormulaV2,
-  CLAVE_INGRESO, CLAVE_EDITAR, CLAVE_VENTAS, CLAVE_ADMIN,
-  PESOS_TRIMESTRE, MSG_RANKING_OFF, MES_NAMES,
+  getIndicadores, esFormulaV2,
+  esAdmin, puedeIngresoVentas, puedeAdmin,
+  PESOS_TRIMESTRE, MES_NAMES,
 } from "./lib/constantes.js";
 import {
   fmtN, colorN, bgN, hoyStr, trimestreActual, mesesTrimestre,
@@ -31,13 +31,13 @@ export default function App() {
   const [filas, setFilas] = useState({});
   const [guardado, setGuardado] = useState(false);
   const [editando, setEditando] = useState(false);
-  const [pideClave, setPideClave] = useState(false);
-  const [claveIn, setClaveIn] = useState("");
-  const [claveErr, setClaveErr] = useState(false);
   const [verModoTrim, setVerModoTrim] = useState(false);
-  const [ingresoOk, setIngresoOk] = useState(false);
-  const [ventasOk, setVentasOk] = useState(false);
   const [confetti, setConfetti] = useState(false);
+  // Auth: usuario logueado
+  const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [pideLogin, setPideLogin] = useState(false);  // muestra modal de login
+  const [pantallaTrasLogin, setPantallaTrasLogin] = useState(null);  // a dónde ir tras loguearse
 
   const ahora = new Date();
   const añoActual = ahora.getFullYear();
@@ -46,6 +46,34 @@ export default function App() {
   const mes = mesViendo;
   const claveMesActual = claveMes(año, mes);
   const activas = vendedoras.filter(v => v.activa !== false);
+
+  // ============================================================
+  // FIREBASE AUTH — listener de login
+  // ============================================================
+  useEffect(() => {
+    let unsub;
+    (async () => {
+      const { onAuthStateChanged } = await import("firebase/auth");
+      const { auth } = await import("./firebase.js");
+      unsub = onAuthStateChanged(auth, (u) => {
+        setUser(u);
+        setAuthReady(true);
+      });
+    })();
+    return () => unsub && unsub();
+  }, []);
+
+  async function hacerLogin(email, password) {
+    const { signInWithEmailAndPassword } = await import("firebase/auth");
+    const { auth } = await import("./firebase.js");
+    await signInWithEmailAndPassword(auth, email, password);
+  }
+
+  async function hacerLogout() {
+    const { signOut } = await import("firebase/auth");
+    const { auth } = await import("./firebase.js");
+    await signOut(auth);
+  }
 
   // ============================================================
   // CARGA INICIAL DESDE FIREBASE
@@ -211,44 +239,88 @@ export default function App() {
     );
   }
 
-  function ModalClave() {
+  // Modal de login con email + password (Firebase Auth)
+  function ModalLogin({ titulo, onClose }) {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [err, setErr] = useState("");
+    const [cargando, setCargando] = useState(false);
+
+    async function intentar() {
+      setErr(""); setCargando(true);
+      try {
+        await hacerLogin(email.trim(), password);
+        // Login exitoso: el listener de auth se encarga
+        setCargando(false);
+        if (onClose) onClose();
+      } catch (e) {
+        setCargando(false);
+        const code = e?.code || "";
+        if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) {
+          setErr("Correo o contraseña incorrectos");
+        } else if (code.includes("too-many-requests")) {
+          setErr("Demasiados intentos. Esperá unos minutos.");
+        } else if (code.includes("network")) {
+          setErr("Sin conexión a internet");
+        } else {
+          setErr("Error: " + (e?.message || "intenta de nuevo"));
+        }
+      }
+    }
+
     return (
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
-        <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: 260, textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>🔐</div>
-          <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 16 }}>Clave para editar</div>
-          <input type="password" placeholder="••••" value={claveIn} autoFocus
-            onChange={e => { setClaveIn(e.target.value); setClaveErr(false); }}
-            onKeyDown={e => { if (e.key === "Enter") { if (claveIn === CLAVE_EDITAR) { setEditando(true); setPideClave(false); } else setClaveErr(true); } }}
-            inputMode="numeric" pattern="[0-9]*"
-            style={{ ...S.inp, textAlign: "center", letterSpacing: 8, marginBottom: 8 }} />
-          {claveErr && <div style={{ color: "#dc2626", fontSize: 12, marginBottom: 8 }}>Clave incorrecta</div>}
-          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-            <button style={{ ...S.btnS, flex: 1 }} onClick={() => { setPideClave(false); setClaveIn(""); }}>Cancelar</button>
-            <button style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 13, background: "#ea580c", color: "#fff" }}
-              onClick={() => { if (claveIn === CLAVE_EDITAR) { setEditando(true); setPideClave(false); } else setClaveErr(true); }}>Entrar</button>
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
+        <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 320 }}>
+          <div style={{ fontSize: 32, marginBottom: 8, textAlign: "center" }}>🔐</div>
+          <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16, textAlign: "center" }}>{titulo || "Iniciar sesión"}</div>
+          <label style={S.lbl}>Correo</label>
+          <input type="email" autoComplete="email" autoFocus value={email}
+            onChange={e => { setEmail(e.target.value); setErr(""); }}
+            onKeyDown={e => { if (e.key === "Enter") document.getElementById("pwd-input")?.focus(); }}
+            placeholder="tucorreo@ejemplo.com"
+            style={{ ...S.inp, marginBottom: 8 }} />
+          <label style={S.lbl}>Contraseña</label>
+          <input id="pwd-input" type="password" autoComplete="current-password" value={password}
+            onChange={e => { setPassword(e.target.value); setErr(""); }}
+            onKeyDown={e => { if (e.key === "Enter") intentar(); }}
+            style={{ ...S.inp, marginBottom: 8 }} />
+          {err && <div style={{ color: "#dc2626", fontSize: 12, marginBottom: 8, textAlign: "center" }}>{err}</div>}
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            {onClose && <button style={{ ...S.btnS, flex: 1 }} onClick={onClose} disabled={cargando}>Cancelar</button>}
+            <button disabled={cargando || !email || !password} onClick={intentar}
+              style={{ flex: 2, padding: "12px 0", borderRadius: 10, border: "none", cursor: cargando ? "wait" : "pointer", fontWeight: 800, fontSize: 14, background: "linear-gradient(135deg,#ea580c,#f97316)", color: "#fff", opacity: (!email || !password) ? 0.5 : 1 }}>
+              {cargando ? "Verificando…" : "Ingresar"}
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  function PantallaClave({ emoji, titulo, clave, onOk }) {
-    const [pin, setPin] = useState("");
-    const [err, setErr] = useState(false);
-    const intentar = () => { if (pin === clave) onOk(); else setErr(true); };
+  // Pantalla cuando se requiere login (Ingreso/Ventas/Admin sin estar logueado)
+  function PantallaRequiereLogin({ emoji, titulo, descripcion }) {
+    const [showLogin, setShowLogin] = useState(false);
     return (
-      <div style={{ fontFamily: "'DM Sans',sans-serif", maxWidth: 300, margin: "60px auto", textAlign: "center", padding: 20 }}>
+      <div style={{ fontFamily: "'DM Sans',sans-serif", maxWidth: 320, margin: "60px auto", textAlign: "center", padding: 20 }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>{emoji}</div>
-        <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 20, color: "#0f172a" }}>{titulo}</div>
-        <input type="password" placeholder="Clave" value={pin} autoFocus
-          onChange={e => { setPin(e.target.value); setErr(false); }}
-          onKeyDown={e => { if (e.key === "Enter") intentar(); }}
-          style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px", color: "#0f172a", fontSize: 16, width: "100%", boxSizing: "border-box", textAlign: "center", letterSpacing: 10, marginBottom: 8 }}
-          inputMode="numeric" pattern="[0-9]*" />
-        {err && <div style={{ color: "#dc2626", fontSize: 12, marginBottom: 8 }}>Clave incorrecta</div>}
+        <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8, color: "#0f172a" }}>{titulo}</div>
+        <div style={{ fontSize: 13, color: "#475569", marginBottom: 20 }}>{descripcion}</div>
         <button style={{ padding: "13px 0", width: "100%", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 14, background: "linear-gradient(135deg,#ea580c,#f97316)", color: "#fff" }}
-          onClick={intentar}>Entrar</button>
+          onClick={() => setShowLogin(true)}>🔐 Iniciar sesión</button>
+        {showLogin && <ModalLogin titulo={titulo} onClose={() => setShowLogin(false)} />}
+      </div>
+    );
+  }
+
+  // Pantalla cuando estás logueado pero no tenés permiso
+  function PantallaSinPermiso({ titulo }) {
+    return (
+      <div style={{ fontFamily: "'DM Sans',sans-serif", maxWidth: 320, margin: "60px auto", textAlign: "center", padding: 20 }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🚫</div>
+        <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8, color: "#0f172a" }}>{titulo}</div>
+        <div style={{ fontSize: 13, color: "#475569", marginBottom: 16 }}>Tu cuenta no tiene permiso para esta sección.</div>
+        <div style={{ fontSize: 12, color: "#475569", marginBottom: 16 }}>Sesión: <b>{user?.email}</b></div>
+        <button style={{ ...S.btnS, padding: "10px 16px" }} onClick={() => hacerLogout()}>Cerrar sesión</button>
       </div>
     );
   }
@@ -620,7 +692,8 @@ export default function App() {
   // PANTALLA INGRESO DIARIO
   // ============================================================
   function PantallaIngreso() {
-    if (!ingresoOk) return <PantallaClave emoji="✏️" titulo="Ingreso diario" clave={CLAVE_INGRESO} onOk={() => setIngresoOk(true)} />;
+    if (!user) return <PantallaRequiereLogin emoji="✏️" titulo="Ingreso diario" descripcion="Inicia sesión para ingresar los datos del día." />;
+    if (!puedeIngresoVentas(user)) return <PantallaSinPermiso titulo="Ingreso diario" />;
 
     const [yStr, mStr] = fecha.split("-");
     const yIng = parseInt(yStr), mIng = parseInt(mStr);
@@ -644,7 +717,7 @@ export default function App() {
           {guardado && !editando && (
             <div style={{ marginTop: 9, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>✅ Día guardado</span>
-              <button style={S.btnS} onClick={() => { setPideClave(true); setClaveIn(""); setClaveErr(false); }}>Editar</button>
+              <button style={S.btnS} onClick={() => setEditando(true)}>Editar</button>
             </div>
           )}
         </div>
@@ -798,7 +871,8 @@ export default function App() {
       setTimeout(() => setOk(false), 2000);
     }
 
-    if (!ventasOk) return <PantallaClave emoji="💰" titulo="Ventas" clave={CLAVE_VENTAS} onOk={() => setVentasOk(true)} />;
+    if (!user) return <PantallaRequiereLogin emoji="💰" titulo="Ventas" descripcion="Inicia sesión para registrar las ventas." />;
+    if (!puedeIngresoVentas(user)) return <PantallaSinPermiso titulo="Ventas" />;
     const mesNombreVentas = new Date(añoVentasV, mesVentasV - 1).toLocaleDateString("es-CO", { month: "long", year: "numeric" });
 
     return (
@@ -1069,7 +1143,6 @@ export default function App() {
   // PANTALLA ADMIN
   // ============================================================
   function PantallaAdmin() {
-    const [adminOk, setAdminOk] = useState(false);
     const [nuevoNombre, setNuevoNombre] = useState("");
     const [nuevaCiudad, setNuevaCiudad] = useState("BOG");
     const [confirmarBaja, setConfirmarBaja] = useState(null);
@@ -1190,7 +1263,8 @@ export default function App() {
       flash(`🔓 ${MES_NAMES[mesC - 1]} ${añoC} abierto`);
     }
 
-    if (!adminOk) return <PantallaClave emoji="⚙️" titulo="Administrador" clave={CLAVE_ADMIN} onOk={() => setAdminOk(true)} />;
+    if (!user) return <PantallaRequiereLogin emoji="⚙️" titulo="Administrador" descripcion="Inicia sesión con tu cuenta de admin." />;
+    if (!puedeAdmin(user)) return <PantallaSinPermiso titulo="Administrador" />;
 
     const act = vendedoras.filter(v => v.activa !== false);
     const inact = vendedoras.filter(v => v.activa === false);
@@ -1450,7 +1524,11 @@ export default function App() {
           <button style={{ ...S.btnP, marginBottom: 10 }} onClick={exportarJSON}>⬇️ Exportar backup (JSON)</button>
           <button style={{ ...S.btnP, background: "#f1f5f9", color: "#475569", boxShadow: "none" }} onClick={() => setModalTexto({ titulo: "⬆️ Importar backup", texto: "", modo: "importar" })}>⬆️ Importar backup</button>
         </div>
-        <button style={{ ...S.btnP, background: "#f1f5f9", color: "#475569", boxShadow: "none", marginTop: 4 }} onClick={() => setAdminOk(false)}>🔒 Cerrar sesión</button>
+        <div style={{ ...S.card, marginTop: 14, background: "#f8fafc" }}>
+          <div style={{ fontSize: 11, color: "#475569", marginBottom: 6 }}>Sesión actual:</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>{user?.email}</div>
+          <button style={{ ...S.btnP, background: "#f1f5f9", color: "#475569", boxShadow: "none" }} onClick={() => hacerLogout()}>🔒 Cerrar sesión</button>
+        </div>
       </div>
     );
   }
@@ -1458,31 +1536,33 @@ export default function App() {
   // ============================================================
   // RENDER PRINCIPAL
   // ============================================================
-  if (!cargado) return (
+  if (!cargado || !authReady) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 10, minHeight: "100vh", background: "#f8fafc" }}>
       <div style={{ fontSize: 30 }}>⚡</div>
       <div style={{ color: "#475569", fontSize: 13 }}>Cargando...</div>
     </div>
   );
 
-  // Si el ranking está apagado, las pantallas de visualización muestran pantalla bloqueada
+  // Si el ranking está apagado, las vendedoras (no logueadas) ven pantalla bloqueada.
+  // Luis y Carolina (logueados) siempre ven el ranking.
   const pantallasBloqueables = ["ranking", "boletin", "trimestre"];
-  const pantallaActualBloqueada = !config.rankingVisible && pantallasBloqueables.includes(pantalla);
+  const pantallaActualBloqueada = !user && !config.rankingVisible && pantallasBloqueables.includes(pantalla);
 
   return (
     <>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
       <Confetti />
       <div style={S.wrap}>
-        {pideClave && <ModalClave />}
+        {pideLogin && <ModalLogin titulo="Iniciar sesión" onClose={() => { setPideLogin(false); if (pantallaTrasLogin) { setPantalla(pantallaTrasLogin); setPantallaTrasLogin(null); } }} />}
         <div style={S.hdr}>
           <div style={S.logo}>⚡ Televentas</div>
           <div style={S.nav}>
             <button style={S.navB(pantalla === "ranking" || pantalla === "boletin")} onClick={() => setPantalla("ranking")}>📊</button>
-            <button style={S.navB(pantalla === "ingreso")} onClick={() => setPantalla("ingreso")}>✏️</button>
-            <button style={S.navB(pantalla === "ventas")} onClick={() => setPantalla("ventas")}>💰</button>
+            {puedeIngresoVentas(user) && <button style={S.navB(pantalla === "ingreso")} onClick={() => setPantalla("ingreso")}>✏️</button>}
+            {puedeIngresoVentas(user) && <button style={S.navB(pantalla === "ventas")} onClick={() => setPantalla("ventas")}>💰</button>}
             <button style={S.navB(pantalla === "trimestre")} onClick={() => setPantalla("trimestre")}>📈</button>
-            <button style={S.navB(pantalla === "admin")} onClick={() => setPantalla("admin")}>⚙️</button>
+            {esAdmin(user) && <button style={S.navB(pantalla === "admin")} onClick={() => setPantalla("admin")}>⚙️</button>}
+            {!user && <button style={{ ...S.navB(false), background: "#0f172a", color: "#fff" }} onClick={() => setPideLogin(true)}>🔐</button>}
           </div>
         </div>
         {pantallaActualBloqueada ? (
