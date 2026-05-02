@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// Reglas de seguridad para Cloud Firestore — Televentas Evaluación
+//
+// Cómo funciona:
+// - LECTURA pública: cualquiera (vendedoras sin login) puede ver el ranking, boletines, trimestre.
+// - ESCRITURA restringida: solo los emails autorizados pueden modificar datos.
+//   - Admin (Luis): puede modificar TODO (vendedoras, snapshots, config, registros, metas)
+//   - Oficina (Carolina): solo puede modificar 'registros' y 'metas'
+//
+// IMPORTANTE: si agregas más usuarios autorizados, edita las funciones aquí
+// y publica las reglas. La app NO valida nada del lado cliente — la
+// seguridad real está acá en el servidor de Firebase.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Función helper: verifica si el usuario es Admin (Luis)
+    function esAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'luisponce.tv@gmail.com';
+    }
+
+    // Función helper: verifica si el usuario es Oficina (Carolina)
+    function esOficina() {
+      return request.auth != null
+        && request.auth.token.email == 'info@televentas.com';
+    }
+
+    // Documentos de la app
+    match /televentas/{docId} {
+      // Lectura libre (vendedoras pueden ver el ranking sin login)
+      allow read: if true;
+
+      // Escritura: solo Admin u Oficina, según el documento
+      // - registros y metas: ambos (Carolina necesita cargar el día a día)
+      // - vendedoras, snapshots, config: solo Admin
+      allow write: if (
+        (docId in ['registros', 'metas'] && (esAdmin() || esOficina()))
+        || (docId in ['vendedoras', 'snapshots', 'config'] && esAdmin())
+      );
+    }
+  }
+}
