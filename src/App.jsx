@@ -997,12 +997,12 @@ export default function App() {
 
           return (
             <div style={{ ...S.card, background: "linear-gradient(135deg,#fff7ed,#fff)", border: "2px solid #fed7aa", marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#ea580c", textTransform: "uppercase", letterSpacing: 1 }}>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#ea580c", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
                   🏆 Premios {rankingTrim.every(v => v.completo) ? "(final)" : "(tiempo real)"}
                 </div>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#9a3412" }}>
-                  Total: ${(totalGeneral / 1e6).toFixed(0)}M
+                <div style={{ fontSize: 13, fontWeight: 800, color: "#9a3412" }}>
+                  Total a entregar: <span style={{ fontSize: 16 }}>${totalGeneral.toLocaleString("es-CO")}</span>
                 </div>
               </div>
 
@@ -1038,8 +1038,13 @@ export default function App() {
                       </div>
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase" }}>Gana</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: esTop ? "#854d0e" : "#9a3412", lineHeight: 1 }}>
-                          ${(g.total / 1e6).toFixed(0)}M
+                        <div style={{ fontSize: 17, fontWeight: 900, color: esTop ? "#854d0e" : "#9a3412", lineHeight: 1 }}>
+                          ${g.total.toLocaleString("es-CO")}
+                        </div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", marginTop: 2 }}>
+                          {g.total === 1000000 && "Un millón de pesos"}
+                          {g.total === 2000000 && "Dos millones de pesos"}
+                          {g.total > 2000000 && `${Math.round(g.total / 1e6)} millones de pesos`}
                         </div>
                       </div>
                     </div>
@@ -1050,7 +1055,7 @@ export default function App() {
                         <div key={i} style={{ fontSize: 11, color: "#475569", padding: "2px 0", display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ flexShrink: 0 }}>{r.emoji}</span>
                           <span style={{ flex: 1 }}>{r.razon}</span>
-                          <span style={{ fontWeight: 800, color: "#0f172a" }}>${(r.monto / 1e6).toFixed(0)}M</span>
+                          <span style={{ fontWeight: 800, color: "#0f172a" }}>${r.monto.toLocaleString("es-CO")}</span>
                         </div>
                       ))}
                     </div>
