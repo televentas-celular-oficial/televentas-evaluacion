@@ -144,6 +144,25 @@ export default function App() {
   const bloqueado = guardado && !editando;
   const mesEstaCerrado = !!snapshots[claveMesActual];
 
+  // Detectar transición false→true del switch ranking — disparar confetti solo si estás en pantalla de visualización
+  // Usamos null como "no inicializado" para no disparar en la carga inicial
+  const prevRankingVisible = useRef(null);
+  useEffect(() => {
+    if (!cargado) return;
+    const pantallasViz = ["ranking", "boletin", "trimestre"];
+    // Primer render: solo guardar el valor sin disparar nada
+    if (prevRankingVisible.current === null) {
+      prevRankingVisible.current = config.rankingVisible;
+      return;
+    }
+    // Detectar transición false→true real
+    if (prevRankingVisible.current === false && config.rankingVisible === true && pantallasViz.includes(pantalla)) {
+      setConfetti(true);
+      setTimeout(() => setConfetti(false), 4000);
+    }
+    prevRankingVisible.current = config.rankingVisible;
+  }, [config.rankingVisible, pantalla, cargado]);
+
   // Estilos centrales
   const S = makeStyles();
 
@@ -320,29 +339,21 @@ export default function App() {
       if (tabRank === "puntualidad") {
         const d = v.detalle?.puntualidad;
         if (d) return `${d.diasTarde} día${d.diasTarde !== 1 ? "s" : ""} tarde · ${d.minutosAcum} min acum.`;
-        return `${v.dias} días`;
+        return `${v.dias} días trabajados`;
       }
       if (tabRank === "resenas") {
         const d = v.detalle?.resenas;
         if (d) return `${d.totalResenas} reseña${d.totalResenas !== 1 ? "s" : ""} totales`;
-        return `${v.dias} días`;
+        return `${v.dias} días trabajados`;
       }
-      if (["tienda", "tienda_e"].includes(tabRank)) {
-        const d = v.detalle?.tienda;
-        if (d) return `${d.novedades} día${d.novedades !== 1 ? "s" : ""} con novedad`;
-        return `${v.dias} días`;
+      // Indicadores con "días con novedad" — V2 (tienda/planilla/actitud) y V1 (celular/uniforme/tienda_e/planilla)
+      const novTabs = ["tienda", "tienda_e", "planilla", "actitud", "celular", "uniforme"];
+      if (novTabs.includes(tabRank)) {
+        const d = v.detalle?.[tabRank];
+        if (d && d.novedades !== undefined) return `${d.novedades} día${d.novedades !== 1 ? "s" : ""} con novedad`;
+        return `${v.dias} días trabajados`;
       }
-      if (tabRank === "planilla") {
-        const d = v.detalle?.planilla;
-        if (d) return `${d.novedades} día${d.novedades !== 1 ? "s" : ""} con novedad`;
-        return `${v.dias} días`;
-      }
-      if (tabRank === "actitud") {
-        const d = v.detalle?.actitud;
-        if (d) return `${d.novedades} día${d.novedades !== 1 ? "s" : ""} con novedad`;
-        return `${v.dias} días`;
-      }
-      // Fallback V1
+      // Fallback
       return `${v.dias} días trabajados`;
     }
 
@@ -938,8 +949,21 @@ export default function App() {
               const esMejorBOG = premios.mejorBOG?.id === v.id;
               const esExtra = premios.extraNacional?.id === v.id;
               const conBono = idsConBono.has(v.id);
+              const ganaAlgo = esMejorMED || esMejorBOG || conBono;
+              const colorBorde = esMejorMED ? "#10b981" : esMejorBOG ? "#f59e0b" : conBono ? "#ea580c" : "#cbd5e1";
+              const fondoEspecial = ganaAlgo
+                ? (esMejorMED ? "linear-gradient(90deg,#ecfdf5,#fff 40%)" :
+                   esMejorBOG ? "linear-gradient(90deg,#fffbeb,#fff 40%)" :
+                   "linear-gradient(90deg,#ffedd5,#fff 40%)")
+                : "#fff";
               return (
-                <div key={v.id} style={{ ...S.card, display: "flex", alignItems: "center", gap: 11, cursor: "pointer", borderLeft: "3px solid " + (esMejorMED ? "#10b981" : esMejorBOG ? "#f59e0b" : conBono ? "#ea580c" : "#cbd5e1") }}
+                <div key={v.id} style={{
+                  ...S.card,
+                  display: "flex", alignItems: "center", gap: 11, cursor: "pointer",
+                  borderLeft: `5px solid ${colorBorde}`,
+                  background: fondoEspecial,
+                  boxShadow: ganaAlgo ? `0 2px 8px ${colorBorde}30` : "0 1px 4px rgba(0,0,0,0.04)",
+                }}
                   onClick={() => { setVerVid(v.id); setVerModoTrim(true); setPantalla("boletin"); }}>
                   <div style={{
                     width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
@@ -1019,6 +1043,12 @@ export default function App() {
     const [confirmarCierre, setConfirmarCierre] = useState(null);
     const [mostrarAbrir, setMostrarAbrir] = useState(false);
     const [confirmarAbrir, setConfirmarAbrir] = useState(null);
+    const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
+    // Mes anterior al actual (caso típico de cierre)
+    const _mesAntAño = mesActual === 1 ? añoActual - 1 : añoActual;
+    const _mesAntMes = mesActual === 1 ? 12 : mesActual - 1;
+    const [añoSel, setAñoSel] = useState(_mesAntAño);
+    const [mesSel, setMesSel] = useState(_mesAntMes);
 
     function flash(txt) { setMsg(txt); setTimeout(() => setMsg(""), 2500); }
 
@@ -1054,10 +1084,7 @@ export default function App() {
     function toggleRanking() {
       const nuevoEstado = !config.rankingVisible;
       saveConfig({ ...config, rankingVisible: nuevoEstado });
-      if (nuevoEstado) {
-        setConfetti(true);
-        setTimeout(() => setConfetti(false), 4000);
-      }
+      // El confetti se dispara automáticamente en Ranking/Trimestre cuando detecten el cambio
       flash(nuevoEstado ? "🔓 Ranking VISIBLE para vendedoras" : "🔒 Ranking OCULTO para vendedoras");
     }
 
@@ -1131,14 +1158,20 @@ export default function App() {
     const act = vendedoras.filter(v => v.activa !== false);
     const inact = vendedoras.filter(v => v.activa === false);
 
-    const cerrables = [];
-    for (let y = añoActual - 1; y <= añoActual; y++) {
-      for (let m = 1; m <= 12; m++) {
-        if (y === añoActual && m >= mesActual) break;
-        if (y === añoActual - 1 && m < 4) continue;
-        cerrables.push({ año: y, mes: m, cerrado: !!snapshots[claveMes(y, m)] });
-      }
-    }
+    // Mes anterior al actual (caso típico de cierre)
+    const mesAntAño = _mesAntAño;
+    const mesAntMes = _mesAntMes;
+    const mesAntCerrado = !!snapshots[claveMes(mesAntAño, mesAntMes)];
+
+    // Lista de meses cerrados (para mostrar)
+    const cerrados = Object.keys(snapshots).map(k => {
+      const [yStr, mStr] = k.split("_");
+      return { año: parseInt(yStr), mes: parseInt(mStr) };
+    }).sort((a, b) => (a.año - b.año) || (a.mes - b.mes));
+
+    // Validez del selector: NO cerrar mes futuro o el mes en curso
+    const mesSelValido = (añoSel < añoActual) || (añoSel === añoActual && mesSel < mesActual);
+    const mesSelYaCerrado = !!snapshots[claveMes(añoSel, mesSel)];
 
     return (
       <div style={S.body}>
@@ -1169,37 +1202,79 @@ export default function App() {
           <div style={{ fontSize: 11, color: "#475569", marginBottom: 10 }}>
             Cerrar un mes deja sus notas FIJAS para siempre. Útil al terminar un mes y haber cargado todos los datos.
           </div>
-          {cerrables.filter(c => !c.cerrado).map(c => (
-            <button key={`${c.año}-${c.mes}`} onClick={() => intentarCerrarMes(c.año, c.mes)}
-              style={{ ...S.btnP, marginBottom: 8, background: "linear-gradient(135deg,#dc2626,#b91c1c)", padding: "10px 0" }}>
-              🔒 Cerrar {MES_NAMES[c.mes - 1]} {c.año}
+
+          {/* Botón principal: cerrar mes anterior */}
+          {!mesAntCerrado ? (
+            <button onClick={() => intentarCerrarMes(mesAntAño, mesAntMes)}
+              style={{ ...S.btnP, marginBottom: 8, background: "linear-gradient(135deg,#dc2626,#b91c1c)", padding: "12px 0" }}>
+              🔒 Cerrar {MES_NAMES[mesAntMes - 1]} {mesAntAño}
             </button>
-          ))}
-          {cerrables.filter(c => c.cerrado).length > 0 && (
-            <>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", marginTop: 10, marginBottom: 6 }}>Meses cerrados:</div>
-              {cerrables.filter(c => c.cerrado).map(c => (
-                <div key={`${c.año}-${c.mes}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "#fef3c7", borderRadius: 6, marginBottom: 4, fontSize: 12 }}>
-                  <span style={{ fontWeight: 700, color: "#92400e" }}>🔒 {MES_NAMES[c.mes - 1]} {c.año}</span>
+          ) : (
+            <div style={{ padding: "10px 14px", background: "#fef3c7", borderRadius: 8, marginBottom: 8, fontSize: 12, fontWeight: 700, color: "#92400e", textAlign: "center" }}>
+              ✅ {MES_NAMES[mesAntMes - 1]} {mesAntAño} ya está cerrado
+            </div>
+          )}
+
+          {/* Toggle para opciones avanzadas */}
+          <button onClick={() => setMostrarAvanzado(!mostrarAvanzado)} style={{ background: "none", border: "none", color: "#475569", textDecoration: "underline", cursor: "pointer", fontSize: 11, marginTop: 4 }}>
+            {mostrarAvanzado ? "Ocultar opciones avanzadas" : "Cerrar otro mes / opciones avanzadas"}
+          </button>
+
+          {mostrarAvanzado && (
+            <div style={{ marginTop: 10, padding: 10, background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 8 }}>Cerrar un mes específico:</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                <div>
+                  <label style={S.lbl}>Año</label>
+                  <select value={añoSel} onChange={e => setAñoSel(parseInt(e.target.value))} style={S.inp}>
+                    {[añoActual - 1, añoActual, añoActual + 1].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
                 </div>
-              ))}
-              <div style={{ marginTop: 10, fontSize: 10, color: "#94a3b8" }}>
-                <button onClick={() => setMostrarAbrir(!mostrarAbrir)} style={{ background: "none", border: "none", color: "#94a3b8", textDecoration: "underline", cursor: "pointer", fontSize: 10 }}>
-                  {mostrarAbrir ? "Ocultar opción de abrir mes" : "¿Necesitas abrir un mes? (uso de emergencia)"}
-                </button>
+                <div>
+                  <label style={S.lbl}>Mes</label>
+                  <select value={mesSel} onChange={e => setMesSel(parseInt(e.target.value))} style={S.inp}>
+                    {MES_NAMES.map((n, i) => <option key={i} value={i + 1}>{n}</option>)}
+                  </select>
+                </div>
               </div>
-              {mostrarAbrir && (
-                <div style={{ marginTop: 10, padding: 10, background: "#fee2e2", border: "1px dashed #fca5a5", borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, color: "#991b1b", marginBottom: 6 }}>⚠️ Abrir un mes lo descongela. Las notas se podrán recalcular y editar otra vez. Usar SOLO en emergencias.</div>
-                  {cerrables.filter(c => c.cerrado).map(c => (
-                    <button key={`abrir-${c.año}-${c.mes}`} onClick={() => setConfirmarAbrir({ año: c.año, mes: c.mes })}
-                      style={{ display: "block", width: "100%", marginBottom: 4, padding: "6px", borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#991b1b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      🔓 Abrir {MES_NAMES[c.mes - 1]} {c.año}
-                    </button>
-                  ))}
-                </div>
+              {!mesSelValido && (
+                <div style={{ fontSize: 11, color: "#dc2626", marginBottom: 6 }}>⚠️ No puedes cerrar el mes en curso ni un mes futuro.</div>
               )}
-            </>
+              {mesSelYaCerrado && (
+                <div style={{ fontSize: 11, color: "#92400e", marginBottom: 6 }}>✅ Ese mes ya está cerrado.</div>
+              )}
+              <button disabled={!mesSelValido || mesSelYaCerrado} onClick={() => intentarCerrarMes(añoSel, mesSel)}
+                style={{ ...S.btnP, padding: "8px 0", opacity: (!mesSelValido || mesSelYaCerrado) ? 0.4 : 1, marginTop: 4 }}>
+                🔒 Cerrar {MES_NAMES[mesSel - 1]} {añoSel}
+              </button>
+
+              {cerrados.length > 0 && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", marginTop: 14, marginBottom: 6 }}>Meses cerrados ({cerrados.length}):</div>
+                  <div style={{ maxHeight: 120, overflowY: "auto" }}>
+                    {cerrados.map(c => (
+                      <div key={`${c.año}-${c.mes}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", background: "#fef3c7", borderRadius: 6, marginBottom: 3, fontSize: 11 }}>
+                        <span style={{ fontWeight: 700, color: "#92400e" }}>🔒 {MES_NAMES[c.mes - 1]} {c.año}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={() => setMostrarAbrir(!mostrarAbrir)} style={{ background: "none", border: "none", color: "#94a3b8", textDecoration: "underline", cursor: "pointer", fontSize: 10, marginTop: 8 }}>
+                    {mostrarAbrir ? "Ocultar abrir mes" : "¿Necesitas abrir un mes? (emergencia)"}
+                  </button>
+                  {mostrarAbrir && (
+                    <div style={{ marginTop: 8, padding: 8, background: "#fee2e2", border: "1px dashed #fca5a5", borderRadius: 6 }}>
+                      <div style={{ fontSize: 10, color: "#991b1b", marginBottom: 6 }}>⚠️ Abrir descongela el mes. SOLO emergencias.</div>
+                      {cerrados.map(c => (
+                        <button key={`abrir-${c.año}-${c.mes}`} onClick={() => setConfirmarAbrir({ año: c.año, mes: c.mes })}
+                          style={{ display: "block", width: "100%", marginBottom: 3, padding: "5px", borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#991b1b", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          🔓 Abrir {MES_NAMES[c.mes - 1]} {c.año}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
 

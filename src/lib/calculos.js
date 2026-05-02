@@ -111,16 +111,31 @@ export function notaDia(reg, año, mes) {
 function calcMesV1(registros, vid, año, mes) {
   const pref = vid + "_" + año + "-" + String(mes).padStart(2, "0");
   const dias = Object.entries(registros).filter(([k, r]) => k.startsWith(pref) && !r.descanso).map(([, r]) => r);
-  if (!dias.length) return { nota: null, dias: 0, porInd: {} };
+  if (!dias.length) return { nota: null, dias: 0, porInd: {}, detalle: {} };
   const porInd = {};
   INDICADORES_V1.forEach(ind => {
     const ns = dias.map(r => notaIndicadorV1(r, ind.id)).filter(n => n !== null);
     porInd[ind.id] = ns.length ? Math.round(ns.reduce((a, b) => a + b, 0) / ns.length * 100) / 100 : null;
   });
+  // Detalle por indicador (igual que V2 para consistencia en el ranking)
+  const detalle = {
+    puntualidad: {
+      diasTarde: dias.filter(r => (r.minutos || 0) > 0).length,
+      diasGraves: dias.filter(r => (r.minutos || 0) >= 10).length,
+      minutosAcum: dias.reduce((s, r) => s + (r.minutos || 0), 0),
+    },
+    resenas: {
+      totalResenas: dias.reduce((s, r) => s + (r.resenas || 0), 0),
+    },
+    celular: { novedades: dias.filter(r => r.celular === "mal").length },
+    uniforme: { novedades: dias.filter(r => r.uniforme === "mal").length },
+    tienda_e: { novedades: dias.filter(r => r.tienda_e === "mal").length },
+    planilla: { novedades: dias.filter(r => r.planilla === "mal").length },
+  };
   // Suma ponderada / suma de pesos = 70 (V1)
   const totalPeso = INDICADORES_V1.reduce((s, i) => s + i.peso, 0);
   const notaBase = Math.round(INDICADORES_V1.reduce((s, i) => s + (porInd[i.id] ?? 0) * i.peso, 0) / totalPeso * 100) / 100;
-  return { nota: notaBase, dias: dias.length, porInd };
+  return { nota: notaBase, dias: dias.length, porInd, detalle };
 }
 
 // V2 (mayo 2026 en adelante)
