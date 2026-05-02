@@ -33,6 +33,7 @@ export default function App() {
   const [editando, setEditando] = useState(false);
   const [verModoTrim, setVerModoTrim] = useState(false);
   const [confetti, setConfetti] = useState(false);
+  const [erroresFalt, setErroresFalt] = useState([]);  // vids con campos obligatorios faltantes
   // Auth: usuario logueado
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
@@ -159,6 +160,31 @@ export default function App() {
   }
 
   function guardarDia() {
+    // Validar: si actitud es regular/mal, requiere nota obligatoria
+    const [yStr, mStr] = fecha.split("-");
+    const yIng = parseInt(yStr), mIng = parseInt(mStr);
+    const isV2 = esFormulaV2(yIng, mIng);
+    if (isV2) {
+      const faltantes = activas
+        .filter(v => !filas[v.id]?.descanso)
+        .filter(v => {
+          const f = filas[v.id] || {};
+          const necesita = f.actitud === "regular" || f.actitud === "mal";
+          const tiene = (f.actitud_nota || "").trim().length > 0;
+          return necesita && !tiene;
+        })
+        .map(v => v.id);
+      if (faltantes.length > 0) {
+        setErroresFalt(faltantes);
+        // Scroll al primero que falta
+        setTimeout(() => {
+          const el = document.querySelector(`[data-actitud-vid="${faltantes[0]}"]`);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 100);
+        return;
+      }
+    }
+    setErroresFalt([]);
     const n = { ...registros };
     activas.forEach(v => {
       n[v.id + "_" + fecha] = { ...filas[v.id], vid: v.id, fecha };
@@ -816,12 +842,34 @@ export default function App() {
                       );
                     })}
                   </div>
-                  {(f.actitud === "regular" || f.actitud === "mal") && (
-                    <input type="text" placeholder="¿Qué pasó? (opcional)"
-                      value={f.actitud_nota || ""} onChange={e => setFila(v.id, "actitud_nota", e.target.value)}
-                      disabled={bloqueado || cerrado}
-                      style={{ ...S.inp, marginTop: 6, fontSize: 12 }} />
-                  )}
+                  {(f.actitud === "regular" || f.actitud === "mal") && (() => {
+                    const haynota = (f.actitud_nota || "").trim().length > 0;
+                    const enError = erroresFalt.includes(v.id) && !haynota;
+                    return (
+                      <div data-actitud-vid={v.id}>
+                        <input type="text"
+                          placeholder={enError ? "⚠️ Obligatorio: ¿qué pasó?" : "¿Qué pasó? (obligatorio)"}
+                          value={f.actitud_nota || ""}
+                          onChange={e => {
+                            setFila(v.id, "actitud_nota", e.target.value);
+                            if (enError && e.target.value.trim().length > 0) {
+                              setErroresFalt(prev => prev.filter(id => id !== v.id));
+                            }
+                          }}
+                          disabled={bloqueado || cerrado}
+                          style={{
+                            ...S.inp, marginTop: 6, fontSize: 12,
+                            border: enError ? "2px solid #dc2626" : "1px solid #e2e8f0",
+                            background: enError ? "#fee2e2" : "#f8fafc",
+                          }} />
+                        {enError && (
+                          <div style={{ fontSize: 10, color: "#dc2626", marginTop: 3, fontWeight: 700 }}>
+                            ⚠️ Tienes que escribir qué pasó para guardar
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </>
               ) : (
                 /* V1: 4 selects bien/mal */
@@ -841,6 +889,11 @@ export default function App() {
             </div>
           );
         })}
+        {erroresFalt.length > 0 && (
+          <div style={{ background: "#fee2e2", border: "2px solid #fca5a5", borderRadius: 10, padding: "10px 14px", marginTop: 6, fontSize: 13, fontWeight: 700, color: "#991b1b" }}>
+            ⚠️ Faltan campos por llenar: {erroresFalt.length} vendedora{erroresFalt.length !== 1 ? "s" : ""} con actitud Regular/Mal sin describir qué pasó.
+          </div>
+        )}
         {!bloqueado && !cerrado && <button style={{ ...S.btnP, marginTop: 6 }} onClick={guardarDia}>💾 Guardar día</button>}
         {guardado && !editando && esAdmin(user) && (
           <div style={{ textAlign: "center", fontSize: 12, color: "#475569", marginTop: 10 }}>Toca "Editar" para corregir</div>
