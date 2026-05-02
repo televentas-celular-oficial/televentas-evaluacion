@@ -303,16 +303,6 @@ export default function App() {
   // PANTALLA RANKING
   // ============================================================
   function PantallaRanking() {
-    const tabsRef = useRef(null);
-    const tabRefs = useRef({});
-
-    // Mantener el tab seleccionado visible al cambiar
-    useEffect(() => {
-      const el = tabRefs.current[tabRank];
-      if (el && tabsRef.current) {
-        el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-      }
-    }, [tabRank]);
 
     const indicadoresMes = getIndicadores(año, mes);
     const indicadorActivo = indicadoresMes.find(i => i.id === tabRank);
@@ -338,7 +328,12 @@ export default function App() {
       if (tabRank === "ventas") return `$${(v.real / 1e6).toFixed(1)}M de $${(v.meta / 1e6).toFixed(1)}M (${v.pct}%)`;
       if (tabRank === "puntualidad") {
         const d = v.detalle?.puntualidad;
-        if (d) return `${d.diasTarde} día${d.diasTarde !== 1 ? "s" : ""} tarde · ${d.minutosAcum} min acum.`;
+        if (d) {
+          const partes = [`${d.diasTarde} día${d.diasTarde !== 1 ? "s" : ""} tarde`];
+          if (d.diasGraves > 0) partes.push(`${d.diasGraves} grave${d.diasGraves !== 1 ? "s" : ""}`);
+          partes.push(`${d.minutosAcum} min acum.`);
+          return partes.join(" · ");
+        }
         return `${v.dias} días trabajados`;
       }
       if (tabRank === "resenas") {
@@ -379,15 +374,15 @@ export default function App() {
           {new Date(año, mes - 1).toLocaleDateString("es-CO", { month: "long", year: "numeric" })} · {conDatos.length} vendedoras con datos
         </div>
 
-        {/* Tabs scrollables */}
-        <div ref={tabsRef} style={{ display: "flex", gap: 5, overflowX: "auto", marginBottom: 14, background: "#f1f5f9", borderRadius: 12, padding: 6, scrollbarWidth: "none" }}>
-          <button ref={el => tabRefs.current["general"] = el} style={S.tabActivo("general", tabRank, "#ea580c")} onClick={() => setTabRank("general")}>🏅 General</button>
+        {/* Tabs en grid 4x2 — sin scroll, todo visible */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5, marginBottom: 14, background: "#f1f5f9", borderRadius: 12, padding: 6 }}>
+          <button style={S.tabActivo("general", tabRank, "#ea580c")} onClick={() => setTabRank("general")}>🏅 General</button>
           {indicadoresMes.map(ind =>
-            <button key={ind.id} ref={el => tabRefs.current[ind.id] = el} style={S.tabActivo(ind.id, tabRank, ind.color)} onClick={() => setTabRank(ind.id)}>
+            <button key={ind.id} style={S.tabActivo(ind.id, tabRank, ind.color)} onClick={() => setTabRank(ind.id)}>
               {ind.emoji} {ind.label}
             </button>
           )}
-          <button ref={el => tabRefs.current["ventas"] = el} style={S.tabActivo("ventas", tabRank, COLOR_VENTAS)} onClick={() => setTabRank("ventas")}>💰 Ventas</button>
+          <button style={S.tabActivo("ventas", tabRank, COLOR_VENTAS)} onClick={() => setTabRank("ventas")}>💰 Ventas</button>
         </div>
 
         {/* Podio top 3 */}
@@ -889,57 +884,99 @@ export default function App() {
         </div>
         <div style={S.sub}>{meses.map(m => MES_NAMES[m - 1]).join(" · ")} · Pesos: 20% · 30% · 50%</div>
 
-        {/* Bloque de premios */}
-        {rankingTrim.length > 0 && (
-          <div style={{ ...S.card, background: "linear-gradient(135deg,#fff7ed,#fff)", border: "2px solid #fed7aa", marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#ea580c", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
-              🏆 Premios del trimestre {rankingTrim.every(v => v.completo) ? "(final)" : "(en tiempo real)"}
-            </div>
+        {/* Bloque de premios — agrupado por vendedora */}
+        {rankingTrim.length > 0 && (() => {
+          // Construir lista de ganadoras agrupadas
+          const ganadoras = [];
+          const addRazon = (v, razon, monto, emoji) => {
+            let g = ganadoras.find(x => x.id === v.id);
+            if (!g) {
+              g = { ...v, razones: [], total: 0 };
+              ganadoras.push(g);
+            }
+            g.razones.push({ razon, monto, emoji });
+            g.total += monto;
+          };
+          if (premios.mejorMED) addRazon(premios.mejorMED, "Mejor de Medellín", 1000000, "🏆");
+          if (premios.mejorBOG) addRazon(premios.mejorBOG, "Mejor de Bogotá", 1000000, "🏆");
+          premios.conBono.forEach(v => {
+            if (v.id !== premios.mejorMED?.id && v.id !== premios.mejorBOG?.id) {
+              addRazon(v, "Nota trimestral ≥4.50", 1000000, "⭐");
+            }
+          });
+          if (premios.extraNacional) addRazon(premios.extraNacional, "La mejor de las mejores", 1000000, "🌟");
 
-            {premios.mejorMED && (
-              <div style={{ ...S.card, background: "linear-gradient(135deg,#ecfdf5,#fff)", border: "1px solid #6ee7b7", padding: "10px 14px", marginBottom: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: "#065f46", marginBottom: 4 }}>🏆 Mejor de Medellín · $1.000.000</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ fontWeight: 900, fontSize: 14, flex: 1 }}>{premios.mejorMED.nombre}</div>
-                  <NotaBadge nota={premios.mejorMED.notaTrim} size={13} />
+          // Ordenar por total descendente
+          ganadoras.sort((a, b) => b.total - a.total || (b.notaTrim - a.notaTrim));
+          const totalGeneral = ganadoras.reduce((s, g) => s + g.total, 0);
+
+          if (ganadoras.length === 0) return null;
+
+          return (
+            <div style={{ ...S.card, background: "linear-gradient(135deg,#fff7ed,#fff)", border: "2px solid #fed7aa", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#ea580c", textTransform: "uppercase", letterSpacing: 1 }}>
+                  🏆 Premios {rankingTrim.every(v => v.completo) ? "(final)" : "(tiempo real)"}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#9a3412" }}>
+                  Total: ${(totalGeneral / 1e6).toFixed(0)}M
                 </div>
               </div>
-            )}
 
-            {premios.mejorBOG && (
-              <div style={{ ...S.card, background: "linear-gradient(135deg,#fffbeb,#fff)", border: "1px solid #fde68a", padding: "10px 14px", marginBottom: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: "#854d0e", marginBottom: 4 }}>🏆 Mejor de Bogotá · $1.000.000</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ fontWeight: 900, fontSize: 14, flex: 1 }}>{premios.mejorBOG.nombre}</div>
-                  <NotaBadge nota={premios.mejorBOG.notaTrim} size={13} />
-                </div>
-              </div>
-            )}
+              {ganadoras.map((g, idx) => {
+                const esTop = idx === 0 && g.total >= 2000000;
+                const fondoCard = esTop
+                  ? "linear-gradient(135deg,#fef9c3,#fff)"
+                  : g.total >= 2000000
+                    ? "linear-gradient(135deg,#fef9c3,#fff)"
+                    : g.ciudad === "MED"
+                      ? "linear-gradient(135deg,#ecfdf5,#fff)"
+                      : "linear-gradient(135deg,#fffbeb,#fff)";
+                const bordeCard = esTop ? "2px solid #fde047" : g.ciudad === "MED" ? "1px solid #6ee7b7" : "1px solid #fde68a";
 
-            {premios.conBono.filter(v => v.id !== premios.mejorMED?.id && v.id !== premios.mejorBOG?.id).length > 0 && (
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: "#475569", marginBottom: 6 }}>⭐ También con nota ≥4.50 · $1.000.000 c/u</div>
-                {premios.conBono.filter(v => v.id !== premios.mejorMED?.id && v.id !== premios.mejorBOG?.id).map(v => (
-                  <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, flex: 1 }}>{v.nombre}</div>
-                    <BadgeCiudad ciudad={v.ciudad} />
-                    <NotaBadge nota={v.notaTrim} size={13} />
+                return (
+                  <div key={g.id} style={{
+                    background: fondoCard, border: bordeCard, borderRadius: 12, padding: "12px 14px", marginBottom: 9,
+                    boxShadow: esTop ? "0 0 16px rgba(251,191,36,0.4)" : "0 1px 4px rgba(0,0,0,0.05)",
+                  }}>
+                    {/* Encabezado: vendedora + total */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <div style={{
+                        width: 38, height: 38, borderRadius: "50%", background: COLOR_CIUDAD[g.ciudad],
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 16, fontWeight: 900, color: "#fff", flexShrink: 0,
+                      }}>{g.nombre[0]}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          <div style={{ fontWeight: 900, fontSize: 14 }}>{g.nombre}</div>
+                          <BadgeCiudad ciudad={g.ciudad} />
+                        </div>
+                        <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>Nota trimestral: <span style={{ color: colorN(g.notaTrim), fontWeight: 700 }}>{fmtN(g.notaTrim)}</span></div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase" }}>Gana</div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: esTop ? "#854d0e" : "#9a3412", lineHeight: 1 }}>
+                          ${(g.total / 1e6).toFixed(0)}M
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Razones */}
+                    <div style={{ borderTop: "1px dashed " + (esTop ? "#fde047" : "#e2e8f0"), paddingTop: 8 }}>
+                      {g.razones.map((r, i) => (
+                        <div key={i} style={{ fontSize: 11, color: "#475569", padding: "2px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ flexShrink: 0 }}>{r.emoji}</span>
+                          <span style={{ flex: 1 }}>{r.razon}</span>
+                          <span style={{ fontWeight: 800, color: "#0f172a" }}>${(r.monto / 1e6).toFixed(0)}M</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {premios.extraNacional && (
-              <div style={{ ...S.card, background: "linear-gradient(135deg,#fef9c3,#fff)", border: "1px solid #fde047", padding: "10px 14px" }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: "#854d0e", marginBottom: 4 }}>🌟 BONUS #1 Nacional · +$1.000.000 EXTRA</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ fontWeight: 900, fontSize: 14, flex: 1 }}>{premios.extraNacional.nombre}</div>
-                  <NotaBadge nota={premios.extraNacional.notaTrim} size={13} />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {rankingTrim.length > 0 && (
           <>
