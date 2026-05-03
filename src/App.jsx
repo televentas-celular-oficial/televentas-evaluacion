@@ -472,8 +472,8 @@ export default function App() {
           {new Date(año, mes - 1).toLocaleDateString("es-CO", { month: "long", year: "numeric" })} · {conDatos.length} vendedoras con datos
         </div>
 
-        {/* Tabs en grid 4x2 — sin scroll, todo visible */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5, marginBottom: 14, background: "#f1f5f9", borderRadius: 12, padding: 6 }}>
+        {/* Tabs en grid 4 columnas — minmax(0,1fr) garantiza que NO se desborde */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 4, marginBottom: 14, background: "#f1f5f9", borderRadius: 12, padding: 5 }}>
           <button style={S.tabActivo("general", tabRank, "#ea580c")} onClick={() => setTabRank("general")}>🏅 General</button>
           {indicadoresMes.map(ind =>
             <button key={ind.id} style={S.tabActivo(ind.id, tabRank, ind.color)} onClick={() => setTabRank(ind.id)}>
@@ -1672,12 +1672,17 @@ function makeStyles() {
     btnP: { padding: "13px 0", width: "100%", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 14, background: "linear-gradient(135deg,#ea580c,#f97316)", color: "#fff", boxShadow: "0 2px 8px rgba(234,88,12,0.3)" },
     btnS: { padding: "7px 13px", borderRadius: 7, border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 700, fontSize: 11, background: "#fff", color: "#475569" },
     tabActivo: (id, activo, color) => ({
-      padding: "7px 13px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 11,
-      fontWeight: 800, whiteSpace: "nowrap",
+      padding: "8px 4px", borderRadius: 14, border: "none", cursor: "pointer", fontSize: 10,
+      fontWeight: 800,
       background: id === activo ? "#fff" : "transparent",
       color: id === activo ? color : "#475569",
       boxShadow: id === activo ? `0 2px 8px ${color}40, 0 0 0 2px ${color}` : "none",
       transition: "all 0.2s",
+      minWidth: 0,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      textAlign: "center",
     }),
   };
 }
