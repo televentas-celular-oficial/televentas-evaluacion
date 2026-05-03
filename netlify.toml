@@ -4,6 +4,11 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # La API key del SDK web de Firebase NO es un secreto — está diseñada para
+  # ser pública. La seguridad real está en las reglas de Firestore y Auth.
+  # Le decimos a Netlify que la ignore en su escaneo de secretos.
+  SECRETS_SCAN_OMIT_PATHS = "src/firebase.js,dist/**"
+  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSyA0dRWJ79Tlb5VwSrjv6pLhE2b5AuQINlg"
 
 [[redirects]]
   from = "/*"
