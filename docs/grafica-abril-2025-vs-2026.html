@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Ventas Abril 2025 vs 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: #f8fafc;
+    padding: 24px 16px;
+    color: #0f172a;
+  }
+  .card {
+    max-width: 480px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px 22px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
+  .header {
+    text-align: center;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #fed7aa;
+    margin-bottom: 18px;
+  }
+  .logo { font-size: 20px; font-weight: 900; color: #ea580c; }
+  .titulo { font-size: 22px; font-weight: 900; margin-top: 6px; line-height: 1.2; }
+  .subtitulo { font-size: 12px; color: #475569; margin-top: 4px; font-weight: 500; }
+
+  /* TOTAL NACIONAL — destacado */
+  .total {
+    background: linear-gradient(135deg, #fef2f2, #fff);
+    border: 2px solid #fca5a5;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .total-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #991b1b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .total-comparativa {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    gap: 14px;
+    margin-top: 12px;
+  }
+  .total-año { flex: 1; }
+  .total-año-label { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; }
+  .total-año-valor { font-size: 18px; font-weight: 900; color: #0f172a; }
+  .total-año.viejo .total-año-valor { color: #16a34a; }
+  .total-año.nuevo .total-año-valor { color: #dc2626; }
+  .total-cambio {
+    margin-top: 14px;
+    padding: 10px;
+    background: #dc2626;
+    color: #fff;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  /* BARRAS POR TIENDA */
+  .seccion-titulo {
+    font-size: 13px;
+    font-weight: 800;
+    color: #ea580c;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 16px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ciudad-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+  .ciudad-badge.med { background: #d1fae5; color: #065f46; }
+  .ciudad-badge.bog { background: #fef3c7; color: #92400e; }
+  .ciudad-total {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .ciudad-total.bajo { color: #dc2626; }
+  .ciudad-total.subio { color: #059669; }
+
+  .tienda {
+    margin-bottom: 12px;
+  }
+  .tienda-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .tienda-nombre {
+    font-size: 12px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .tienda-cambio {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .tienda-cambio.subio {
+    background: #d1fae5;
+    color: #059669;
+  }
+  .tienda-cambio.bajo-suave {
+    background: #fed7aa;
+    color: #c2410c;
+  }
+  .tienda-cambio.bajo {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  .tienda-cambio.bajo-fuerte {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  .barras {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .barra {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .barra-año {
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .barra-bar {
+    flex: 1;
+    height: 18px;
+    background: #f1f5f9;
+    border-radius: 5px;
+    position: relative;
+    overflow: visible;
+  }
+  .barra-fill {
+    height: 100%;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+  }
+  .barra-fill.viejo { background: linear-gradient(90deg, #16a34a, #22c55e); }
+  .barra-fill.nuevo { background: linear-gradient(90deg, #dc2626, #ef4444); }
+
+  /* MENSAJE FINAL */
+  .mensaje {
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #fff7ed, #fef9c3);
+    border: 2px solid #fde68a;
+    border-radius: 12px;
+    text-align: center;
+  }
+  .mensaje-titulo {
+    font-size: 13px;
+    font-weight: 900;
+    color: #9a3412;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .mensaje-texto {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.4;
+  }
+
+  .footer {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  /* Para que las barras tengan ancho proporcional */
+  /* Max ventas 2025 = $43.986.000, max 2026 = $42.941.300 */
+  /* Voy a usar un máximo de 50M para escalar */
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="logo">⚡ Televentas</div>
+    <div class="titulo">📉 Ventas Abril<br/>2025 vs 2026</div>
+    <div class="subtitulo">Comparativo por tienda · Cifras en millones</div>
+  </div>
+
+  <!-- TOTAL NACIONAL -->
+  <div class="total">
+    <div class="total-label">📊 TOTAL NACIONAL</div>
+    <div class="total-comparativa">
+      <div class="total-año viejo">
+        <div class="total-año-label">ABRIL 2025</div>
+        <div class="total-año-valor">$211.9 M</div>
+      </div>
+      <div class="total-año nuevo">
+        <div class="total-año-label">ABRIL 2026</div>
+        <div class="total-año-valor">$183.5 M</div>
+      </div>
+    </div>
+    <div class="total-cambio">↓ −$28.4 M (−13%)</div>
+  </div>
+
+  <!-- MEDELLÍN -->
+  <div class="seccion-titulo">
+    🏬 Medellín <span class="ciudad-badge med">MED</span>
+    <span class="ciudad-total bajo">−5%</span>
+  </div>
+
+  <div class="tienda">
+    <div class="tienda-header">
+      <div class="tienda-nombre">VEGAS</div>
+      <div class="tienda-cambio subio">↑ +22%</div>
+    </div>
+    <div class="barras">
+      <div class="barra"><div class="barra-año">2025</div><div class="barra-bar"><div class="barra-fill viejo" style="width: 55%">$27.6M</div></div></div>
+      <div class="barra"><div class="barra-año">2026</div><div class="barra-bar"><div class="barra-fill nuevo" style="width: 67%; background: linear-gradient(90deg, #16a34a, #22c55e)">$33.6M</div></div></div>
+    </div>
+  </div>
+
+  <div class="tienda">
+    <div class="tienda-header">
+      <div class="tienda-nombre">PP</div>
+      <div class="tienda-cambio bajo-suave">↓ −2%</div>
+    </div>
+    <div class="barras">
+      <div class="barra"><div class="barra-año">2025</div><div class="barra-bar"><div class="barra-fill viejo" style="width: 88%">$43.9M</div></div></div>
+      <div class="barra"><div class="barra-año">2026</div><div class="barra-bar"><div class="barra-fill nuevo" style="width: 86%">$42.9M</div></div></div>
+    </div>
+  </div>
+
+  <div class="tienda">
+    <div class="tienda-header">
+      <div class="tienda-nombre">65</div>
+      <div class="tienda-cambio bajo">↓ −20%</div>
+    </div>
+    <div class="barras">
+      <div class="barra"><div class="barra-año">2025</div><div class="barra-bar"><div class="barra-fill viejo" style="width: 81%">$40.7M</div></div></div>
+      <div class="barra"><div class="barra-año">2026</div><div class="barra-bar"><div class="barra-fill nuevo" style="width: 65%">$32.4M</div></div></div>
+    </div>
+  </div>
+
+  <div class="tienda">
+    <div class="tienda-header">
+      <div class="tienda-nombre">TENIS</div>
+      <div class="tienda-cambio bajo-fuerte">↓ −29%</div>
+    </div>
+    <div class="barras">
+      <div class="barra"><div class="barra-año">2025</div><div class="barra-bar"><div class="barra-fill viejo" style="width: 22%">$11.0M</div></div></div>
+      <div class="barra"><div class="barra-año">2026</div><div class="barra-bar"><div class="barra-fill nuevo" style="width: 16%">$7.8M</div></div></div>
+    </div>
+  </div>
+
+  <!-- BOGOTÁ -->
+  <div class="seccion-titulo">
+    🏬 Bogotá <span class="ciudad-badge bog">BOG</span>
+    <span class="ciudad-total bajo">−25%</span>
+  </div>
+
+  <div class="tienda">
+    <div class="tienda-header">
+      <div class="tienda-nombre">JUMBO 80</div>
+      <div class="tienda-cambio subio">↑ +93%</div>
+    </div>
+    <div class="barras">
+      <div class="barra"><div class="barra-año">2025</div><div class="barra-bar"><div class="barra-fill viejo" style="width: 16%">$7.9M</div></div></div>
+      <div class="barra"><div class="barra-año">2026</div><div class="barra-bar"><div class="barra-fill nuevo" style="width: 31%; background: linear-gradient(90deg, #16a34a, #22c55e)">$15.3M</div></div></div>
+    </div>
+  </div>
+
+  <div class="tienda">
+    <div class="tienda-header">
+      <div class="tienda-nombre">JUMBO 170</div>
+      <div class="tienda-cambio bajo">↓ −16%</div>
+    </div>
+    <div class="barras">
+      <div class="barra"><div class="barra-año">2025</div><div class="barra-bar"><div class="barra-fill viejo" style="width: 18%">$9.2M</div></div></div>
+      <div class="barra"><div class="barra-año">2026</div><div class="barra-bar"><div class="barra-fill nuevo" style="width: 15%">$7.7M</div></div></div>
+    </div>
+  </div>
+
+  <div class="tienda">
+    <div class="tienda-header">
+      <div class="tienda-nombre">CRA 30</div>
+      <div class="tienda-cambio bajo">↓ −26%</div>
+    </div>
+    <div class="barras">
+      <div class="barra"><div class="barra-año">2025</div><div class="barra-bar"><div class="barra-fill viejo" style="width: 42%">$21.2M</div></div></div>
+      <div class="barra"><div class="barra-año">2026</div><div class="barra-bar"><div class="barra-fill nuevo" style="width: 31%">$15.7M</div></div></div>
+    </div>
+  </div>
+
+  <div class="tienda">
+    <div class="tienda-header">
+      <div class="tienda-nombre">FLORESTA</div>
+      <div class="tienda-cambio bajo-fuerte">↓ −44%</div>
+    </div>
+    <div class="barras">
+      <div class="barra"><div class="barra-año">2025</div><div class="barra-bar"><div class="barra-fill viejo" style="width: 60%">$30.2M</div></div></div>
+      <div class="barra"><div class="barra-año">2026</div><div class="barra-bar"><div class="barra-fill nuevo" style="width: 34%">$17.0M</div></div></div>
+    </div>
+  </div>
+
+  <div class="tienda">
+    <div class="tienda-header">
+      <div class="tienda-nombre">HAYUELOS</div>
+      <div class="tienda-cambio bajo-fuerte">↓ −45%</div>
+    </div>
+    <div class="barras">
+      <div class="barra"><div class="barra-año">2025</div><div class="barra-bar"><div class="barra-fill viejo" style="width: 40%">$20.1M</div></div></div>
+      <div class="barra"><div class="barra-año">2026</div><div class="barra-bar"><div class="barra-fill nuevo" style="width: 22%">$11.0M</div></div></div>
+    </div>
+  </div>
+
+  <!-- MENSAJE FINAL -->
+  <div class="mensaje">
+    <div class="mensaje-titulo">💪 Mayo y Junio</div>
+    <div class="mensaje-texto">El sistema de premios sigue.<br/>El resultado depende de ustedes.</div>
+  </div>
+
+  <div class="footer">⚡ Televentas · Mayo 2026</div>
+</div>
+</body>
+</html>

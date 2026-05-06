@@ -226,7 +226,7 @@ export default function App() {
 
   function BadgeCiudad({ ciudad, full }) {
     return (
-      <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 10, background: COLOR_CIUDAD[ciudad] + "20", color: COLOR_CIUDAD[ciudad], border: "1px solid " + COLOR_CIUDAD[ciudad] + "40" }}>
+      <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 9px", borderRadius: 10, background: COLOR_CIUDAD[ciudad] + "20", color: COLOR_CIUDAD[ciudad], border: "1px solid " + COLOR_CIUDAD[ciudad] + "40" }}>
         {full ? LABEL_CIUDAD[ciudad] : ciudad}
       </span>
     );
@@ -537,13 +537,13 @@ export default function App() {
               }}>#{v.rm}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>{v.nombre}</div>
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>{v.nombre}</div>
                   <BadgeCiudad ciudad={v.ciudad} />
-                  {esTopInd && <span style={{ fontSize: 9, fontWeight: 800, color: "#854d0e", background: "#fef9c3", padding: "1px 6px", borderRadius: 8 }}>👑 Estrella</span>}
+                  {esTopInd && <span style={{ fontSize: 11, fontWeight: 800, color: "#854d0e", background: "#fef9c3", padding: "2px 8px", borderRadius: 8 }}>👑 Estrella</span>}
                 </div>
-                <div style={{ fontSize: 10, color: "#475569", marginTop: 1 }}>{infoDebajoNombre(v)}</div>
+                <div style={{ fontSize: 12, color: "#334155", marginTop: 3, fontWeight: 600 }}>{infoDebajoNombre(v)}</div>
               </div>
-              <NotaBadge nota={v.nm} size={18} />
+              <NotaBadge nota={v.nm} size={20} />
             </div>
           );
         })}
@@ -651,7 +651,7 @@ export default function App() {
             </div>
           )}
 
-          <div style={{ marginTop: 14, padding: "10px 14px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, fontSize: 12, color: "#92400e", fontWeight: 600 }}>
+          <div style={{ marginTop: 14, padding: "12px 16px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, fontSize: 14, color: "#92400e", fontWeight: 700, lineHeight: 1.45 }}>
             {fraseMotivacional}
           </div>
         </div>
@@ -1033,13 +1033,11 @@ export default function App() {
             g.razones.push({ razon, monto, emoji });
             g.total += monto;
           };
-          if (premios.mejorMED) addRazon(premios.mejorMED, "Mejor de Medellín", 1000000, "🏆");
-          if (premios.mejorBOG) addRazon(premios.mejorBOG, "Mejor de Bogotá", 1000000, "🏆");
+          // Cada vendedora con nota trimestral ≥4.50 gana $1M
           premios.conBono.forEach(v => {
-            if (v.id !== premios.mejorMED?.id && v.id !== premios.mejorBOG?.id) {
-              addRazon(v, "Nota trimestral ≥4.50", 1000000, "⭐");
-            }
+            addRazon(v, "Nota trimestral ≥4.50", 1000000, "⭐");
           });
+          // Si hay 2+ con nota ≥4.50, la mejor entre ellas gana $1M extra (total $2M)
           if (premios.extraNacional) addRazon(premios.extraNacional, "La mejor de las mejores", 1000000, "🌟");
 
           // Ordenar por total descendente
@@ -1123,15 +1121,12 @@ export default function App() {
           <>
             <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Ranking trimestral</div>
             {rankingTrim.map(v => {
-              const esMejorMED = premios.mejorMED?.id === v.id;
-              const esMejorBOG = premios.mejorBOG?.id === v.id;
               const esExtra = premios.extraNacional?.id === v.id;
               const conBono = idsConBono.has(v.id);
-              const ganaAlgo = esMejorMED || esMejorBOG || conBono;
-              const colorBorde = esMejorMED ? "#10b981" : esMejorBOG ? "#f59e0b" : conBono ? "#ea580c" : "#cbd5e1";
+              const ganaAlgo = conBono;
+              const colorBorde = esExtra ? "#fbbf24" : conBono ? "#ea580c" : "#cbd5e1";
               const fondoEspecial = ganaAlgo
-                ? (esMejorMED ? "linear-gradient(90deg,#ecfdf5,#fff 40%)" :
-                   esMejorBOG ? "linear-gradient(90deg,#fffbeb,#fff 40%)" :
+                ? (esExtra ? "linear-gradient(90deg,#fef9c3,#fff 40%)" :
                    "linear-gradient(90deg,#ffedd5,#fff 40%)")
                 : "#fff";
               return (
@@ -1154,10 +1149,8 @@ export default function App() {
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>{v.nombre}</div>
                       <BadgeCiudad ciudad={v.ciudad} />
-                      {esMejorMED && <span style={{ fontSize: 9, fontWeight: 800, color: "#065f46", background: "#d1fae5", padding: "1px 6px", borderRadius: 8 }}>🏆 MED $1M</span>}
-                      {esMejorBOG && <span style={{ fontSize: 9, fontWeight: 800, color: "#854d0e", background: "#fef3c7", padding: "1px 6px", borderRadius: 8 }}>🏆 BOG $1M</span>}
-                      {conBono && !esMejorMED && !esMejorBOG && <span style={{ fontSize: 9, fontWeight: 800, color: "#9a3412", background: "#ffedd5", padding: "1px 6px", borderRadius: 8 }}>⭐ ≥4.5 $1M</span>}
-                      {esExtra && <span style={{ fontSize: 9, fontWeight: 800, color: "#854d0e", background: "#fef9c3", padding: "1px 6px", borderRadius: 8 }}>🌟 +$1M</span>}
+                      {conBono && <span style={{ fontSize: 11, fontWeight: 800, color: "#9a3412", background: "#ffedd5", padding: "2px 8px", borderRadius: 8 }}>⭐ ≥4.50 · $1M</span>}
+                      {esExtra && <span style={{ fontSize: 11, fontWeight: 800, color: "#854d0e", background: "#fef9c3", padding: "2px 8px", borderRadius: 8 }}>🌟 +$1M EXTRA</span>}
                       {!v.completo && <span style={{ fontSize: 9, fontWeight: 800, color: "#94a3b8", background: "#f1f5f9", padding: "1px 6px", borderRadius: 8 }}>{v.mesesConDatos}/3 meses</span>}
                     </div>
                     <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
@@ -1659,23 +1652,23 @@ export default function App() {
 function makeStyles() {
   return {
     wrap: { fontFamily: "'DM Sans',sans-serif", background: "#f8fafc", minHeight: "100vh", color: "#0f172a" },
-    hdr: { background: "#fff", borderBottom: "2px solid #f1f5f9", padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50, boxShadow: "0 1px 8px rgba(0,0,0,0.06)" },
-    logo: { fontSize: 15, fontWeight: 900, color: "#ea580c" },
+    hdr: { background: "#fff", borderBottom: "2px solid #f1f5f9", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50, boxShadow: "0 1px 8px rgba(0,0,0,0.08)" },
+    logo: { fontSize: 17, fontWeight: 900, color: "#ea580c" },
     nav: { display: "flex", gap: 3, background: "#f1f5f9", padding: 3, borderRadius: 9 },
-    navB: a => ({ padding: "6px 11px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 800, background: a ? "#ea580c" : "transparent", color: a ? "#fff" : "#475569" }),
-    body: { padding: "14px 14px 50px", maxWidth: 560, margin: "0 auto" },
-    tit: { fontSize: 19, fontWeight: 900, marginBottom: 3, color: "#0f172a" },
-    sub: { fontSize: 11, color: "#475569", marginBottom: 16 },
-    card: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 13, padding: 14, marginBottom: 9, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" },
-    lbl: { fontSize: 10, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: 3, display: "block" },
-    inp: { background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", color: "#0f172a", fontSize: 16, width: "100%", boxSizing: "border-box" },
-    btnP: { padding: "13px 0", width: "100%", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 14, background: "linear-gradient(135deg,#ea580c,#f97316)", color: "#fff", boxShadow: "0 2px 8px rgba(234,88,12,0.3)" },
-    btnS: { padding: "7px 13px", borderRadius: 7, border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 700, fontSize: 11, background: "#fff", color: "#475569" },
+    navB: a => ({ padding: "8px 13px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: a ? "#ea580c" : "transparent", color: a ? "#fff" : "#334155" }),
+    body: { padding: "16px 14px 60px", maxWidth: 560, margin: "0 auto" },
+    tit: { fontSize: 22, fontWeight: 900, marginBottom: 4, color: "#0f172a" },
+    sub: { fontSize: 13, color: "#334155", marginBottom: 18, fontWeight: 600 },
+    card: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 13, padding: 16, marginBottom: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" },
+    lbl: { fontSize: 12, fontWeight: 800, color: "#334155", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: 4, display: "block" },
+    inp: { background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", color: "#0f172a", fontSize: 16, width: "100%", boxSizing: "border-box" },
+    btnP: { padding: "14px 0", width: "100%", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 15, background: "linear-gradient(135deg,#ea580c,#f97316)", color: "#fff", boxShadow: "0 2px 8px rgba(234,88,12,0.3)" },
+    btnS: { padding: "8px 14px", borderRadius: 7, border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 700, fontSize: 13, background: "#fff", color: "#334155" },
     tabActivo: (id, activo, color) => ({
-      padding: "8px 4px", borderRadius: 14, border: "none", cursor: "pointer", fontSize: 10,
+      padding: "9px 4px", borderRadius: 14, border: "none", cursor: "pointer", fontSize: 11,
       fontWeight: 800,
       background: id === activo ? "#fff" : "transparent",
-      color: id === activo ? color : "#475569",
+      color: id === activo ? color : "#334155",
       boxShadow: id === activo ? `0 2px 8px ${color}40, 0 0 0 2px ${color}` : "none",
       transition: "all 0.2s",
       minWidth: 0,
