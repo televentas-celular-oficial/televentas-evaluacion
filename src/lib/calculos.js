@@ -245,7 +245,10 @@ export function calcNotaMensual(registros, metas, vid, año, mes, snapshots) {
   const metaInfo = metas[claveMes(año, mes)] || { meta: 0, vendidas: {} };
   const real = metaInfo.vendidas?.[vid] ?? 0;
   const meta = metaInfo.meta || 0;
-  const pct = meta > 0 ? Math.round((real / meta) * 100) : 0;
+  // pctExacto: para cálculos (bono, nota ventas) — mantiene precisión
+  // pct: para mostrar en UI — redondeado a entero
+  const pctExacto = meta > 0 ? (real / meta) * 100 : 0;
+  const pct = Math.round(pctExacto);
 
   let notaVentas = null;
   if (meta > 0) {
@@ -278,7 +281,7 @@ export function calcNotaMensual(registros, metas, vid, año, mes, snapshots) {
       const compNorm = notaBase; // notaBase ya está sobre 5
       const ventasNorm = notaVentas;
       notaFinal = Math.round((compNorm * 0.5 + ventasNorm * 0.5) * 100) / 100;
-      bono = bonoVentas(pct, notaBase);
+      bono = bonoVentas(pctExacto, notaBase);
       notaFinal = Math.round((notaFinal + bono) * 100) / 100;
     } else if (notaBase !== null) {
       notaFinal = notaBase; // Sin ventas todavía: solo nota base
@@ -341,21 +344,20 @@ export function calcTrimestre(registros, metas, vid, año, q, snapshots) {
 }
 
 // Calcula los premios trimestrales según las reglas nuevas
+// REGLAS (mayo 2026 en adelante):
+// - Si nadie pasa 4.50 → ningún premio
+// - Cada vendedora con nota trimestral ≥ 4.50 gana $1.000.000
+// - Si 2+ pasan 4.50, la que tenga la nota más alta gana DOBLE ($2.000.000 total)
+// - YA NO se entrega "Mejor de ciudad" automático sin filtro de nota
 export function calcPremios(rankingTrim) {
   // rankingTrim: array de { vid, nombre, ciudad, notaTrim, ... }
   const conNota = rankingTrim.filter(v => v.notaTrim !== null);
-  if (!conNota.length) return { mejorMED: null, mejorBOG: null, conBono: [], extraNacional: null };
+  if (!conNota.length) return { conBono: [], extraNacional: null };
 
-  // Mejor de cada ciudad (sin filtro de nota)
-  const med = conNota.filter(v => v.ciudad === "MED").sort((a, b) => b.notaTrim - a.notaTrim);
-  const bog = conNota.filter(v => v.ciudad === "BOG").sort((a, b) => b.notaTrim - a.notaTrim);
-  const mejorMED = med[0] || null;
-  const mejorBOG = bog[0] || null;
-
-  // Las que pasan ≥4.5
+  // Las que pasan ≥4.50 — cada una gana $1.000.000
   const conBono = conNota.filter(v => v.notaTrim >= 4.5);
 
-  // Extra nacional: si 2+ pasan 4.5, la #1 nacional (la de mayor nota, desempate por ventas) gana +$1M
+  // Extra: si 2+ pasan 4.50, la #1 (mayor nota, desempate por ventas) gana $1M extra
   let extraNacional = null;
   if (conBono.length >= 2) {
     const ordenado = [...conBono].sort((a, b) =>
@@ -364,5 +366,5 @@ export function calcPremios(rankingTrim) {
     extraNacional = ordenado[0];
   }
 
-  return { mejorMED, mejorBOG, conBono, extraNacional };
+  return { conBono, extraNacional };
 }

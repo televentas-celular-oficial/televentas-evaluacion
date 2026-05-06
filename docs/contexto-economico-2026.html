@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Contexto Económico 2026 · Televentas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: #f8fafc;
+    padding: 28px 16px;
+    color: #0f172a;
+  }
+  .card {
+    max-width: 580px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 24px;
+    padding: 32px 28px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding-bottom: 22px;
+    border-bottom: 3px solid #fed7aa;
+    margin-bottom: 24px;
+  }
+  .logo { font-size: 24px; font-weight: 900; color: #ea580c; margin-bottom: 6px; }
+  .titulo {
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .subtitulo {
+    font-size: 14px;
+    color: #475569;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+
+  /* SECCIONES */
+  h2 {
+    font-size: 18px;
+    font-weight: 900;
+    color: #ea580c;
+    margin-top: 22px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #fff7ed;
+  }
+  p {
+    font-size: 15px;
+    color: #334155;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  strong { color: #0f172a; font-weight: 800; }
+
+  /* CIFRA DESTACADA */
+  .cifra-destacada {
+    background: linear-gradient(135deg, #fef2f2, #fff);
+    border: 3px solid #ef4444;
+    border-radius: 16px;
+    padding: 22px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .cifra-destacada .label {
+    font-size: 12px;
+    font-weight: 800;
+    color: #991b1b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .cifra-destacada .valor {
+    font-size: 42px;
+    font-weight: 900;
+    color: #dc2626;
+    line-height: 1;
+  }
+  .cifra-destacada .valor-sub {
+    font-size: 14px;
+    color: #475569;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+
+  /* COMPARATIVA SALARIOS */
+  .salarios-tabla {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px 0;
+  }
+  .salario-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 14px;
+  }
+  .salario-fila:last-child { border-bottom: none; }
+  .salario-fila .año { font-weight: 800; color: #475569; }
+  .salario-fila .valor { font-weight: 900; color: #0f172a; font-size: 16px; }
+  .salario-fila.destacada .año { color: #dc2626; }
+  .salario-fila.destacada .valor { color: #dc2626; font-size: 18px; }
+
+  /* LISTA DE GASTOS */
+  .lista-gastos {
+    background: #fef9c3;
+    border-left: 4px solid #eab308;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 12px 0;
+  }
+  .lista-gastos li {
+    list-style: none;
+    padding: 6px 0;
+    font-size: 14px;
+    color: #92400e;
+    font-weight: 600;
+    padding-left: 22px;
+    position: relative;
+  }
+  .lista-gastos li::before {
+    content: "📈";
+    position: absolute;
+    left: 0;
+  }
+
+  /* IMPACTO COMERCIO */
+  .impacto-card {
+    background: linear-gradient(135deg, #fff7ed, #fff);
+    border: 2px solid #fed7aa;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px 0;
+  }
+  .impacto-card .titulo-card {
+    font-size: 14px;
+    font-weight: 900;
+    color: #9a3412;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .impacto-card .item {
+    padding: 6px 0;
+    font-size: 14px;
+    color: #334155;
+    font-weight: 600;
+  }
+
+  /* ECUACIÓN VISUAL */
+  .ecuacion {
+    background: linear-gradient(135deg, #fee2e2, #fff);
+    border: 3px solid #dc2626;
+    border-radius: 16px;
+    padding: 22px;
+    margin: 18px 0;
+    text-align: center;
+  }
+  .ecuacion-titulo {
+    font-size: 13px;
+    font-weight: 900;
+    color: #991b1b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .ecuacion-fila {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 10px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .ecuacion-fila .icono { font-size: 24px; }
+  .ecuacion-fila .texto-bajo { color: #dc2626; font-weight: 900; }
+  .ecuacion-fila .texto-sube { color: #ea580c; font-weight: 900; }
+
+  /* MENSAJE FINAL */
+  .mensaje {
+    margin-top: 22px;
+    padding: 22px;
+    background: linear-gradient(135deg, #fff7ed, #fef9c3);
+    border: 3px solid #fde68a;
+    border-radius: 16px;
+    text-align: center;
+  }
+  .mensaje-titulo {
+    font-size: 18px;
+    font-weight: 900;
+    color: #9a3412;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .mensaje-texto {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.5;
+  }
+
+  .footer {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+  .fuente {
+    font-size: 11px;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: 6px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="logo">⚡ Televentas</div>
+    <div class="titulo">📊 Por qué necesitamos<br/>vender más en 2026</div>
+    <div class="subtitulo">Un panorama honesto del contexto económico</div>
+  </div>
+
+  <p>Chicas, queremos compartirles información importante sobre la realidad económica que enfrenta la empresa este año, para que entiendan por qué necesitamos que las ventas crezcan.</p>
+
+  <h2>💰 El salario mínimo subió 23%</h2>
+  <p>El gobierno decretó para 2026 el aumento más alto de los últimos años:</p>
+
+  <div class="salarios-tabla">
+    <div class="salario-fila">
+      <span class="año">SMLMV 2024</span>
+      <span class="valor">$1.300.000</span>
+    </div>
+    <div class="salario-fila">
+      <span class="año">SMLMV 2025</span>
+      <span class="valor">$1.423.500</span>
+    </div>
+    <div class="salario-fila destacada">
+      <span class="año">SMLMV 2026</span>
+      <span class="valor">$1.750.905</span>
+    </div>
+  </div>
+
+  <div class="cifra-destacada">
+    <div class="label">Incremento salario 2025 → 2026</div>
+    <div class="valor">+23%</div>
+    <div class="valor-sub">Más auxilio de transporte: $249.095</div>
+  </div>
+
+  <p>Esto significa que <strong>todo el mundo en la empresa tiene un salario mayor que el año pasado</strong>, y las cargas prestacionales (salud, pensión, parafiscales, prima, cesantías) suben en proporción al salario.</p>
+
+  <h2>📈 No solo subió el salario</h2>
+  <p>Cuando el salario mínimo sube 23%, no solo sube la nómina. <strong>Toda la economía se ajusta al alza</strong> porque ese 23% es la base con la que muchos prestadores fijan sus precios:</p>
+
+  <ul class="lista-gastos">
+    <li><strong>Arriendos y cánones</strong> de las tiendas (la mayoría se ajusta con IPC + indicadores laborales)</li>
+    <li><strong>Servicios públicos</strong> (energía, agua, internet, vigilancia)</li>
+    <li><strong>Administraciones</strong> de centros comerciales</li>
+    <li><strong>Costos de mercancía y proveedores</strong> (ellos también pagan más nómina)</li>
+    <li><strong>Transporte y logística</strong></li>
+    <li><strong>Aportes parafiscales y prestaciones sociales</strong></li>
+  </ul>
+
+  <p>De acuerdo con encuestas de las Cámaras de Comercio publicadas en marzo de 2026, <strong>el 37% de las empresas trasladaron el alza de costos al consumidor final</strong> — es decir, los precios subieron en todo el comercio.</p>
+
+  <h2>🏬 Mientras tanto, en el comercio…</h2>
+
+  <div class="impacto-card">
+    <div class="titulo-card">Lo que está pasando en el sector</div>
+    <div class="item">📉 <strong>149.000 empleos perdidos</strong> en comercio y reparación de vehículos solo en enero 2026</div>
+    <div class="item">📉 <strong>109.000 empleos perdidos</strong> en alojamiento y servicios de comida</div>
+    <div class="item">⚠️ Las pymes y el comercio son <strong>los más afectados</strong> por el alza, porque la mano de obra es su mayor costo</div>
+  </div>
+
+  <p class="fuente">Fuentes: Holland & Knight · Bancolombia · El Colombiano · Infobae · Cámaras de Comercio · Decretos 1469 y 1470 de 2025</p>
+
+  <h2>📊 La realidad de Televentas</h2>
+
+  <div class="ecuacion">
+    <div class="ecuacion-titulo">Lo que está pasando con nosotros</div>
+    <div class="ecuacion-fila">
+      <span class="icono">💸</span>
+      <span>Costos operacionales: <span class="texto-sube">SUBIERON +23%</span></span>
+    </div>
+    <div class="ecuacion-fila">
+      <span class="icono">📉</span>
+      <span>Ventas abril 2026 vs 2025: <span class="texto-bajo">BAJARON −13%</span></span>
+    </div>
+    <div style="margin-top: 14px; font-size: 17px; font-weight: 900; color: #991b1b;">
+      Es matemáticamente insostenible.
+    </div>
+  </div>
+
+  <p>Mientras los gastos suben más del 23%, nuestras ventas en abril estuvieron <strong>$28 millones por debajo</strong> del mismo mes del año pasado.</p>
+
+  <p>Este es el contexto en el que decidimos crear el sistema de evaluación con premios trimestrales. <strong>El objetivo es claro: necesitamos que las ventas crezcan</strong> para que la empresa pueda sostener los nuevos costos y, además, premiar a las vendedoras que más se esfuerzan.</p>
+
+  <h2>💡 Lo importante que tienen que saber</h2>
+
+  <p><strong>El salario mínimo subió 23% para todos.</strong> Eso significa que quienes son nuevas o están aprendiendo recibieron un aumento importante. Pero las que llevan tiempo y son destacadas, en términos relativos, perdieron diferencia respecto a quienes empiezan.</p>
+
+  <p>El sistema de premios fue diseñado <strong>justamente para reconocer a quienes sobresalen</strong>. Para que el esfuerzo extra y la consistencia se vean reflejados en ingresos extra. <strong>Pero eso solo funciona si las ventas crecen.</strong></p>
+
+  <div class="mensaje">
+    <div class="mensaje-titulo">🎯 Mensaje claro</div>
+    <div class="mensaje-texto">
+      No estamos pidiendo más por capricho.<br/>
+      Estamos pidiendo más porque <strong>el contexto lo exige</strong>.<br/><br/>
+      Y queremos que ustedes sean parte de la solución,<br/>
+      no espectadoras del problema.
+    </div>
+  </div>
+
+  <p style="text-align:center; margin-top:18px; font-size:15px; color:#475569;">
+    Cuento con cada una de ustedes para sacar adelante mayo y junio. 💪
+  </p>
+
+  <div class="footer">⚡ Televentas · Mayo 2026</div>
+</div>
+</body>
+</html>

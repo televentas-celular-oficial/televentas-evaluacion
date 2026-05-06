@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Ventas Bogotá · Abril 2025 vs 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: #f8fafc;
+    padding: 28px 16px;
+    color: #0f172a;
+  }
+  .card {
+    max-width: 540px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 24px;
+    padding: 32px 26px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding-bottom: 22px;
+    border-bottom: 3px solid #fed7aa;
+    margin-bottom: 24px;
+  }
+  .logo { font-size: 26px; font-weight: 900; color: #ea580c; margin-bottom: 6px; }
+  .titulo {
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .ciudad-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    padding: 8px 24px;
+    border-radius: 30px;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .subtitulo {
+    font-size: 15px;
+    color: #475569;
+    margin-top: 12px;
+    font-weight: 600;
+  }
+
+  /* TOTAL */
+  .total {
+    background: linear-gradient(135deg, #fee2e2, #fff);
+    border: 3px solid #ef4444;
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .total-label {
+    font-size: 14px;
+    font-weight: 800;
+    color: #7f1d1d;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 14px;
+  }
+  .total-comparativa {
+    display: flex;
+    justify-content: space-around;
+    gap: 14px;
+  }
+  .total-año { flex: 1; }
+  .total-año-label { font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 6px; }
+  .total-año-valor { font-size: 19px; font-weight: 900; white-space: nowrap; }
+  .total-año.viejo .total-año-valor { color: #16a34a; }
+  .total-año.nuevo .total-año-valor { color: #dc2626; }
+  .total-cambio {
+    margin-top: 18px;
+    padding: 14px;
+    background: #991b1b;
+    color: #fff;
+    border-radius: 12px;
+    font-size: 22px;
+    font-weight: 900;
+  }
+
+  /* TIENDAS */
+  .seccion-titulo {
+    font-size: 18px;
+    font-weight: 900;
+    color: #ea580c;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 6px 0 18px;
+    text-align: center;
+  }
+
+  .tienda {
+    margin-bottom: 22px;
+    padding: 18px 18px 16px;
+    border-radius: 14px;
+    border: 2px solid #e2e8f0;
+  }
+  .tienda.subio {
+    background: linear-gradient(135deg, #ecfdf5, #fff);
+    border-color: #6ee7b7;
+  }
+  .tienda.malo {
+    background: linear-gradient(135deg, #fff7ed, #fff);
+    border-color: #fb923c;
+  }
+  .tienda.muy-malo {
+    background: linear-gradient(135deg, #fef2f2, #fff);
+    border-color: #fca5a5;
+  }
+  .tienda.terrible {
+    background: linear-gradient(135deg, #fee2e2, #fff);
+    border-color: #ef4444;
+  }
+
+  .tienda-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tienda-nombre {
+    font-size: 22px;
+    font-weight: 900;
+    color: #0f172a;
+  }
+  .tienda-cambio {
+    font-size: 18px;
+    font-weight: 900;
+    padding: 6px 14px;
+    border-radius: 10px;
+  }
+  .tienda-cambio.subio { background: #059669; color: #fff; }
+  .tienda-cambio.malo { background: #ea580c; color: #fff; }
+  .tienda-cambio.muy-malo { background: #dc2626; color: #fff; }
+  .tienda-cambio.terrible { background: #991b1b; color: #fff; }
+
+  .barras {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .barra {
+    display: grid;
+    grid-template-columns: 44px 1fr 130px;
+    align-items: center;
+    gap: 10px;
+  }
+  .barra-año {
+    font-size: 14px;
+    font-weight: 800;
+    color: #475569;
+  }
+  .barra-bar {
+    height: 26px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .barra-fill {
+    height: 100%;
+    border-radius: 8px;
+  }
+  .barra-fill.viejo { background: linear-gradient(90deg, #16a34a, #22c55e); }
+  .barra-fill.nuevo { background: linear-gradient(90deg, #dc2626, #ef4444); }
+  .barra-fill.nuevo-positivo { background: linear-gradient(90deg, #16a34a, #22c55e); }
+  .barra-valor {
+    font-size: 15px;
+    font-weight: 900;
+    color: #0f172a;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .barra-valor.viejo { color: #16a34a; }
+  .barra-valor.nuevo { color: #dc2626; }
+  .barra-valor.nuevo-positivo { color: #16a34a; }
+
+  .comentario {
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+  .comentario.subio { background: #d1fae5; color: #065f46; }
+  .comentario.malo { background: #ffedd5; color: #9a3412; }
+  .comentario.muy-malo { background: #fee2e2; color: #991b1b; }
+  .comentario.terrible { background: #fecaca; color: #7f1d1d; }
+
+  /* MENSAJE FINAL */
+  .mensaje {
+    margin-top: 22px;
+    padding: 22px;
+    background: linear-gradient(135deg, #fff7ed, #fef9c3);
+    border: 3px solid #fde68a;
+    border-radius: 16px;
+    text-align: center;
+  }
+  .mensaje-titulo {
+    font-size: 18px;
+    font-weight: 900;
+    color: #9a3412;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .mensaje-texto {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.4;
+  }
+
+  .footer {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="logo">⚡ Televentas</div>
+    <div class="titulo">📉 Ventas Abril<br/>2025 vs 2026</div>
+    <div class="ciudad-badge">🏬 BOGOTÁ</div>
+    <div class="subtitulo">Comparativo por tienda · Cifras en pesos</div>
+  </div>
+
+  <!-- TOTAL BOGOTÁ -->
+  <div class="total">
+    <div class="total-label">📊 Total Bogotá</div>
+    <div class="total-comparativa">
+      <div class="total-año viejo">
+        <div class="total-año-label">ABRIL 2025</div>
+        <div class="total-año-valor">$88.639.900</div>
+      </div>
+      <div class="total-año nuevo">
+        <div class="total-año-label">ABRIL 2026</div>
+        <div class="total-año-valor">$66.742.900</div>
+      </div>
+    </div>
+    <div class="total-cambio">↓ −$21.897.000 &nbsp;·&nbsp; −25%</div>
+  </div>
+
+  <div class="seccion-titulo">📊 Resultado por tienda</div>
+
+  <!-- JUMBO 80 — SUBIÓ MUCHÍSIMO -->
+  <div class="tienda subio">
+    <div class="tienda-header">
+      <div class="tienda-nombre">JUMBO 80</div>
+      <div class="tienda-cambio subio">↑ +93%</div>
+    </div>
+    <div class="barras">
+      <div class="barra">
+        <div class="barra-año">2025</div>
+        <div class="barra-bar"><div class="barra-fill viejo" style="width: 26%"></div></div>
+        <div class="barra-valor viejo">$7.920.000</div>
+      </div>
+      <div class="barra">
+        <div class="barra-año">2026</div>
+        <div class="barra-bar"><div class="barra-fill nuevo-positivo" style="width: 51%"></div></div>
+        <div class="barra-valor nuevo-positivo">$15.272.800</div>
+      </div>
+    </div>
+    <div class="comentario subio">🌟 ¡EXCELENTE! Casi DUPLICÓ las ventas. Esto es lo que esperamos de todas.</div>
+  </div>
+
+  <!-- JUMBO 170 — MAL -->
+  <div class="tienda malo">
+    <div class="tienda-header">
+      <div class="tienda-nombre">JUMBO 170</div>
+      <div class="tienda-cambio malo">↓ −16%</div>
+    </div>
+    <div class="barras">
+      <div class="barra">
+        <div class="barra-año">2025</div>
+        <div class="barra-bar"><div class="barra-fill viejo" style="width: 31%"></div></div>
+        <div class="barra-valor viejo">$9.230.000</div>
+      </div>
+      <div class="barra">
+        <div class="barra-año">2026</div>
+        <div class="barra-bar"><div class="barra-fill nuevo" style="width: 26%"></div></div>
+        <div class="barra-valor nuevo">$7.714.700</div>
+      </div>
+    </div>
+    <div class="comentario malo">⚠️ Mal. La meta no era bajar, era crecer.</div>
+  </div>
+
+  <!-- CRA 30 — MUY MAL -->
+  <div class="tienda muy-malo">
+    <div class="tienda-header">
+      <div class="tienda-nombre">CRA 30</div>
+      <div class="tienda-cambio muy-malo">↓ −26%</div>
+    </div>
+    <div class="barras">
+      <div class="barra">
+        <div class="barra-año">2025</div>
+        <div class="barra-bar"><div class="barra-fill viejo" style="width: 70%"></div></div>
+        <div class="barra-valor viejo">$21.179.900</div>
+      </div>
+      <div class="barra">
+        <div class="barra-año">2026</div>
+        <div class="barra-bar"><div class="barra-fill nuevo" style="width: 52%"></div></div>
+        <div class="barra-valor nuevo">$15.712.100</div>
+      </div>
+    </div>
+    <div class="comentario muy-malo">🔴 Muy mal. Una caída del 26% es preocupante.</div>
+  </div>
+
+  <!-- FLORESTA — TERRIBLE -->
+  <div class="tienda terrible">
+    <div class="tienda-header">
+      <div class="tienda-nombre">FLORESTA</div>
+      <div class="tienda-cambio terrible">↓ −44%</div>
+    </div>
+    <div class="barras">
+      <div class="barra">
+        <div class="barra-año">2025</div>
+        <div class="barra-bar"><div class="barra-fill viejo" style="width: 100%"></div></div>
+        <div class="barra-valor viejo">$30.170.000</div>
+      </div>
+      <div class="barra">
+        <div class="barra-año">2026</div>
+        <div class="barra-bar"><div class="barra-fill nuevo" style="width: 56%"></div></div>
+        <div class="barra-valor nuevo">$17.030.100</div>
+      </div>
+    </div>
+    <div class="comentario terrible">🚨 TERRIBLE. Casi la MITAD de ventas. Esto no se puede sostener.</div>
+  </div>
+
+  <!-- HAYUELOS — TERRIBLE -->
+  <div class="tienda terrible">
+    <div class="tienda-header">
+      <div class="tienda-nombre">HAYUELOS</div>
+      <div class="tienda-cambio terrible">↓ −45%</div>
+    </div>
+    <div class="barras">
+      <div class="barra">
+        <div class="barra-año">2025</div>
+        <div class="barra-bar"><div class="barra-fill viejo" style="width: 67%"></div></div>
+        <div class="barra-valor viejo">$20.140.000</div>
+      </div>
+      <div class="barra">
+        <div class="barra-año">2026</div>
+        <div class="barra-bar"><div class="barra-fill nuevo" style="width: 36%"></div></div>
+        <div class="barra-valor nuevo">$11.013.200</div>
+      </div>
+    </div>
+    <div class="comentario terrible">🚨 TERRIBLE. La caída más grande de Bogotá. Esto exige acción inmediata.</div>
+  </div>
+
+  <!-- MENSAJE FINAL -->
+  <div class="mensaje">
+    <div class="mensaje-titulo">💪 Mayo y Junio</div>
+    <div class="mensaje-texto">Bogotá necesita reaccionar.<br/>El sistema de premios sigue activo.<br/>El resultado depende de ustedes.</div>
+  </div>
+
+  <div class="footer">⚡ Televentas · Mayo 2026</div>
+</div>
+</body>
+</html>
