@@ -24,13 +24,15 @@ export const COLOR_CIUDAD = { BOG: "#f59e0b", MED: "#10b981" };
 export const LABEL_CIUDAD = { BOG: "Bogotá", MED: "Medellín" };
 
 // Indicadores NUEVOS (mayo 2026 en adelante)
-// Cada uno con peso 10% — total comportamiento 50%, ventas 50%
+// Pesos ponderados — total comportamiento 40%, ventas 60%
+// Puntualidad pesa más (más objetiva, base de la disciplina)
+// Reseñas pesa menos (es la que más se "farmea")
 export const INDICADORES_V2 = [
-  { id: "puntualidad", label: "Puntualidad", emoji: "⏰", peso: 10, color: "#3b82f6" },  // azul
-  { id: "resenas", label: "Reseñas", emoji: "⭐", peso: 10, color: "#eab308" },           // amarillo
-  { id: "tienda", label: "Tienda", emoji: "🏪", peso: 10, color: "#10b981" },              // verde
-  { id: "planilla", label: "Planilla", emoji: "📋", peso: 10, color: "#a855f7" },          // púrpura
-  { id: "actitud", label: "Actitud", emoji: "💪", peso: 10, color: "#ec4899" },            // rosa
+  { id: "puntualidad", label: "Puntualidad", emoji: "⏰", peso: 11, color: "#3b82f6" },  // azul — la más importante
+  { id: "tienda", label: "Tienda", emoji: "🏪", peso: 9, color: "#10b981" },              // verde
+  { id: "planilla", label: "Planilla", emoji: "📋", peso: 9, color: "#a855f7" },          // púrpura
+  { id: "actitud", label: "Actitud", emoji: "💪", peso: 6, color: "#ec4899" },             // rosa
+  { id: "resenas", label: "Reseñas", emoji: "⭐", peso: 5, color: "#eab308" },             // amarillo — la menos determinante
 ];
 
 // Indicadores VIEJOS (abril 2026 y antes — para retrocompatibilidad)

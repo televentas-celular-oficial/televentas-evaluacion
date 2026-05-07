@@ -275,12 +275,13 @@ export function calcNotaMensual(registros, metas, vid, año, mes, snapshots) {
   let bono = 0;
 
   if (esFormulaV2(año, mes)) {
-    // V2: pesos 50/50, bono escalonado con filtro
+    // V2: pesos 40/60 (comportamiento/ventas), bono escalonado con filtro
+    // Las ventas dominan porque sostienen la operación; el comportamiento
+    // sigue siendo importante pero no debe poder compensar malas ventas.
     if (notaBase !== null && notaVentas !== null) {
-      // Comportamiento (50%) + Ventas (50%)
-      const compNorm = notaBase; // notaBase ya está sobre 5
+      const compNorm = notaBase;     // notaBase ya está sobre 5
       const ventasNorm = notaVentas;
-      notaFinal = Math.round((compNorm * 0.5 + ventasNorm * 0.5) * 100) / 100;
+      notaFinal = Math.round((compNorm * 0.4 + ventasNorm * 0.6) * 100) / 100;
       bono = bonoVentas(pctExacto, notaBase);
       notaFinal = Math.round((notaFinal + bono) * 100) / 100;
     } else if (notaBase !== null) {

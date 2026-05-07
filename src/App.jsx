@@ -660,7 +660,7 @@ export default function App() {
         {!esTrim && (
           <div style={{ ...S.card, borderLeft: "4px solid " + (datos.notaVentas !== null ? colorN(datos.notaVentas) : "#e2e8f0") }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ fontWeight: 800, fontSize: 13 }}>💰 Ventas <span style={{ fontSize: 10, color: "#475569", fontWeight: 400 }}>({esFormulaV2(año, mes) ? "50%" : "30%"})</span></div>
+              <div style={{ fontWeight: 800, fontSize: 13 }}>💰 Ventas <span style={{ fontSize: 10, color: "#475569", fontWeight: 400 }}>({esFormulaV2(año, mes) ? "60%" : "30%"})</span></div>
               <NotaBadge nota={datos.notaVentas} size={16} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
