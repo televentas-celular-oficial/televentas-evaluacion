@@ -1274,16 +1274,21 @@ export default function App() {
     function detectarFaltantes(añoC, mesC) {
       const faltantes = [];
       const ultimoDia = new Date(añoC, mesC, 0).getDate();
+      const ultimoDiaMes = añoC + "-" + String(mesC).padStart(2, "0") + "-" + String(ultimoDia).padStart(2, "0");
       const act = vendedoras.filter(v => v.activa !== false);
       for (let d = 1; d <= ultimoDia; d++) {
         const f = añoC + "-" + String(mesC).padStart(2, "0") + "-" + String(d).padStart(2, "0");
-        const sinReg = act.filter(v => !registros[v.id + "_" + f]);
+        // Solo cuentan vendedoras que ya estaban contratadas ese día
+        const elegiblesDia = act.filter(v => !v.fechaIngreso || v.fechaIngreso <= f);
+        const sinReg = elegiblesDia.filter(v => !registros[v.id + "_" + f]);
         if (sinReg.length > 0) faltantes.push(`Día ${d}: ${sinReg.length} vendedora(s) sin registrar`);
       }
       const meta = metas[claveMes(añoC, mesC)];
       if (!meta || !meta.meta) faltantes.push("Meta del mes no cargada");
       else {
-        const sinVent = act.filter(v => meta.vendidas?.[v.id] === undefined);
+        // Solo se valida ventas de quienes estuvieron al menos parte del mes
+        const elegiblesMes = act.filter(v => !v.fechaIngreso || v.fechaIngreso <= ultimoDiaMes);
+        const sinVent = elegiblesMes.filter(v => meta.vendidas?.[v.id] === undefined);
         if (sinVent.length > 0) faltantes.push(`${sinVent.length} vendedora(s) sin ventas cargadas`);
       }
       return faltantes;
