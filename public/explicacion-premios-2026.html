@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>🏆 Premios Trimestrales 2026 · Televentas</title>
+<meta name="description" content="Cómo funcionan los premios trimestrales 2026 — meta, calificación y cómo se gana." />
+<meta property="og:title" content="🏆 Premios Trimestrales 2026 · Televentas" />
+<meta property="og:description" content="Cómo funcionan los premios trimestrales 2026. $2.000.000 perfectamente alcanzables." />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#ea580c" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: #f8fafc;
+    padding: 24px 14px;
+    color: #0f172a;
+  }
+  .card {
+    max-width: 540px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 24px;
+    padding: 30px 24px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding-bottom: 22px;
+    border-bottom: 3px solid #fed7aa;
+    margin-bottom: 26px;
+  }
+  .logo { font-size: 22px; font-weight: 900; color: #ea580c; margin-bottom: 8px; }
+  .titulo {
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.05;
+    margin-bottom: 10px;
+  }
+  .subtitulo {
+    font-size: 15px;
+    color: #475569;
+    font-weight: 600;
+  }
+
+  /* INTRO */
+  .intro {
+    font-size: 16px;
+    color: #334155;
+    line-height: 1.5;
+    margin-bottom: 26px;
+    font-weight: 500;
+  }
+
+  /* SECCIONES */
+  .seccion {
+    margin-bottom: 26px;
+  }
+  .seccion-num {
+    display: inline-block;
+    background: #ea580c;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    font-weight: 900;
+    font-size: 15px;
+    margin-right: 10px;
+  }
+  .seccion-titulo {
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 14px;
+  }
+
+  /* META BOX */
+  .meta-box {
+    background: linear-gradient(135deg, #fff7ed, #fff);
+    border: 2px solid #fed7aa;
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .meta-formula {
+    font-size: 17px;
+    font-weight: 800;
+    color: #9a3412;
+    text-align: center;
+    line-height: 1.4;
+    margin-bottom: 14px;
+  }
+  .meta-formula .resaltado {
+    background: #fed7aa;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .meta-ejemplo {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 8px;
+  }
+  .meta-ejemplo-titulo {
+    font-size: 11px;
+    font-weight: 800;
+    color: #9a3412;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .meta-ejemplo-texto {
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  .meta-ejemplo-texto strong { color: #0f172a; font-weight: 800; }
+  .meta-ejemplo .flecha {
+    text-align: center;
+    color: #ea580c;
+    font-size: 18px;
+    font-weight: 900;
+    margin: 6px 0;
+  }
+  .meta-resultado {
+    text-align: center;
+    background: #ea580c;
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 8px;
+    font-size: 17px;
+    font-weight: 900;
+  }
+
+  /* NOTA — DONUT VISUAL */
+  .nota-visual {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .nota-circulo {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: conic-gradient(#ea580c 0deg 216deg, #10b981 216deg 360deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .nota-circulo-inner {
+    width: 70px;
+    height: 70px;
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 900;
+    color: #0f172a;
+  }
+  .nota-leyenda {
+    flex: 1;
+  }
+  .nota-leyenda-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .nota-leyenda-item:last-child { margin-bottom: 0; }
+  .nota-leyenda-cuadro {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    margin-right: 10px;
+  }
+  .nota-leyenda-pct {
+    font-weight: 900;
+    margin-right: 6px;
+    font-size: 16px;
+  }
+
+  /* INDICADORES LIST */
+  .indicadores {
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+  .indicadores-titulo {
+    font-size: 11px;
+    font-weight: 800;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .indicador-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    font-size: 14px;
+  }
+  .indicador-nombre {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: #334155;
+  }
+  .indicador-pct {
+    font-weight: 900;
+    color: #ea580c;
+    font-size: 15px;
+  }
+
+  /* PREMIO */
+  .premio-card {
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .premio-icono {
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+  .premio-card.gana {
+    background: linear-gradient(135deg, #d1fae5, #fff);
+    border: 2px solid #6ee7b7;
+  }
+  .premio-card.doble {
+    background: linear-gradient(135deg, #fef9c3, #fff);
+    border: 2px solid #fde047;
+  }
+  .premio-card.no {
+    background: linear-gradient(135deg, #fee2e2, #fff);
+    border: 2px solid #fca5a5;
+  }
+  .premio-texto {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .premio-texto strong { font-weight: 900; }
+  .premio-monto {
+    font-size: 18px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .premio-card.gana .premio-monto { color: #059669; }
+  .premio-card.doble .premio-monto { color: #ca8a04; }
+  .premio-card.no .premio-monto { color: #dc2626; font-size: 14px; }
+
+  /* IMPORTANTE */
+  .importante {
+    background: linear-gradient(135deg, #fef9c3, #fff);
+    border-left: 5px solid #eab308;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin: 22px 0;
+  }
+  .importante-titulo {
+    font-size: 13px;
+    font-weight: 900;
+    color: #854d0e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .importante-texto {
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  .importante-texto strong { color: #854d0e; font-weight: 800; }
+
+  /* CIERRE */
+  .cierre {
+    text-align: center;
+    background: linear-gradient(135deg, #ea580c, #f97316);
+    color: #fff;
+    padding: 22px 18px;
+    border-radius: 16px;
+    margin-top: 22px;
+  }
+  .cierre-texto {
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+  .cierre-emoji {
+    font-size: 26px;
+    margin-top: 8px;
+  }
+
+  .footer {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="header">
+    <div class="logo">⚡ Televentas</div>
+    <div class="titulo">🏆 Premios<br/>Trimestrales 2026</div>
+    <div class="subtitulo">Cómo funciona, en simple</div>
+  </div>
+
+  <div class="intro">
+    Chicas, les contamos cómo se calculan los premios este año, paso a paso. 🌟
+  </div>
+
+  <!-- 1. LA META -->
+  <div class="seccion">
+    <div class="seccion-titulo">
+      <span class="seccion-num">1</span>
+      <span>📊 La meta del trimestre</span>
+    </div>
+    <div class="meta-box">
+      <div class="meta-formula">
+        Ventas de <span class="resaltado">la #1 del mismo mes en 2025</span><br/>
+        + 23% del reajuste salarial 2026
+      </div>
+      <div class="meta-ejemplo">
+        <div class="meta-ejemplo-titulo">📌 Ejemplo: mayo 2026</div>
+        <div class="meta-ejemplo-texto">
+          En mayo 2025, <strong>Durley</strong> fue la #1 del equipo y vendió <strong>$26.960.000</strong>. Ese es nuestro punto de referencia — un número <strong>real, alcanzado por una de ustedes</strong>.
+        </div>
+        <div class="flecha">↓ + 23%</div>
+        <div class="meta-resultado">Meta mayo 2026 = $33.160.800</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. LA NOTA -->
+  <div class="seccion">
+    <div class="seccion-titulo">
+      <span class="seccion-num">2</span>
+      <span>🧮 Cómo se califica</span>
+    </div>
+
+    <div class="nota-visual">
+      <div class="nota-circulo">
+        <div class="nota-circulo-inner">100</div>
+      </div>
+      <div class="nota-leyenda">
+        <div class="nota-leyenda-item">
+          <div class="nota-leyenda-cuadro" style="background:#ea580c"></div>
+          <span class="nota-leyenda-pct">60%</span>
+          <span>Ventas 💰</span>
+        </div>
+        <div class="nota-leyenda-item">
+          <div class="nota-leyenda-cuadro" style="background:#10b981"></div>
+          <span class="nota-leyenda-pct">40%</span>
+          <span>Comportamiento</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="indicadores">
+      <div class="indicadores-titulo">El 40% de comportamiento se reparte así</div>
+      <div class="indicador-row">
+        <div class="indicador-nombre">⏰ Puntualidad</div>
+        <div class="indicador-pct">11%</div>
+      </div>
+      <div class="indicador-row">
+        <div class="indicador-nombre">🏪 Tienda</div>
+        <div class="indicador-pct">9%</div>
+      </div>
+      <div class="indicador-row">
+        <div class="indicador-nombre">📋 Planilla</div>
+        <div class="indicador-pct">9%</div>
+      </div>
+      <div class="indicador-row">
+        <div class="indicador-nombre">💪 Actitud</div>
+        <div class="indicador-pct">6%</div>
+      </div>
+      <div class="indicador-row">
+        <div class="indicador-nombre">⭐ Reseñas</div>
+        <div class="indicador-pct">5%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. EL PREMIO -->
+  <div class="seccion">
+    <div class="seccion-titulo">
+      <span class="seccion-num">3</span>
+      <span>🏆 Cómo se gana</span>
+    </div>
+
+    <div class="premio-card gana">
+      <div class="premio-icono">⭐</div>
+      <div class="premio-texto">Cada una con <strong>nota trimestral ≥ 4.50</strong> gana</div>
+      <div class="premio-monto">$1M</div>
+    </div>
+
+    <div class="premio-card doble">
+      <div class="premio-icono">🌟</div>
+      <div class="premio-texto">Si <strong>2 o más pasan 4.50</strong>, la mejor de ellas gana</div>
+      <div class="premio-monto">$2M</div>
+    </div>
+
+    <div class="premio-card no">
+      <div class="premio-icono">❌</div>
+      <div class="premio-texto">Si <strong>nadie pasa 4.50</strong>, no se entrega premio</div>
+      <div class="premio-monto">—</div>
+    </div>
+  </div>
+
+  <!-- ALCANZABLE -->
+  <div style="background: linear-gradient(135deg,#ecfdf5,#fff); border:2px solid #6ee7b7; border-radius:14px; padding:20px; margin: 22px 0;">
+    <div style="font-size:13px; font-weight:900; color:#065f46; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; text-align:center;">
+      💚 Esto NO es un regalo
+    </div>
+    <div style="font-size:15px; color:#0f172a; line-height:1.55; font-weight:600; text-align:center;">
+      Es un <strong>premio al trabajo</strong>.<br/>
+      $2.000.000 son <strong>perfectamente alcanzables</strong> — la meta sale de números que ustedes mismas ya lograron.<br/><br/>
+      <span style="color:#059669; font-weight:900; font-size:16px;">Depende de cada una.</span>
+    </div>
+  </div>
+
+  <!-- IMPORTANTE -->
+  <div class="importante">
+    <div class="importante-titulo">⚠️ Importante</div>
+    <div class="importante-texto">
+      Esta meta del trimestre <strong>solo aplica al premio</strong>.<br/><br/>
+      Sus <strong>metas individuales mensuales</strong> (las del bono mensual de cada una) <strong>siguen igual</strong> por ahora. Las revisamos en julio cuando entren los nuevos decretos.
+    </div>
+  </div>
+
+  <!-- COMPROMISO DE EQUIDAD -->
+  <div style="background: linear-gradient(135deg,#eff6ff,#fff); border:2px solid #93c5fd; border-radius:14px; padding:20px; margin: 22px 0;">
+    <div style="font-size:13px; font-weight:900; color:#1e40af; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; text-align:center;">
+      🛠️ Sistema en construcción · Equidad total
+    </div>
+    <div style="font-size:14px; color:#334155; line-height:1.6; font-weight:600;">
+      Las notas de <strong>abril 2026 quedaron calculadas con los parámetros anteriores</strong> y no se modifican.<br/><br/>
+      Al revisar abril, identificamos <strong>varios indicadores que generaban notas que no eran del todo justas</strong>. Por eso, a partir de <strong>mayo 2026</strong> aplicamos los ajustes que ven en este documento (60% ventas, 40% comportamiento, con puntualidad pesando más y reseñas menos).<br/><br/>
+      <strong>Volveremos a evaluar al final de mayo.</strong> Si vemos algo que no es justo, lo ajustamos. Estamos comprometidos a seguir afinando este sistema <strong>hasta lograr la equidad total</strong> que un premio de este valor merece.<br/><br/>
+      <span style="color:#1e40af; font-weight:800;">Sus comentarios y observaciones son bienvenidos.</span>
+    </div>
+  </div>
+
+  <!-- CIERRE -->
+  <div class="cierre">
+    <div class="cierre-texto">
+      Vender más es lo que más vale.<br/>
+      Pero llegar a tiempo y cuidar la tienda<br/>
+      también cuenta.
+    </div>
+    <div class="cierre-emoji">💪✨</div>
+  </div>
+
+  <div class="footer">⚡ Televentas · Mayo 2026</div>
+
+</div>
+</body>
+</html>
