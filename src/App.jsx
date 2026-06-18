@@ -848,9 +848,10 @@ export default function App() {
                     return (
                       <div data-actitud-vid={v.id}>
                         <input type="text"
+                          key={`actitud-nota-${v.id}-${fecha}`}
                           placeholder={enError ? "⚠️ Obligatorio: ¿qué pasó?" : "¿Qué pasó? (obligatorio)"}
-                          value={f.actitud_nota || ""}
-                          onChange={e => {
+                          defaultValue={f.actitud_nota || ""}
+                          onBlur={e => {
                             setFila(v.id, "actitud_nota", e.target.value);
                             if (enError && e.target.value.trim().length > 0) {
                               setErroresFalt(prev => prev.filter(id => id !== v.id));
