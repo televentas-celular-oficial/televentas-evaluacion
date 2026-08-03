@@ -239,8 +239,22 @@ export default function App() {
   const ahora = new Date();
   const añoActual = ahora.getFullYear();
   const mesActual = ahora.getMonth() + 1;
-  const diaSemana = ahora.getDay(); // 0=domingo, 1=lunes ... 5=viernes, 6=sábado
-  const esLunesOViernes = diaSemana === 1 || diaSemana === 5;
+
+  // Auto-encendido del ranking: martes y viernes, 6pm–11:59pm hora de Colombia.
+  // Se calcula con timezone America/Bogota para que funcione bien aunque
+  // la vendedora tenga el celular configurado en otra zona horaria.
+  const partsCO = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Bogota",
+    weekday: "long",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(ahora);
+  const weekdayCO = partsCO.find(p => p.type === "weekday")?.value || "";
+  const horaCO = parseInt(partsCO.find(p => p.type === "hour")?.value || "0", 10);
+  const esMartesOViernes = weekdayCO === "Tuesday" || weekdayCO === "Friday";
+  const enHorarioNoche = horaCO >= 18 && horaCO <= 23; // 18:00 a 23:59:59
+  const autoVisible = esMartesOViernes && enHorarioNoche;
+
   const año = añoViendo;
   const mes = mesViendo;
   const claveMesActual = claveMes(año, mes);
@@ -259,8 +273,8 @@ export default function App() {
     ciudadEfectiva = ciudadVendedora;
   }
 
-  // Ranking visible: manual (config) O automático los lunes/viernes
-  const rankingVisibleEfectivo = config.rankingVisible || esLunesOViernes;
+  // Ranking visible: manual (config) O automático (martes/viernes 6pm–12am hora Colombia)
+  const rankingVisibleEfectivo = config.rankingVisible || autoVisible;
 
   // ============================================================
   // FIREBASE AUTH — listener de login
@@ -569,13 +583,13 @@ export default function App() {
   }
 
   // Pantalla bloqueada cuando el switch del ranking está apagado
-  // (se muestra solo si NO es lunes ni viernes — sino, el auto-encendido lo pone visible)
+  // (se muestra solo si NO es martes ni viernes en horario 6pm-12am hora Colombia)
   function PantallaBloqueada() {
     return (
       <div style={{ ...S.body, textAlign: "center", paddingTop: 50 }}>
         <div style={{ fontSize: 50, marginBottom: 16 }}>🚀</div>
         <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 8, lineHeight: 1.4 }}>
-          El ranking se publica<br />los lunes y viernes.
+          El ranking se publica<br />los martes y viernes,<br/>de 6pm a 12am.
         </div>
         <div style={{ fontSize: 15, color: "#334155", marginTop: 12, fontWeight: 700 }}>
           ¡Sigue vendiendo con toda, cada venta cuenta! 💪
@@ -1727,7 +1741,7 @@ export default function App() {
           </div>
           <div style={{ fontSize: 11, color: "#475569", marginBottom: 10 }}>
             Cada equipo tiene su link único. Compártelos por WhatsApp con el grupo correcto.
-            <br/>Auto-encendido: <strong>lunes y viernes</strong> · el resto de días con el switch de abajo.
+            <br/>Auto-encendido: <strong>martes y viernes de 6pm a 12am</strong> (hora Colombia) · el resto de días con el switch de abajo.
           </div>
           {[
             { ciudad: "MED", label: "🟢 Team Valquirias · Medellín", color: COLOR_CIUDAD.MED },
