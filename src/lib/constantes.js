@@ -48,6 +48,24 @@ export const INDICADORES_V1 = [
 // Color para Ventas (siempre naranja, marca)
 export const COLOR_VENTAS = "#ea580c";
 
+// ===========================================
+// TOKENS DE ACCESO POR CIUDAD (URL ?c=)
+// ===========================================
+// Las vendedoras acceden con un link que incluye ?c=<token>. Los tokens
+// son intencionalmente opacos (nada que revele "med" o "bog") para que
+// una vendedora de una ciudad no pueda adivinar el link de la otra.
+// Para ROTAR los tokens (si alguno se filtra), cambia las claves aquí y
+// los links viejos dejan de funcionar inmediatamente.
+export const CIUDAD_TOKENS = {
+  "team-valquirias": "MED",  // Medellín
+  "team-bacata":     "BOG",  // Bogotá (Bacatá = nombre muisca original)
+};
+
+// Helper inverso: dado "MED" → "team-valquirias" (para armar el link a compartir)
+export function tokenParaCiudad(ciudad) {
+  return Object.entries(CIUDAD_TOKENS).find(([, c]) => c === ciudad)?.[0] || "";
+}
+
 // Mes a partir del cual se aplica V2 (mayo 2026)
 export const FECHA_CORTE_V2 = { año: 2026, mes: 5 };
 

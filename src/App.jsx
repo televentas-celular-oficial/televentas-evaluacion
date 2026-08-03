@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   VENDEDORAS_DEFAULT, COLOR_CIUDAD, LABEL_CIUDAD, COLOR_VENTAS,
   getIndicadores, esFormulaV2,
-  esAdmin, puedeIngresoVentas, puedeAdmin,
+  esAdmin, puedeIngresoVentas, puedeAdmin, rolDe,
   PESOS_TRIMESTRE, MES_NAMES,
+  CIUDAD_TOKENS, tokenParaCiudad,
 } from "./lib/constantes.js";
 import {
   fmtN, colorN, bgN, hoyStr, trimestreActual, mesesTrimestre,
@@ -11,6 +12,166 @@ import {
   notaDia,
   calcNotaMensual, calcRanking, calcTrimestre, calcPremios,
 } from "./lib/calculos.js";
+
+// =============================================================
+// FormularioMetasCiudad — panel de admin para pre-cargar metas
+// trimestrales separadas por ciudad (MED / BOG).
+//
+// Definido FUERA de App a propósito: la lección del bug #8 (input de
+// actitud_nota) — todos los componentes definidos dentro de App se
+// desmontan-remontan en cada render del padre y los inputs pierden
+// foco. Este está afuera + usa defaultValue+onBlur en los inputs de
+// texto para evitar re-renders por cada tecla.
+// =============================================================
+function FormularioMetasCiudad({ metas, snapshots, añoActual, onGuardar }) {
+  // Mes por defecto: el actual (para carga rápida del mes en curso)
+  const mesInicial = new Date().getMonth() + 1;
+  const [mesSel, setMesSel] = useState(mesInicial);
+  const [añoSel, setAñoSel] = useState(añoActual);
+
+  const clave = añoSel + "_" + String(mesSel).padStart(2, "0");
+  const metaExistente = metas[clave]?.meta;
+  const cerrado = !!snapshots[clave];
+
+  // Extraer valores iniciales del meta existente (soporta ambos formatos)
+  let inicialMED = "";
+  let inicialBOG = "";
+  if (metaExistente != null) {
+    if (typeof metaExistente === "number") {
+      // Formato viejo: mismo número para ambas ciudades (retrocompat visual)
+      inicialMED = String(metaExistente);
+      inicialBOG = String(metaExistente);
+    } else if (typeof metaExistente === "object") {
+      inicialMED = metaExistente.MED ? String(metaExistente.MED) : "";
+      inicialBOG = metaExistente.BOG ? String(metaExistente.BOG) : "";
+    }
+  }
+
+  // Refs para leer valores al momento de guardar (inputs descontrolados)
+  const refMED = useRef(null);
+  const refBOG = useRef(null);
+
+  function handleGuardar() {
+    const medVal = refMED.current?.value || "";
+    const bogVal = refBOG.current?.value || "";
+    onGuardar(clave, medVal, bogVal);
+  }
+
+  // Lista de meses con metas ya cargadas (para mostrar debajo)
+  const cargadas = Object.entries(metas)
+    .map(([k, m]) => {
+      const [y, mm] = k.split("_").map(Number);
+      const val = m?.meta;
+      let med = null, bog = null;
+      if (typeof val === "number") { med = val; bog = val; }
+      else if (typeof val === "object" && val) { med = val.MED || null; bog = val.BOG || null; }
+      return { clave: k, año: y, mes: mm, med, bog, cerrado: !!snapshots[k] };
+    })
+    .filter(x => x.med || x.bog)
+    .sort((a, b) => (b.año - a.año) || (b.mes - a.mes));
+
+  const cardStyle = {
+    background: "#fff", borderRadius: 12, padding: 16, marginBottom: 12,
+    boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #e2e8f0",
+  };
+  const inputStyle = {
+    width: "100%", padding: "9px 11px", borderRadius: 8, border: "1px solid #cbd5e1",
+    fontSize: 13, fontFamily: "inherit", background: "#f8fafc",
+  };
+  const labelStyle = { fontSize: 11, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: 1, marginBottom: 5, display: "block" };
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: "#ea580c", marginBottom: 4 }}>
+        🎯 Metas trimestrales por ciudad
+      </div>
+      <div style={{ fontSize: 11, color: "#475569", marginBottom: 14, lineHeight: 1.5 }}>
+        A partir de <strong>agosto 2026</strong>, cada ciudad tiene su propia meta
+        (2 empresas separadas). Cargas aquí Medellín y Bogotá por mes.
+      </div>
+
+      {/* Selector de mes/año + inputs */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+        <div>
+          <label style={labelStyle}>Año</label>
+          <select value={añoSel} onChange={e => setAñoSel(Number(e.target.value))} style={inputStyle}>
+            {[añoActual - 1, añoActual, añoActual + 1].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>Mes</label>
+          <select value={mesSel} onChange={e => setMesSel(Number(e.target.value))} style={inputStyle}>
+            {MES_NAMES.map((n, i) => (
+              <option key={i} value={i + 1}>{n}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {cerrado ? (
+        <div style={{ padding: "10px 12px", background: "#fef3c7", borderRadius: 8, fontSize: 12, fontWeight: 700, color: "#92400e", textAlign: "center", marginBottom: 8 }}>
+          🔒 {MES_NAMES[mesSel - 1]} {añoSel} está cerrado · No se puede modificar
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: 10 }}>
+            <label style={labelStyle}>🟢 Meta Medellín</label>
+            <input type="number"
+              key={`med-${clave}`}
+              ref={refMED}
+              defaultValue={inicialMED}
+              placeholder="Ej: 34000000"
+              style={inputStyle} />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>🟡 Meta Bogotá</label>
+            <input type="number"
+              key={`bog-${clave}`}
+              ref={refBOG}
+              defaultValue={inicialBOG}
+              placeholder="Ej: 22500000"
+              style={inputStyle} />
+          </div>
+          <button onClick={handleGuardar}
+            style={{
+              width: "100%", padding: "11px 0", background: "#ea580c", color: "#fff",
+              border: "none", borderRadius: 10, fontSize: 14, fontWeight: 800, cursor: "pointer",
+            }}>
+            💾 Guardar meta de {MES_NAMES[mesSel - 1]} {añoSel}
+          </button>
+        </>
+      )}
+
+      {/* Lista de metas cargadas */}
+      {cargadas.length > 0 && (
+        <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px dashed #e2e8f0" }}>
+          <div style={{ ...labelStyle, marginBottom: 8 }}>Metas ya cargadas</div>
+          {cargadas.map(c => (
+            <div key={c.clave} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "8px 10px", background: "#f8fafc", borderRadius: 8, marginBottom: 5, fontSize: 12,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {c.cerrado && <span title="Mes cerrado">🔒</span>}
+                <strong>{MES_NAMES[c.mes - 1]} {c.año}</strong>
+              </div>
+              <div style={{ display: "flex", gap: 10, fontSize: 11, color: "#334155" }}>
+                <span>🟢 ${c.med ? (c.med / 1e6).toFixed(1) + "M" : "—"}</span>
+                <span>🟡 ${c.bog ? (c.bog / 1e6).toFixed(1) + "M" : "—"}</span>
+                <button onClick={() => { setAñoSel(c.año); setMesSel(c.mes); }}
+                  style={{ background: "none", border: "none", color: "#ea580c", cursor: "pointer", fontWeight: 700, fontSize: 11 }}>
+                  Editar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // =============================================================
 // COMPONENTE PRINCIPAL
@@ -40,13 +201,66 @@ export default function App() {
   const [pideLogin, setPideLogin] = useState(false);  // muestra modal de login
   const [pantallaTrasLogin, setPantallaTrasLogin] = useState(null);  // a dónde ir tras loguearse
 
+  // ============================================================
+  // CIUDAD DE LA VENDEDORA (segmentación MED / BOG)
+  // ============================================================
+  // - Se lee de ?c=med o ?c=bog en la URL, o de localStorage si ya vino antes.
+  // - Se guarda en localStorage para no pedirla de nuevo.
+  // - Si el usuario está autenticado (Luis/Carolina), NO se restringe nada aquí:
+  //   ellos ven todo y pueden filtrar con los botones de admin.
+  // - Vendedora sin ciudad (sin URL ni localStorage) → pantalla bloqueada.
+  const [ciudadVendedora, setCiudadVendedora] = useState(null); // "MED" | "BOG" | null
+  // Filtro que usa el admin para simular vista de vendedora: "TODAS" | "MED" | "BOG"
+  const [filtroCiudadAdmin, setFiltroCiudadAdmin] = useState("TODAS");
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const c = (params.get("c") || "").toLowerCase();
+      // Los tokens son opacos (team-valquirias, team-bacata). Nada revela
+      // "med" o "bog" — ver CIUDAD_TOKENS en constantes.js.
+      const ciudad = CIUDAD_TOKENS[c] || null;
+      if (ciudad) {
+        localStorage.setItem("televentas_ciudad", ciudad);
+        // Limpiar el ?c= del URL para que no quede visible el token en la barra
+        const url = new URL(window.location.href);
+        url.searchParams.delete("c");
+        window.history.replaceState({}, "", url.toString());
+        setCiudadVendedora(ciudad);
+      } else {
+        const guardada = localStorage.getItem("televentas_ciudad");
+        if (guardada === "MED" || guardada === "BOG") {
+          setCiudadVendedora(guardada);
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }, []);
+
   const ahora = new Date();
   const añoActual = ahora.getFullYear();
   const mesActual = ahora.getMonth() + 1;
+  const diaSemana = ahora.getDay(); // 0=domingo, 1=lunes ... 5=viernes, 6=sábado
+  const esLunesOViernes = diaSemana === 1 || diaSemana === 5;
   const año = añoViendo;
   const mes = mesViendo;
   const claveMesActual = claveMes(año, mes);
   const activas = vendedoras.filter(v => v.activa !== false);
+
+  // Ciudad efectiva para el filtro de ranking:
+  // - Si es admin/oficina, usa el filtro seleccionado (TODAS/MED/BOG)
+  // - Si es vendedora, usa su ciudad
+  // - Si no hay ni una ni otra, será null (y se muestra pantalla bloqueada más abajo)
+  const rolUsuario = rolDe(user);
+  const esUsuarioAutenticado = !!user && (rolUsuario === "admin" || rolUsuario === "oficina");
+  let ciudadEfectiva = null;
+  if (esUsuarioAutenticado) {
+    ciudadEfectiva = filtroCiudadAdmin === "TODAS" ? null : filtroCiudadAdmin;
+  } else {
+    ciudadEfectiva = ciudadVendedora;
+  }
+
+  // Ranking visible: manual (config) O automático los lunes/viernes
+  const rankingVisibleEfectivo = config.rankingVisible || esLunesOViernes;
 
   // ============================================================
   // FIREBASE AUTH — listener de login
@@ -194,7 +408,10 @@ export default function App() {
     setEditando(false);
   }
 
+  // ranking global (todas las ciudades) — el filtrado por ciudad se hace en las pantallas
   const ranking = calcRanking(registros, metas, año, mes, vendedoras, snapshots);
+  // ranking filtrado por la ciudad efectiva (para vendedoras o admin filtrando)
+  const rankingCiudad = calcRanking(registros, metas, año, mes, vendedoras, snapshots, ciudadEfectiva);
   const bloqueado = guardado && !editando;
   const mesEstaCerrado = !!snapshots[claveMesActual];
 
@@ -352,20 +569,45 @@ export default function App() {
   }
 
   // Pantalla bloqueada cuando el switch del ranking está apagado
+  // (se muestra solo si NO es lunes ni viernes — sino, el auto-encendido lo pone visible)
   function PantallaBloqueada() {
     return (
       <div style={{ ...S.body, textAlign: "center", paddingTop: 50 }}>
         <div style={{ fontSize: 50, marginBottom: 16 }}>🚀</div>
         <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 8, lineHeight: 1.4 }}>
-          Cada venta cuenta.<br />Cada cliente importa.
+          El ranking se publica<br />los lunes y viernes.
         </div>
-        <div style={{ fontSize: 14, color: "#475569", marginTop: 12 }}>
-          Tus calificaciones se publicarán pronto. ✨
+        <div style={{ fontSize: 15, color: "#334155", marginTop: 12, fontWeight: 700 }}>
+          ¡Sigue vendiendo con toda, cada venta cuenta! 💪
         </div>
         <div style={{ marginTop: 30, padding: "20px 16px", background: "linear-gradient(135deg,#fff7ed,#fff)", border: "2px solid #fed7aa", borderRadius: 14 }}>
           <div style={{ fontSize: 13, color: "#9a3412", fontWeight: 700 }}>💡 Mientras tanto…</div>
           <div style={{ fontSize: 12, color: "#475569", marginTop: 6, lineHeight: 1.5 }}>
             Sigue dando lo mejor en cada momento. Cada reseña, cada minuto puntual y cada cliente bien atendido cuentan para el premio del trimestre.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pantalla para vendedoras que abrieron la app sin ?c= ni ciudad en localStorage.
+  // Solo la ven las vendedoras (sin login) — Luis y Carolina nunca la ven.
+  function PantallaSinCiudad() {
+    return (
+      <div style={{ ...S.body, textAlign: "center", paddingTop: 60 }}>
+        <div style={{ fontSize: 50, marginBottom: 16 }}>👋</div>
+        <div style={{ fontSize: 20, fontWeight: 900, color: "#0f172a", marginBottom: 12, lineHeight: 1.3 }}>
+          ¡Hola!
+        </div>
+        <div style={{ fontSize: 16, color: "#334155", lineHeight: 1.5, fontWeight: 600, maxWidth: 340, margin: "0 auto" }}>
+          Este link no es el correcto.
+        </div>
+        <div style={{ fontSize: 16, color: "#334155", lineHeight: 1.5, fontWeight: 600, maxWidth: 340, margin: "12px auto 0" }}>
+          Pídele <strong style={{ color: "#ea580c" }}>al admin</strong> el link que corresponde a tu ciudad.
+        </div>
+        <div style={{ marginTop: 40, padding: "18px 16px", background: "#f8fafc", borderRadius: 12, maxWidth: 340, margin: "40px auto 0" }}>
+          <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.5 }}>
+            Cada tienda tiene un link único que muestra el ranking de tu equipo.
           </div>
         </div>
       </div>
@@ -405,17 +647,19 @@ export default function App() {
     const indicadoresMes = getIndicadores(año, mes);
     const indicadorActivo = indicadoresMes.find(i => i.id === tabRank);
 
-    const conDatos = ranking.filter(v => v.notaFinal !== null);
+    // Usa el ranking ya filtrado por ciudadEfectiva (para vendedora o filtro admin)
+    const rk = rankingCiudad;
+    const conDatos = rk.filter(v => v.notaFinal !== null);
 
     let lista;
     if (tabRank === "general") {
-      lista = ranking.filter(v => v.notaFinal !== null).map(v => ({ ...v, nm: v.notaFinal, rm: v.rankGen }));
+      lista = rk.filter(v => v.notaFinal !== null).map(v => ({ ...v, nm: v.notaFinal, rm: v.rankGen }));
     } else if (tabRank === "ventas") {
-      lista = ranking.filter(v => v.meta > 0)
+      lista = rk.filter(v => v.meta > 0)
         .sort((a, b) => (b.real / Math.max(b.meta, 1)) - (a.real / Math.max(a.meta, 1)))
         .map((v, i) => ({ ...v, nm: v.notaVentas, rm: i + 1 }));
     } else {
-      lista = ranking.filter(v => v.porInd?.[tabRank] !== null && v.porInd?.[tabRank] !== undefined)
+      lista = rk.filter(v => v.porInd?.[tabRank] !== null && v.porInd?.[tabRank] !== undefined)
         .sort((a, b) => ((b.porInd[tabRank] ?? -1) - (a.porInd[tabRank] ?? -1)))
         .map((v, i) => ({ ...v, nm: v.porInd[tabRank], rm: i + 1 }));
     }
@@ -450,9 +694,39 @@ export default function App() {
       return `${v.dias} días trabajados`;
     }
 
+    // Título dinámico según ciudad efectiva
+    const tituloRanking = ciudadEfectiva === "MED" ? "🏆 Rankings · Medellín"
+      : ciudadEfectiva === "BOG" ? "🏆 Rankings · Bogotá"
+      : "🏆 Rankings";
+
     return (
       <div style={S.body}>
-        <div style={S.tit}>🏆 Rankings</div>
+        <div style={S.tit}>{tituloRanking}</div>
+
+        {/* Botones de filtro por ciudad — SOLO ADMIN */}
+        {esUsuarioAutenticado && rolUsuario === "admin" && (
+          <div style={{ display: "flex", gap: 6, marginBottom: 14, padding: "8px", background: "#0f172a", borderRadius: 12 }}>
+            {[
+              { val: "TODAS", lab: "🌎 Todas", col: "#ea580c" },
+              { val: "MED",   lab: "🟢 Medellín", col: COLOR_CIUDAD.MED },
+              { val: "BOG",   lab: "🟡 Bogotá",   col: COLOR_CIUDAD.BOG },
+            ].map(({ val, lab, col }) => {
+              const sel = filtroCiudadAdmin === val;
+              return (
+                <button key={val} onClick={() => setFiltroCiudadAdmin(val)}
+                  style={{
+                    flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+                    cursor: "pointer", fontSize: 12, fontWeight: 800,
+                    background: sel ? col : "transparent",
+                    color: sel ? "#fff" : "#cbd5e1",
+                  }}>
+                  {lab}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {mesEstaCerrado && (
           <div style={{ background: "linear-gradient(135deg,#fef3c7,#fff)", border: "2px solid #fde68a", borderRadius: 12, padding: "8px 14px", marginBottom: 12, fontSize: 12, fontWeight: 700, color: "#92400e", display: "flex", alignItems: "center", gap: 8 }}>
             🔒 MES CERRADO · Las notas están finalizadas
@@ -557,13 +831,18 @@ export default function App() {
   function PantallaBoletin() {
     const v = vendedoras.find(x => x.id === verVid);
     if (!v) return null;
+    // Guard de segmentación por ciudad: una vendedora MED no puede ver el
+    // detalle de una vendedora BOG (y viceversa). Admin/oficina sí ven todas.
+    if (ciudadEfectiva && v.ciudad !== ciudadEfectiva && !esUsuarioAutenticado) {
+      return null;
+    }
     const qActual = trimestreActual();
     const mesesTrim = mesesTrimestre(qActual);
     const indicadoresMes = getIndicadores(año, mes);
 
-    const datos = calcNotaMensual(registros, metas, v.id, año, mes, snapshots);
-    const datosPrev = calcNotaMensual(registros, metas, v.id, mes === 1 ? año - 1 : año, mes === 1 ? 12 : mes - 1, snapshots);
-    const trimDatos = calcTrimestre(registros, metas, v.id, año, qActual, snapshots);
+    const datos = calcNotaMensual(registros, metas, v.id, año, mes, snapshots, vendedoras);
+    const datosPrev = calcNotaMensual(registros, metas, v.id, mes === 1 ? año - 1 : año, mes === 1 ? 12 : mes - 1, snapshots, vendedoras);
+    const trimDatos = calcTrimestre(registros, metas, v.id, año, qActual, snapshots, vendedoras);
 
     const rankV = ranking.find(x => x.id === v.id);
     const total = ranking.filter(x => x.notaFinal !== null).length;
@@ -909,41 +1188,93 @@ export default function App() {
   // ============================================================
   // PANTALLA VENTAS
   // ============================================================
+  // PantallaVentas — SOLO LECTURA (ago 2026 en adelante).
+  // Las ventas ya se sincronizan cada 5 min desde systemlap.
+  // Las metas por ciudad ya se cargan en Admin → formulario.
+  // Esta pantalla muestra el progreso del mes sin dar acceso a modificar
+  // (evita que un ajuste manual sobrescriba lo que la sync ya trajo).
   function PantallaVentas() {
     const [mesVentasV, setMesVentasV] = useState(mesActual);
     const [añoVentasV] = useState(añoActual);
     const claveVentas = claveMes(añoVentasV, mesVentasV);
     const cerrado = !!snapshots[claveVentas];
-    const [metaInput, setMetaInput] = useState("");
-    const [vendsInput, setVendsInput] = useState({});
-    const [ok, setOk] = useState(false);
+    const mi = metas[claveVentas] || { meta: 0, vendidas: {} };
 
-    useEffect(() => {
-      const mi = metas[claveVentas] || { meta: 0, vendidas: {} };
-      setMetaInput(String(mi.meta || ""));
-      const i = {};
-      activas.forEach(v => { i[v.id] = String(mi.vendidas?.[v.id] || ""); });
-      setVendsInput(i);
-    }, [mesVentasV]);
-
-    function guardar() {
-      const vendidas = {};
-      activas.forEach(v => { if (vendsInput[v.id]) vendidas[v.id] = Number(vendsInput[v.id]); });
-      saveMetas({ ...metas, [claveVentas]: { meta: Number(metaInput) || 0, vendidas } });
-      setOk(true);
-      setTimeout(() => setOk(false), 2000);
-    }
-
-    if (!user) return <PantallaRequiereLogin emoji="💰" titulo="Ventas" descripcion="Inicia sesión para registrar las ventas." />;
+    if (!user) return <PantallaRequiereLogin emoji="💰" titulo="Ventas" descripcion="Inicia sesión para ver las ventas." />;
     if (!puedeIngresoVentas(user)) return <PantallaSinPermiso titulo="Ventas" />;
     const mesNombreVentas = new Date(añoVentasV, mesVentasV - 1).toLocaleDateString("es-CO", { month: "long", year: "numeric" });
+
+    // Meta por ciudad (retrocompatible)
+    const metaField = mi.meta;
+    const metaMED = metaField == null ? 0 : (typeof metaField === "number" ? metaField : (metaField.MED || 0));
+    const metaBOG = metaField == null ? 0 : (typeof metaField === "number" ? metaField : (metaField.BOG || 0));
+
+    // Agrupar vendedoras por ciudad y calcular totales
+    const porCiudad = { MED: [], BOG: [] };
+    activas.forEach(v => {
+      const real = mi.vendidas?.[v.id] || 0;
+      const meta = v.ciudad === "MED" ? metaMED : metaBOG;
+      const pct = meta > 0 ? Math.round((real / meta) * 100) : 0;
+      porCiudad[v.ciudad]?.push({ ...v, real, meta, pct });
+    });
+    Object.values(porCiudad).forEach(arr => arr.sort((a, b) => b.real - a.real));
+    const totalMED = porCiudad.MED.reduce((s, x) => s + x.real, 0);
+    const totalBOG = porCiudad.BOG.reduce((s, x) => s + x.real, 0);
+    const pctTotalMED = metaMED > 0 ? Math.round((totalMED / metaMED) * 100) : 0;
+    const pctTotalBOG = metaBOG > 0 ? Math.round((totalBOG / metaBOG) * 100) : 0;
+
+    function BloqueCiudad({ ciudad, lista, meta, total, pct }) {
+      if (!lista.length) return null;
+      const color = COLOR_CIUDAD[ciudad];
+      const label = LABEL_CIUDAD[ciudad];
+      return (
+        <div style={{ ...S.card, borderLeft: `5px solid ${color}`, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 24, height: 24, borderRadius: "50%", background: color }} />
+              <div style={{ fontSize: 15, fontWeight: 900 }}>{label}</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase" }}>Meta</div>
+              <div style={{ fontSize: 13, fontWeight: 800 }}>${meta.toLocaleString("es-CO")}</div>
+            </div>
+          </div>
+
+          <div style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>Vendido</span>
+              <span style={{ fontSize: 15, fontWeight: 900, color: pct >= 100 ? "#059669" : "#0f172a" }}>${total.toLocaleString("es-CO")} <span style={{ fontSize: 11, color: "#475569" }}>({pct}%)</span></span>
+            </div>
+            <div style={{ background: "#e2e8f0", borderRadius: 4, height: 6, overflow: "hidden" }}>
+              <div style={{ height: "100%", borderRadius: 4, width: Math.min(pct, 100) + "%", background: pct >= 100 ? "#059669" : pct >= 70 ? "#d97706" : color }} />
+            </div>
+          </div>
+
+          {lista.map(v => (
+            <div key={v.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 4px", borderTop: "1px solid #f1f5f9" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.nombre}</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: v.pct >= 100 ? "#059669" : "#0f172a" }}>${v.real.toLocaleString("es-CO")}</div>
+                <div style={{ fontSize: 10, color: v.pct >= 100 ? "#059669" : v.pct >= 70 ? "#d97706" : "#94a3b8", fontWeight: 700 }}>{v.pct}%</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
 
     return (
       <div style={S.body}>
         <div style={S.tit}>💰 Ventas</div>
+        <div style={{ fontSize: 11, color: "#475569", marginBottom: 12, padding: "8px 12px", background: "#f1f5f9", borderRadius: 8, lineHeight: 1.5 }}>
+          📡 <strong>Vista de solo lectura.</strong> Las ventas se sincronizan cada 5 min desde systemlap.
+          Las metas se cargan en <strong>Admin → Metas por ciudad</strong>.
+        </div>
         {cerrado && (
-          <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "8px 14px", marginBottom: 12, fontSize: 12, fontWeight: 700, color: "#991b1b" }}>
-            ⚠️ Este mes ya está CERRADO. Editar requiere abrir el mes desde Admin.
+          <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 10, padding: "8px 14px", marginBottom: 12, fontSize: 12, fontWeight: 700, color: "#92400e" }}>
+            🔒 Mes cerrado · Datos finales
           </div>
         )}
         <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
@@ -955,33 +1286,15 @@ export default function App() {
           ))}
         </div>
         <div style={S.sub}>{mesNombreVentas}</div>
-        <div style={S.card}>
-          <label style={S.lbl}>Meta del mes ($)</label>
-          <input type="number" disabled={cerrado} value={metaInput} onChange={e => setMetaInput(e.target.value)} placeholder="Ej: 5000000" style={S.inp} />
-        </div>
-        {activas.map(v => {
-          const real = Number(vendsInput[v.id] || 0);
-          const meta = Number(metaInput || 0);
-          const pct = meta > 0 ? Math.round((real / meta) * 100) : 0;
-          return (
-            <div key={v.id} style={{ ...S.card, padding: "10px 14px", marginBottom: 7 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>{v.nombre}</div>
-                  <BadgeCiudad ciudad={v.ciudad} />
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 800, color: pct >= 100 ? "#059669" : pct >= 70 ? "#d97706" : "#475569" }}>{pct}%</div>
-              </div>
-              <input type="number" disabled={cerrado} value={vendsInput[v.id] || ""} onChange={e => setVendsInput(i => ({ ...i, [v.id]: e.target.value }))} placeholder="$ vendido" style={S.inp} />
-              {meta > 0 && real > 0 && (
-                <div style={{ marginTop: 6, background: "#f1f5f9", borderRadius: 4, height: 5, overflow: "hidden" }}>
-                  <div style={{ height: "100%", borderRadius: 4, width: Math.min(pct, 100) + "%", background: pct >= 100 ? "#059669" : pct >= 70 ? "#d97706" : "#ea580c" }} />
-                </div>
-              )}
-            </div>
-          );
-        })}
-        <button disabled={cerrado} style={{ ...S.btnP, marginTop: 6, opacity: cerrado ? 0.5 : 1 }} onClick={guardar}>{ok ? "✅ Guardado" : "💾 Guardar ventas"}</button>
+
+        {(metaMED === 0 && metaBOG === 0) && (
+          <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#991b1b" }}>
+            ⚠️ Este mes aún no tiene metas cargadas. Ve a <strong>Admin → 🎯 Metas trimestrales por ciudad</strong>.
+          </div>
+        )}
+
+        <BloqueCiudad ciudad="MED" lista={porCiudad.MED} meta={metaMED} total={totalMED} pct={pctTotalMED} />
+        <BloqueCiudad ciudad="BOG" lista={porCiudad.BOG} meta={metaBOG} total={totalBOG} pct={pctTotalBOG} />
       </div>
     );
   }
@@ -994,11 +1307,13 @@ export default function App() {
     const [q, setQ] = useState(qActual);
     const meses = mesesTrimestre(q);
     const inicioTrim = año + "-" + String((q - 1) * 3 + 1).padStart(2, "0") + "-01";
-    const elegibles = activas.filter(v => !v.fechaIngreso || v.fechaIngreso <= inicioTrim);
-    const soloMensuales = activas.filter(v => v.fechaIngreso && v.fechaIngreso > inicioTrim);
+    // Filtro por ciudad efectiva: vendedora ve solo su ciudad; admin usa filtroCiudadAdmin.
+    const activasFiltradas = ciudadEfectiva ? activas.filter(v => v.ciudad === ciudadEfectiva) : activas;
+    const elegibles = activasFiltradas.filter(v => !v.fechaIngreso || v.fechaIngreso <= inicioTrim);
+    const soloMensuales = activasFiltradas.filter(v => v.fechaIngreso && v.fechaIngreso > inicioTrim);
 
     const datos = elegibles.map(v => {
-      const t = calcTrimestre(registros, metas, v.id, año, q, snapshots);
+      const t = calcTrimestre(registros, metas, v.id, año, q, snapshots, vendedoras);
       const realTrim = meses.reduce((s, m) => s + (metas[claveMes(año, m)]?.vendidas?.[v.id] || 0), 0);
       return { ...v, ...t, realTrim };
     });
@@ -1007,12 +1322,49 @@ export default function App() {
     const rankingTrim = [...conNota].sort((a, b) => (b.notaTrim - a.notaTrim) || ((b.realTrim ?? 0) - (a.realTrim ?? 0))).map((v, i) => ({ ...v, rt: i + 1 }));
     const sinDatos = datos.filter(v => v.notaTrim === null);
 
-    const premios = calcPremios(rankingTrim);
-    const idsConBono = new Set(premios.conBono.map(v => v.id));
+    // Premios ahora vienen separados por ciudad: { med: {conBono, extraCiudad}, bog: {...} }
+    // Combinamos las conBono de ambas ciudades para la lista visible en esta pantalla,
+    // pero filtramos según ciudadEfectiva (vendedora ve solo su ciudad).
+    const premiosBrutos = calcPremios(rankingTrim);
+    const premiosCiudades = ciudadEfectiva === "MED" ? ["med"] : ciudadEfectiva === "BOG" ? ["bog"] : ["med", "bog"];
+    const conBonoTodos = premiosCiudades.flatMap(k => premiosBrutos[k].conBono);
+    const extrasTodos = premiosCiudades.map(k => premiosBrutos[k].extraCiudad).filter(Boolean);
+    const idsConBono = new Set(conBonoTodos.map(v => v.id));
+    const idsExtra = new Set(extrasTodos.map(v => v.id));
+
+    // Título dinámico
+    const tituloTrim = ciudadEfectiva === "MED" ? "📈 Trimestre · Medellín"
+      : ciudadEfectiva === "BOG" ? "📈 Trimestre · Bogotá"
+      : "📈 Trimestre";
 
     return (
       <div style={S.body}>
-        <div style={S.tit}>📈 Trimestre</div>
+        <div style={S.tit}>{tituloTrim}</div>
+
+        {/* Botones de filtro por ciudad — SOLO ADMIN */}
+        {esUsuarioAutenticado && rolUsuario === "admin" && (
+          <div style={{ display: "flex", gap: 6, marginBottom: 14, padding: "8px", background: "#0f172a", borderRadius: 12 }}>
+            {[
+              { val: "TODAS", lab: "🌎 Todas", col: "#ea580c" },
+              { val: "MED",   lab: "🟢 Medellín", col: COLOR_CIUDAD.MED },
+              { val: "BOG",   lab: "🟡 Bogotá",   col: COLOR_CIUDAD.BOG },
+            ].map(({ val, lab, col }) => {
+              const sel = filtroCiudadAdmin === val;
+              return (
+                <button key={val} onClick={() => setFiltroCiudadAdmin(val)}
+                  style={{
+                    flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+                    cursor: "pointer", fontSize: 12, fontWeight: 800,
+                    background: sel ? col : "transparent",
+                    color: sel ? "#fff" : "#cbd5e1",
+                  }}>
+                  {lab}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           {[1, 2, 3, 4].filter(n => n <= qActual).map(n => (
             <button key={n} onClick={() => setQ(n)}
@@ -1035,11 +1387,14 @@ export default function App() {
             g.total += monto;
           };
           // Cada vendedora con nota trimestral ≥4.50 gana $1M
-          premios.conBono.forEach(v => {
+          conBonoTodos.forEach(v => {
             addRazon(v, "Nota trimestral ≥4.50", 1000000, "⭐");
           });
-          // Si hay 2+ con nota ≥4.50, la mejor entre ellas gana $1M extra (total $2M)
-          if (premios.extraNacional) addRazon(premios.extraNacional, "La mejor de las mejores", 1000000, "🌟");
+          // Extra por ciudad: si en una ciudad hay 2+ con nota ≥4.50, la mejor gana $1M extra
+          extrasTodos.forEach(v => {
+            const razon = `La mejor de ${v.ciudad === "MED" ? "Medellín" : "Bogotá"}`;
+            addRazon(v, razon, 1000000, "🌟");
+          });
 
           // Ordenar por total descendente
           ganadoras.sort((a, b) => b.total - a.total || (b.notaTrim - a.notaTrim));
@@ -1122,7 +1477,7 @@ export default function App() {
           <>
             <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Ranking trimestral</div>
             {rankingTrim.map(v => {
-              const esExtra = premios.extraNacional?.id === v.id;
+              const esExtra = idsExtra.has(v.id);
               const conBono = idsConBono.has(v.id);
               const ganaAlgo = conBono;
               const colorBorde = esExtra ? "#fbbf24" : conBono ? "#ea580c" : "#cbd5e1";
@@ -1287,6 +1642,12 @@ export default function App() {
       const meta = metas[claveMes(añoC, mesC)];
       if (!meta || !meta.meta) faltantes.push("Meta del mes no cargada");
       else {
+        // Meta puede ser número (formato viejo) u objeto {MED, BOG} (formato nuevo).
+        // Si es objeto, ambas ciudades deben tener meta > 0.
+        if (typeof meta.meta === "object") {
+          if (!meta.meta.MED) faltantes.push("Meta MEDELLÍN no cargada");
+          if (!meta.meta.BOG) faltantes.push("Meta BOGOTÁ no cargada");
+        }
         // Solo se valida ventas de quienes estuvieron al menos parte del mes
         const elegiblesMes = act.filter(v => !v.fechaIngreso || v.fechaIngreso <= ultimoDiaMes);
         const sinVent = elegiblesMes.filter(v => meta.vendidas?.[v.id] === undefined);
@@ -1305,7 +1666,7 @@ export default function App() {
         vendedoras: {},
       };
       vendedoras.forEach(v => {
-        const r = calcNotaMensual(registros, metas, v.id, añoC, mesC, null);
+        const r = calcNotaMensual(registros, metas, v.id, añoC, mesC, null, vendedoras);
         snap.vendedoras[v.id] = {
           notaBase: r.notaBase,
           notaVentas: r.notaVentas,
@@ -1359,6 +1720,39 @@ export default function App() {
         <div style={S.tit}>⚙️ Administrador</div>
         {msg && <div style={{ background: "#d1fae5", border: "1px solid #6ee7b7", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 13, fontWeight: 700, color: "#065f46" }}>{msg}</div>}
 
+        {/* LINKS POR CIUDAD — para compartir por WhatsApp */}
+        <div style={{ ...S.card, marginBottom: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#ea580c", marginBottom: 4 }}>
+            🔗 Links por ciudad
+          </div>
+          <div style={{ fontSize: 11, color: "#475569", marginBottom: 10 }}>
+            Cada equipo tiene su link único. Compártelos por WhatsApp con el grupo correcto.
+            <br/>Auto-encendido: <strong>lunes y viernes</strong> · el resto de días con el switch de abajo.
+          </div>
+          {[
+            { ciudad: "MED", label: "🟢 Team Valquirias · Medellín", color: COLOR_CIUDAD.MED },
+            { ciudad: "BOG", label: "🟡 Team Bacatá · Bogotá",       color: COLOR_CIUDAD.BOG },
+          ].map(({ ciudad, label, color }) => {
+            const token = tokenParaCiudad(ciudad);
+            const url = `${window.location.origin}/?c=${token}`;
+            return (
+              <div key={ciudad} style={{ padding: "10px 12px", background: "#f8fafc", borderRadius: 10, marginBottom: 6, borderLeft: `4px solid ${color}` }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>{label}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <div style={{ flex: 1, fontSize: 11, background: "#fff", padding: "6px 10px", borderRadius: 6, fontFamily: "monospace", color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: "1px solid #e2e8f0" }}>
+                    {url}
+                  </div>
+                  <button onClick={() => {
+                    navigator.clipboard.writeText(url).then(() => flash(`✅ Link ${ciudad} copiado`));
+                  }} style={{ padding: "6px 12px", background: color, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    📋 Copiar
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         {/* SWITCH MAESTRO RANKING */}
         <div style={{ ...S.card, padding: "14px", marginBottom: 14, background: config.rankingVisible ? "linear-gradient(135deg,#ecfdf5,#fff)" : "linear-gradient(135deg,#fef2f2,#fff)", border: "2px solid " + (config.rankingVisible ? "#86efac" : "#fca5a5") }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1376,6 +1770,20 @@ export default function App() {
             </button>
           </div>
         </div>
+
+        {/* METAS POR CIUDAD — pre-carga de metas trimestrales MED/BOG */}
+        <FormularioMetasCiudad
+          metas={metas}
+          snapshots={snapshots}
+          añoActual={añoActual}
+          onGuardar={async (clave, metaMED, metaBOG) => {
+            const nuevo = { ...metas };
+            const previo = nuevo[clave] || { vendidas: {} };
+            nuevo[clave] = { ...previo, meta: { MED: Number(metaMED) || 0, BOG: Number(metaBOG) || 0 } };
+            await saveMetas(nuevo);
+            flash(`✅ Meta ${clave} guardada`);
+          }}
+        />
 
         {/* CIERRE DE MES */}
         <div style={S.card}>
@@ -1613,10 +2021,19 @@ export default function App() {
     </div>
   );
 
-  // Si el ranking está apagado, las vendedoras (no logueadas) ven pantalla bloqueada.
-  // Luis y Carolina (logueados) siempre ven el ranking.
+  // Reglas de bloqueo (para vendedoras — Luis/Carolina nunca están bloqueados):
+  //
+  // 1. Vendedora sin ciudad (URL sin ?c= ni localStorage) → PantallaSinCiudad
+  //    "Pídele al admin el link correcto"
+  //
+  // 2. Vendedora con ciudad, PERO ranking apagado (y no es L/V) → PantallaBloqueada
+  //    "El ranking se publica los lunes y viernes"
+  //
+  // Solo aplica a pantallas de lectura pública (ranking, boletin, trimestre).
   const pantallasBloqueables = ["ranking", "boletin", "trimestre"];
-  const pantallaActualBloqueada = !user && !config.rankingVisible && pantallasBloqueables.includes(pantalla);
+  const enPantallaBloqueable = pantallasBloqueables.includes(pantalla);
+  const necesitaCiudad = !esUsuarioAutenticado && enPantallaBloqueable && !ciudadVendedora;
+  const rankingApagado = !esUsuarioAutenticado && enPantallaBloqueable && !rankingVisibleEfectivo;
 
   return (
     <>
@@ -1635,7 +2052,9 @@ export default function App() {
             {!user && <button style={{ ...S.navB(false), background: "#0f172a", color: "#fff" }} onClick={() => setPideLogin(true)}>🔐</button>}
           </div>
         </div>
-        {pantallaActualBloqueada ? (
+        {necesitaCiudad ? (
+          <PantallaSinCiudad />
+        ) : rankingApagado ? (
           <PantallaBloqueada />
         ) : (
           <>

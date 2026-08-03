@@ -240,11 +240,24 @@ export function bonoVentas(porcentajeMeta, notaComp) {
 // CÁLCULO DE NOTA FINAL DEL MES (con ventas + bono)
 // ============================================================
 
-export function calcNotaMensual(registros, metas, vid, año, mes, snapshots) {
+// Helper: obtiene la meta que aplica a una vendedora según su ciudad
+// - metaField número (formato viejo): se aplica igual a todas las ciudades
+// - metaField objeto {MED, BOG} (formato nuevo): cada ciudad usa su propia meta
+export function metaParaCiudad(metaField, ciudad) {
+  if (metaField == null) return 0;
+  if (typeof metaField === "number") return metaField;
+  if (typeof metaField === "object") return metaField[ciudad] || 0;
+  return 0;
+}
+
+export function calcNotaMensual(registros, metas, vid, año, mes, snapshots, vendedoras) {
   const { nota: notaBase, dias, porInd, detalle, cerrado } = calcMes(registros, vid, año, mes, snapshots);
   const metaInfo = metas[claveMes(año, mes)] || { meta: 0, vendidas: {} };
   const real = metaInfo.vendidas?.[vid] ?? 0;
-  const meta = metaInfo.meta || 0;
+  // Buscar la ciudad de la vendedora para determinar qué meta le aplica
+  const vend = (vendedoras || []).find(v => v.id == vid);
+  const ciudad = vend?.ciudad || "MED"; // fallback MED si no se encuentra
+  const meta = metaParaCiudad(metaInfo.meta, ciudad);
   // pctExacto: para cálculos (bono, nota ventas) — mantiene precisión
   // pct: para mostrar en UI — redondeado a entero
   const pctExacto = meta > 0 ? (real / meta) * 100 : 0;
@@ -306,10 +319,14 @@ export function calcNotaMensual(registros, metas, vid, año, mes, snapshots) {
 // RANKING MENSUAL
 // ============================================================
 
-export function calcRanking(registros, metas, año, mes, vendedoras, snapshots) {
+// calcRanking acepta un filtro opcional por ciudad ("MED" | "BOG" | null=todas)
+// Cuando ciudad != null, solo se calcula/rankea el subconjunto de esa ciudad —
+// necesario porque ahora son 2 empresas separadas.
+export function calcRanking(registros, metas, año, mes, vendedoras, snapshots, ciudad = null) {
   const activas = vendedoras.filter(v => v.activa !== false);
-  const datos = activas.map(v => {
-    const r = calcNotaMensual(registros, metas, v.id, año, mes, snapshots);
+  const filtradas = ciudad ? activas.filter(v => v.ciudad === ciudad) : activas;
+  const datos = filtradas.map(v => {
+    const r = calcNotaMensual(registros, metas, v.id, año, mes, snapshots, vendedoras);
     return { ...v, ...r };
   });
   // Ordenar por nota final descendente, desempate por ventas
@@ -325,9 +342,9 @@ export function calcRanking(registros, metas, año, mes, vendedoras, snapshots) 
 // ============================================================
 
 // Calcula la nota trimestral de una vendedora (con pesos 20/30/50)
-export function calcTrimestre(registros, metas, vid, año, q, snapshots) {
+export function calcTrimestre(registros, metas, vid, año, q, snapshots, vendedoras) {
   const meses = mesesTrimestre(q);
-  const datosMes = meses.map(m => calcNotaMensual(registros, metas, vid, año, m, snapshots));
+  const datosMes = meses.map(m => calcNotaMensual(registros, metas, vid, año, m, snapshots, vendedoras));
   const notas = datosMes.map(d => d.notaFinal);
   const conDatos = notas.filter(n => n !== null);
   if (!conDatos.length) return { notaTrim: null, notasMes: notas, datosMes, mesesConDatos: 0, completo: false };
@@ -344,28 +361,33 @@ export function calcTrimestre(registros, metas, vid, año, q, snapshots) {
   };
 }
 
-// Calcula los premios trimestrales según las reglas nuevas
-// REGLAS (mayo 2026 en adelante):
-// - Si nadie pasa 4.50 → ningún premio
+// Calcula los premios trimestrales — SEPARADO POR CIUDAD (agosto 2026+)
+// MED y BOG son 2 empresas independientes: nada se mezcla.
+// Para cada ciudad, la regla es la misma:
 // - Cada vendedora con nota trimestral ≥ 4.50 gana $1.000.000
-// - Si 2+ pasan 4.50, la que tenga la nota más alta gana DOBLE ($2.000.000 total)
-// - YA NO se entrega "Mejor de ciudad" automático sin filtro de nota
+// - Si 2+ pasan 4.50 en la ciudad, la #1 de esa ciudad gana $1.000.000 EXTRA
+// - Si nadie pasa 4.50 en la ciudad, esa ciudad no entrega premio
 export function calcPremios(rankingTrim) {
   // rankingTrim: array de { vid, nombre, ciudad, notaTrim, ... }
-  const conNota = rankingTrim.filter(v => v.notaTrim !== null);
-  if (!conNota.length) return { conBono: [], extraNacional: null };
+  const resultado = { med: { conBono: [], extraCiudad: null }, bog: { conBono: [], extraCiudad: null } };
 
-  // Las que pasan ≥4.50 — cada una gana $1.000.000
-  const conBono = conNota.filter(v => v.notaTrim >= 4.5);
+  for (const ciudad of ["MED", "BOG"]) {
+    const key = ciudad.toLowerCase(); // "med" o "bog"
+    const enCiudad = rankingTrim.filter(v => v.ciudad === ciudad && v.notaTrim !== null);
+    if (!enCiudad.length) continue;
 
-  // Extra: si 2+ pasan 4.50, la #1 (mayor nota, desempate por ventas) gana $1M extra
-  let extraNacional = null;
-  if (conBono.length >= 2) {
-    const ordenado = [...conBono].sort((a, b) =>
-      (b.notaTrim - a.notaTrim) || ((b.realTrim ?? 0) - (a.realTrim ?? 0))
-    );
-    extraNacional = ordenado[0];
+    // Las que pasan ≥4.50 en esta ciudad
+    const conBono = enCiudad.filter(v => v.notaTrim >= 4.5);
+    resultado[key].conBono = conBono;
+
+    // Extra de ciudad: si 2+ pasan 4.50, la mejor gana $1M extra
+    if (conBono.length >= 2) {
+      const ordenado = [...conBono].sort((a, b) =>
+        (b.notaTrim - a.notaTrim) || ((b.realTrim ?? 0) - (a.realTrim ?? 0))
+      );
+      resultado[key].extraCiudad = ordenado[0];
+    }
   }
 
-  return { conBono, extraNacional };
+  return resultado;
 }
