@@ -14,6 +14,59 @@ import {
 } from "./lib/calculos.js";
 
 // =============================================================
+// InputPesos — input de dinero en pesos colombianos.
+// - type="text" + inputMode="numeric" → teclado numérico en móvil, sin flechitas
+// - Formatea en tiempo real con puntos de miles: 29815200 → 29.815.200
+// - Al leer el valor real, quitar los puntos y convertir a número
+// - Preserva la posición del cursor mientras formatea
+// =============================================================
+function InputPesos({ inputRef, defaultValue = "", placeholder, style }) {
+  // Formatea un string de dígitos a formato con puntos de miles: "29815200" → "29.815.200"
+  const fmt = (s) => {
+    const limpio = String(s || "").replace(/\D/g, "");
+    if (!limpio) return "";
+    return Number(limpio).toLocaleString("es-CO");
+  };
+  const inicial = fmt(defaultValue);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontWeight: 700, fontSize: 13, pointerEvents: "none" }}>$</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        ref={inputRef}
+        defaultValue={inicial}
+        placeholder={placeholder}
+        onInput={(e) => {
+          const el = e.target;
+          const antes = el.value;
+          const cursor = el.selectionStart || 0;
+          // Contar dígitos hasta el cursor (para reposicionarlo después)
+          const digitosAntesDelCursor = antes.slice(0, cursor).replace(/\D/g, "").length;
+          const formateado = fmt(antes);
+          el.value = formateado;
+          // Reposicionar cursor tras el mismo número de dígitos
+          let cur = 0, digitosVistos = 0;
+          while (cur < formateado.length && digitosVistos < digitosAntesDelCursor) {
+            if (/\d/.test(formateado[cur])) digitosVistos++;
+            cur++;
+          }
+          try { el.setSelectionRange(cur, cur); } catch { /* ignore */ }
+        }}
+        style={{ ...style, paddingLeft: 24, boxSizing: "border-box", width: "100%" }}
+      />
+    </div>
+  );
+}
+
+// Helper: lee el valor de un input formateado como pesos y retorna número puro.
+function leerPesos(inputRef) {
+  const s = inputRef?.current?.value || "";
+  return Number(String(s).replace(/\D/g, "")) || 0;
+}
+
+// =============================================================
 // FormularioMetasCiudad — panel de admin para pre-cargar metas
 // trimestrales separadas por ciudad (MED / BOG).
 //
@@ -52,8 +105,9 @@ function FormularioMetasCiudad({ metas, snapshots, añoActual, onGuardar }) {
   const refBOG = useRef(null);
 
   function handleGuardar() {
-    const medVal = refMED.current?.value || "";
-    const bogVal = refBOG.current?.value || "";
+    // Los inputs son texto formateado (ej: "29.815.200") — leerPesos limpia y devuelve número.
+    const medVal = leerPesos(refMED);
+    const bogVal = leerPesos(refBOG);
     onGuardar(clave, medVal, bogVal);
   }
 
@@ -118,20 +172,20 @@ function FormularioMetasCiudad({ metas, snapshots, añoActual, onGuardar }) {
         <>
           <div style={{ marginBottom: 10 }}>
             <label style={labelStyle}>🟢 Meta Medellín</label>
-            <input type="number"
+            <InputPesos
               key={`med-${clave}`}
-              ref={refMED}
+              inputRef={refMED}
               defaultValue={inicialMED}
-              placeholder="Ej: 34000000"
+              placeholder="Ej: 34.000.000"
               style={inputStyle} />
           </div>
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>🟡 Meta Bogotá</label>
-            <input type="number"
+            <InputPesos
               key={`bog-${clave}`}
-              ref={refBOG}
+              inputRef={refBOG}
               defaultValue={inicialBOG}
-              placeholder="Ej: 22500000"
+              placeholder="Ej: 22.500.000"
               style={inputStyle} />
           </div>
           <button onClick={handleGuardar}
