@@ -1,44 +1,136 @@
 rules_version = '2';
 
-// Reglas de seguridad para Cloud Firestore — Televentas Evaluación
+// ============================================================
+// Reglas Firestore v2 — Valquirias TLV (blindadas)
+// ============================================================
 //
-// Cómo funciona:
-// - LECTURA pública: cualquiera (vendedoras sin login) puede ver el ranking, boletines, trimestre.
-// - ESCRITURA restringida: solo los emails autorizados pueden modificar datos.
-//   - Admin (Luis): puede modificar TODO (vendedoras, snapshots, config, registros, metas)
-//   - Oficina (Carolina): solo puede modificar 'registros' y 'metas'
+// Modelo de auth:
+// - TODOS los usuarios entran con Firebase Auth (Magic Link).
+// - Cada usuario tiene CUSTOM CLAIMS asignados por Cloud Functions:
+//     * ciudad : 'MED' | 'BOG'          (ciudad de la vendedora/oficina; admin puede ser 'MED')
+//     * rol    : 'vendedora' | 'oficina' | 'admin'
+//     * activa : true | false            (si es false → sin acceso)
 //
-// IMPORTANTE: si agregas más usuarios autorizados, edita las funciones aquí
-// y publica las reglas. La app NO valida nada del lado cliente — la
-// seguridad real está acá en el servidor de Firebase.
+// Regla de oro:
+// - Piso $15M SOLO existe en MED. BOG NUNCA debe poder leer 'config-med'.
+// - Cualquier vendedora con activa != true queda automáticamente FUERA.
+// - La app cliente ya NO puede escribir nada sin ser oficina o admin.
+//
+// Colección única: 'televentas' con docs conocidos:
+//   config-med   → parámetros MED (piso 15M, metas MED, etc.) — SOLO MED
+//   config-bog   → parámetros BOG                              — SOLO BOG
+//   config-comun → parámetros compartidos (fecha corte, versión app…)
+//   vendedoras   → roster de vendedoras (nombres, ciudad, activa)
+//   vendidas     → ventas diarias/mensuales
+//   metas        → metas mensuales por ciudad
+//   snapshots    → cierres históricos
+//   registros    → registros diarios crudos
+// ============================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Función helper: verifica si el usuario es Admin (Luis)
+    // -------- helpers de auth --------
+
+    // ¿Está autenticado Y activo?
+    function autenticadoActivo() {
+      return request.auth != null
+        && request.auth.token.activa == true;
+    }
+
     function esAdmin() {
-      return request.auth != null
-        && request.auth.token.email == 'luisponce.tv@gmail.com';
+      return autenticadoActivo()
+        && request.auth.token.rol == 'admin';
     }
 
-    // Función helper: verifica si el usuario es Oficina (Carolina)
     function esOficina() {
-      return request.auth != null
-        && request.auth.token.email == 'info@televentas.com';
+      return autenticadoActivo()
+        && request.auth.token.rol == 'oficina';
     }
 
-    // Documentos de la app
-    match /televentas/{docId} {
-      // Lectura libre (vendedoras pueden ver el ranking sin login)
-      allow read: if true;
+    function esVendedora() {
+      return autenticadoActivo()
+        && request.auth.token.rol == 'vendedora';
+    }
 
-      // Escritura: solo Admin u Oficina, según el documento
-      // - registros y metas: ambos (Carolina necesita cargar el día a día)
-      // - vendedoras, snapshots, config: solo Admin
-      allow write: if (
-        (docId in ['registros', 'metas'] && (esAdmin() || esOficina()))
-        || (docId in ['vendedoras', 'snapshots', 'config'] && esAdmin())
-      );
+    // Ciudad del usuario
+    function ciudadUsuario() {
+      return request.auth.token.ciudad;
+    }
+
+    // -------- reglas por documento --------
+
+    match /televentas/{docId} {
+
+      // ============ CONFIG-MED (contiene piso $15M) ============
+      // Solo lo pueden LEER usuarios cuya ciudad sea MED.
+      // BOG NUNCA lo ve — ni siquiera admin BOG (no debería existir, pero blindado).
+      // Escribir: solo admin.
+      allow read: if docId == 'config-med'
+        && autenticadoActivo()
+        && ciudadUsuario() == 'MED';
+
+      allow write: if docId == 'config-med' && esAdmin();
+
+      // ============ CONFIG-BOG ============
+      // Solo lo pueden LEER usuarios cuya ciudad sea BOG.
+      // Escribir: solo admin.
+      allow read: if docId == 'config-bog'
+        && autenticadoActivo()
+        && ciudadUsuario() == 'BOG';
+
+      allow write: if docId == 'config-bog' && esAdmin();
+
+      // ============ CONFIG-COMUN ============
+      // Lectura para cualquier usuario autenticado y activo (MED o BOG).
+      // Escribir: solo admin.
+      allow read: if docId == 'config-comun' && autenticadoActivo();
+      allow write: if docId == 'config-comun' && esAdmin();
+
+      // ============ VENDEDORAS ============
+      // Roster completo. Leer: cualquier autenticado activo (necesario para
+      // ranking/boletines). Escribir: solo admin (crea/desactiva vendedoras).
+      allow read: if docId == 'vendedoras' && autenticadoActivo();
+      allow write: if docId == 'vendedoras' && esAdmin();
+
+      // ============ VENDIDAS / REGISTROS ============
+      // Datos operativos día a día que carga Oficina (Carolina).
+      // Leer: cualquier autenticado activo.
+      // Escribir: oficina o admin.
+      allow read: if docId in ['vendidas', 'registros'] && autenticadoActivo();
+      allow write: if docId in ['vendidas', 'registros'] && (esOficina() || esAdmin());
+
+      // ============ METAS ============
+      // Metas mensuales por ciudad. Igual que registros: oficina o admin escriben.
+      allow read: if docId == 'metas' && autenticadoActivo();
+      allow write: if docId == 'metas' && (esOficina() || esAdmin());
+
+      // ============ SNAPSHOTS ============
+      // Cierres históricos. Leer: autenticados activos. Escribir: solo admin.
+      allow read: if docId == 'snapshots' && autenticadoActivo();
+      allow write: if docId == 'snapshots' && esAdmin();
+    }
+
+    // ============ ACCESOS_LOG ============
+    // Colección separada donde Cloud Functions registra cada login.
+    // Nadie escribe desde el cliente. Solo admin puede leer para auditoría.
+    match /accesos_log/{eventoId} {
+      allow read: if esAdmin();
+      allow write: if false; // solo Cloud Functions (server SDK bypassea reglas)
+    }
+
+    // ============ WHITELIST DE EMAILS ============
+    // Documento con la lista blanca de emails autorizados a recibir magic link.
+    // Solo admin lee/escribe. Cloud Function la consulta con Admin SDK.
+    match /whitelist/{emailNormalizado} {
+      allow read: if esAdmin();
+      allow write: if esAdmin();
+    }
+
+    // ============ DENY-ALL por defecto ============
+    // Cualquier ruta no listada arriba queda cerrada.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
