@@ -206,8 +206,8 @@ export default function ValquiriasApp() {
             { id: "resenas", nombre: "Reseñas", emoji: "⭐", peso: 5, nota: 4.7, detalle: "12 reseñas · promedio 4.7 estrellas", estado: "star" },
           ]}
           tip={{
-            titulo: "Cómo subir tu nota",
-            mensaje: <>Llena las <strong>2 planillas atrasadas</strong> y tu comportamiento del mes sube de <strong>3.86</strong> a <strong style={{ color: "#047857" }}>4.42</strong> — impacta directo a tu premio trimestral.</>,
+            titulo: "Cuida tu patrón",
+            mensaje: <>Los indicadores son <strong>observaciones diarias</strong> — lo que pasó ya pasó. Faltan <strong>16 días</strong> para cerrar agosto: mantén tu ritmo con puntualidad, actitud y detalles y cierras el mes con nota alta 💪</>,
           }}
           onVolver={() => setDetalle(null)}
         />
