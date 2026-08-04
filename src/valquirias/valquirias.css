@@ -2,6 +2,12 @@
    Portados del mockup docs/mockup-valquirias-tlv.html
    Paleta cálida: crema base + pasteles armónicos + acentos vibrantes */
 
+/* Reserva SIEMPRE el ancho del scrollbar → el viewport no cambia entre tabs */
+html {
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
+
 .v-app {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: linear-gradient(180deg, #fef7f0 0%, #fdf4ff 100%);
@@ -9,8 +15,15 @@
   color: #0f172a;
   padding: 16px 14px 90px;
   max-width: 480px;
+  width: 100%;
   margin: 0 auto;
   position: relative;
+  box-sizing: border-box;
+}
+
+/* Todos los hijos directos ocupan el mismo ancho consistente */
+.v-app > * {
+  box-sizing: border-box;
 }
 
 /* Header + saludo */
