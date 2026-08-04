@@ -58,21 +58,33 @@ export default function TabComo({ ciudad }) {
       </Acordeon>
 
       <Acordeon titulo="💰 Premio mensual por ventas" abierto={abierto === "mes"} onToggle={() => tog("mes")}>
-        {!esBog && (
-          <div style={{ marginBottom: 6 }}>
-            Necesitas vender al menos <strong>$15.000.000</strong> en el mes para ganar este premio.
+        <div style={{ marginBottom: 6 }}>
+          {esBog
+            ? "Ganas premio según cuánto vendas en el mes:"
+            : <>Ganas premio según cuánto vendas en el mes. Necesitas superar <strong>$15.000.000</strong> para arrancar a ganar.</>}
+        </div>
+        <div style={{ background: "rgba(168, 85, 247, 0.05)", borderRadius: 10, padding: 6, marginTop: 8, overflowX: "auto" }}>
+          <div style={{ ...filaTablaHeader }}>
+            <span>Rango de ventas</span><span>Asesora</span><span>Admin</span>
           </div>
-        )}
-        {esBog && (
-          <div style={{ marginBottom: 6 }}>Ganas premio según cuánto vendas en el mes:</div>
-        )}
-        <div style={{ background: "rgba(168, 85, 247, 0.05)", borderRadius: 10, padding: 6, marginTop: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", padding: "6px 8px", background: "linear-gradient(135deg, #7c3aed, #ec4899)", color: "#fff", borderRadius: 6, fontSize: 10, textTransform: "uppercase", letterSpacing: 1, fontWeight: 900, marginBottom: 4 }}>
-            <span>Tramo</span><span>Asesora</span><span>Admin</span>
+          <div style={filaTabla}>
+            <span style={cellRango}>$0 – $19.278.642</span>
+            <span style={cellPct}>1%</span>
+            <span style={cellPct}>2%</span>
           </div>
-          <div style={filaTabla}><span>Meta 1</span><span>1%</span><span>2%</span></div>
-          <div style={filaTabla}><span>Meta 2</span><span>2%</span><span>4%</span></div>
-          <div style={{ ...filaTabla, borderBottom: "none" }}><span>Meta 3</span><span>3%</span><span>6%</span></div>
+          <div style={filaTabla}>
+            <span style={cellRango}>$19.278.643 – $39.309.157</span>
+            <span style={cellPct}>2%</span>
+            <span style={cellPct}>4%</span>
+          </div>
+          <div style={{ ...filaTabla, borderBottom: "none" }}>
+            <span style={cellRango}>$39.309.158 en adelante</span>
+            <span style={cellPct}>3%</span>
+            <span style={cellPct}>6%</span>
+          </div>
+        </div>
+        <div style={{ marginTop: 8, fontSize: 11, color: "#64748b", fontWeight: 600 }}>
+          💡 Rangos vigentes para 2026. El admin los actualiza cuando cambien.
         </div>
       </Acordeon>
 
@@ -87,15 +99,13 @@ export default function TabComo({ ciudad }) {
         <div style={premioBox}>💰 <strong>$1.000.000</strong> si tu nota trimestral llega a <strong>4.50</strong></div>
         <div style={premioBox}>🌟 <strong>$1.000.000 EXTRA</strong> a la mejor de la ciudad si hay 2+ que pasan 4.50</div>
         <div style={{ marginTop: 6 }}>🏆 <strong>Reconocimiento sorpresa</strong> a la #1 (este trimestre: TV 42")</div>
-      </Acordeon>
-
-      <Acordeon titulo="📆 Cuándo se publica el ranking" abierto={abierto === "pub"} onToggle={() => tog("pub")}>
-        <div><strong>Martes y viernes</strong> de <strong>6pm a 12am</strong></div>
-        <div style={{ color: "#64748b", marginTop: 4 }}>Zona horaria Colombia. Fuera de esos días la app te avisa cuándo abre.</div>
+        <div style={{ marginTop: 8, fontSize: 11, color: "#64748b", fontWeight: 600 }}>
+          💡 Los premios de cada trimestre los define el admin. Este acordeón los muestra siempre actualizados.
+        </div>
       </Acordeon>
 
       <div style={{ textAlign: "center", marginTop: 12, padding: 10, background: "rgba(168, 85, 247, 0.06)", borderRadius: 10, fontSize: 12, color: "#64748b", fontWeight: 700 }}>
-        💬 ¿Dudas? Escríbele a Luis directo
+        💬 ¿Dudas? Escríbele al administrador
       </div>
     </>
   );
@@ -103,13 +113,32 @@ export default function TabComo({ ciudad }) {
 
 const filaTabla = {
   display: "grid",
-  gridTemplateColumns: "1fr 1fr 1fr",
-  padding: "6px 8px",
-  fontSize: 13,
+  gridTemplateColumns: "1.7fr 0.6fr 0.6fr",
+  padding: "8px 8px",
+  fontSize: 12,
   fontWeight: 800,
   color: "#1e1b4b",
   borderBottom: "1px dashed rgba(168, 85, 247, 0.15)",
+  alignItems: "center",
 };
+
+const filaTablaHeader = {
+  display: "grid",
+  gridTemplateColumns: "1.7fr 0.6fr 0.6fr",
+  padding: "6px 8px",
+  background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+  color: "#fff",
+  borderRadius: 6,
+  fontSize: 10,
+  textTransform: "uppercase",
+  letterSpacing: 1,
+  fontWeight: 900,
+  marginBottom: 4,
+  alignItems: "center",
+};
+
+const cellRango = { fontSize: 11, fontWeight: 800, color: "#1e1b4b", whiteSpace: "nowrap" };
+const cellPct   = { fontSize: 14, fontWeight: 900, color: "#7c3aed", textAlign: "center" };
 
 const premioBox = {
   background: "linear-gradient(90deg, #ecfdf5, #fff)",
