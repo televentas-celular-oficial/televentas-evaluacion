@@ -25,6 +25,7 @@ import DetalleTrimestre from "./detalles/DetalleTrimestre.jsx";
 import DetalleComportamiento from "./detalles/DetalleComportamiento.jsx";
 import IngresoDiario from "./oficina/IngresoDiario.jsx";
 import AdminHome from "./admin/AdminHome.jsx";
+import { DatosProvider, useDatos } from "./data/DatosContext.jsx";
 import { estaEnVentanaAutoEncendido, hoyColombia, fechaBonita, esLunesEnColombia, rangoSemanaAnterior, diasParaFinMes, nombreMesActual } from "./lib/helpers.js";
 
 import "./valquirias.css";
@@ -113,23 +114,32 @@ function datosMockDurley() {
 }
 
 export default function ValquiriasApp() {
-  const [user, setUser] = useState(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-  const [tab, setTab] = useState("hoy");
-  const [detalle, setDetalle] = useState(null); // 'trim' | 'comp' | null
-  const [semanaCerradaOculta, setSemanaCerradaOculta] = useState(false);
-  const [datos] = useState(datosMockDurley()); // TODO: cargar de Firestore
-  const [filtroCiudadAdmin, setFiltroCiudadAdmin] = useState("MED");
-  const [mesSeleccionado, setMesSeleccionado] = useState(() => {
-    const h = hoyColombia();
-    return { año: h.año, mes: h.mes };
-  });
-
   // Modo demo: ?demo=1 (vendedora Durley MED) · ?demo=carolina (rol oficina) · ?demo=admin (rol admin)
   const demoParam = typeof window !== "undefined"
     ? (new URLSearchParams(window.location.search).get("demo") || "")
     : "";
   const esDemo = demoParam !== "";
+
+  return (
+    <DatosProvider modoDemo={esDemo}>
+      <ValquiriasAppInner demoParam={demoParam} esDemo={esDemo} />
+    </DatosProvider>
+  );
+}
+
+function ValquiriasAppInner({ demoParam, esDemo }) {
+  const datosFS = useDatos(); // datos crudos de Firestore
+  const [user, setUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [tab, setTab] = useState("hoy");
+  const [detalle, setDetalle] = useState(null); // 'trim' | 'comp' | null
+  const [semanaCerradaOculta, setSemanaCerradaOculta] = useState(false);
+  const [datos] = useState(datosMockDurley()); // mock (usado en demo y como fallback visual mientras integramos)
+  const [filtroCiudadAdmin, setFiltroCiudadAdmin] = useState("MED");
+  const [mesSeleccionado, setMesSeleccionado] = useState(() => {
+    const h = hoyColombia();
+    return { año: h.año, mes: h.mes };
+  });
 
   useEffect(() => {
     if (esDemo) { setLoadingAuth(false); return; }
@@ -161,18 +171,36 @@ export default function ValquiriasApp() {
 
   // Rol OFICINA (Carolina): vista dedicada al ingreso diario
   if (rol === "oficina") {
-    return <IngresoDiario onGuardar={({ fecha, filas }) => {
-      // TODO: cuando conectemos Firestore, guardar aquí
-      console.log("[Carolina] Guardar día", fecha, filas);
-    }} />;
+    return (
+      <IngresoDiario
+        vendedoras={datosFS.vendedoras}
+        onGuardar={({ fecha, filas }) => {
+          // Guarda cada fila en datosFS.registros con clave `${vid}_${fecha}`
+          const nuevos = { ...datosFS.registros };
+          Object.entries(filas).forEach(([vid, f]) => {
+            nuevos[`${vid}_${fecha}`] = f;
+          });
+          datosFS.saveRegistros(nuevos);
+        }}
+      />
+    );
   }
 
-  // Rol ADMIN (Luis): panel admin nuevo
+  // Rol ADMIN (Luis): panel admin nuevo con ventas reales
   if (rol === "admin") {
+    const h = hoyColombia();
+    const claveMes = `${h.año}_${String(h.mes).padStart(2, "0")}`;
+    const ventasHoy = datosFS.metas[claveMes]?.vendidas || {};
+    let ventasMED = 0, ventasBOG = 0;
+    (datosFS.vendedoras || []).forEach(v => {
+      const val = ventasHoy[v.id] || 0;
+      if (v.ciudad === "MED") ventasMED += val;
+      else if (v.ciudad === "BOG") ventasBOG += val;
+    });
     return <AdminHome datosGlobales={{
-      ventasMesTotal: 132_400_000,
-      ventasMED: 92_000_000,
-      ventasBOG: 40_400_000,
+      ventasMesTotal: ventasMED + ventasBOG,
+      ventasMED,
+      ventasBOG,
     }} />;
   }
   // Vista vendedora

@@ -5,57 +5,49 @@
 import { useState, useMemo } from "react";
 import { formatoPesos, hoyColombia, calcComisionMensual, PISO_MED } from "../lib/helpers.js";
 import { VENDEDORAS_DEFAULT } from "../../lib/constantes.js";
+import { useDatos } from "../data/DatosContext.jsx";
 
 const MES_NOMBRES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
-// Mock: ventas de mes anterior por vendedora
-// En producción viene del sync systemlap (metas[<mes>].vendidas[vendedoraId])
-const MOCK_VENTAS_JULIO = {
-  1: 24_800_000,   // Lorena MED admin
-  2: 18_400_000,   // Dayana MED asesora
-  3: 22_100_000,   // Jennifer MED asesora
-  4: 28_500_000,   // Durley MED admin
-  5: 13_200_000,   // Manuela MED asesora — NO llega piso
-  6: 26_300_000,   // Xiomara BOG admin
-  7: 21_600_000,   // Luisa MED asesora
-  8: 19_800_000,   // Elena MED asesora
-  9: 23_100_000,   // Leydy BOG asesora
-  10: 17_500_000,  // Jackeline BOG asesora
-  11: 12_400_000,  // Yessica BOG asesora
-  12: 8_900_000,   // Vanessa BOG asesora
-  13: 6_200_000,   // Alisson BOG asesora
-  14: 14_500_000,  // Betzabeth MED asesora — NO llega piso
+// Fallback (modo demo): ventas mock si Firestore no tiene datos del mes
+const MOCK_VENTAS = {
+  1: 24_800_000, 2: 18_400_000, 3: 22_100_000, 4: 28_500_000, 5: 13_200_000,
+  6: 26_300_000, 7: 21_600_000, 8: 19_800_000, 9: 23_100_000, 10: 17_500_000,
+  11: 12_400_000, 12: 8_900_000, 13: 6_200_000, 14: 14_500_000,
 };
 
-// Vendedoras con rolTienda (mock — en producción viene de systemlap)
-const VENDEDORAS_CON_ROL = VENDEDORAS_DEFAULT.map(v => ({
-  ...v,
-  rolTienda: [1, 4, 6].includes(v.id) ? "admin" : "asesora", // Lorena, Durley, Xiomara son admin
-}));
+// Roles de tienda mock — en producción cada vendedora tendrá su rolTienda desde systemlap
+const ROL_TIENDA_MOCK = { 1: "admin", 4: "admin", 6: "admin" }; // Lorena, Durley, Xiomara
 
 export default function NominaComisiones({ onVolver }) {
+  const datos = useDatos();
   const hoy = hoyColombia();
   const mesAntAño = hoy.mes === 1 ? hoy.año - 1 : hoy.año;
   const mesAntMes = hoy.mes === 1 ? 12 : hoy.mes - 1;
   const [selMes, setSelMes] = useState({ año: mesAntAño, mes: mesAntMes });
 
-  // Cálculo automático
+  // Cálculo automático con datos reales de Firestore (o mock si no hay)
   const filas = useMemo(() => {
-    const ventasPorId = MOCK_VENTAS_JULIO; // TODO: cargar de Firestore según selMes
-    return VENDEDORAS_CON_ROL
+    const claveMes = `${selMes.año}_${String(selMes.mes).padStart(2, "0")}`;
+    const ventasFS = datos.metas?.[claveMes]?.vendidas || {};
+    const vendedoras = (datos.vendedoras && datos.vendedoras.length > 0) ? datos.vendedoras : VENDEDORAS_DEFAULT;
+
+    return vendedoras
       .filter(v => v.activa !== false)
       .map(v => {
-        const ventas = ventasPorId[v.id] || 0;
+        const ventasReales = ventasFS[v.id];
+        const ventas = (ventasReales !== undefined) ? ventasReales : (MOCK_VENTAS[v.id] || 0);
+        const rolTienda = v.rolTienda || ROL_TIENDA_MOCK[v.id] || "asesora";
         const calc = calcComisionMensual({
           ciudad: v.ciudad,
-          rol: v.rolTienda,
+          rol: rolTienda,
           ventasMes: ventas,
           // TODO: si v.fechaAscensoAdmin cae en el mes, pasar datosCambioRol
         });
-        return { v, ventas, calc };
+        return { v: { ...v, rolTienda }, ventas, calc };
       })
       .sort((a, b) => b.calc.comision - a.calc.comision);
-  }, [selMes]);
+  }, [selMes, datos.metas, datos.vendedoras]);
 
   const filasMed = filas.filter(f => f.v.ciudad === "MED");
   const filasBog = filas.filter(f => f.v.ciudad === "BOG");
