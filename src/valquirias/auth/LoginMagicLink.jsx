@@ -7,8 +7,11 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  signOut,
 } from "firebase/auth";
-import { auth } from "../../firebase.js";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../../firebase.js";
+import { EMAIL_ADMIN, EMAIL_OFICINA } from "../../lib/constantes.js";
 
 const STORAGE_KEY = "valquirias_pending_email";
 
@@ -33,11 +36,45 @@ export default function LoginMagicLink({ onLoggedIn }) {
       }
       if (email) {
         signInWithEmailLink(auth, email, window.location.href)
-          .then((cred) => {
+          .then(async (cred) => {
             window.localStorage.removeItem(STORAGE_KEY);
-            // Limpiar la URL (quita el token)
             window.history.replaceState({}, document.title, window.location.pathname);
-            onLoggedIn?.(cred.user);
+
+            // Validar contra whitelist (a menos que sea admin u oficina — esos siempre entran)
+            const emailBajo = (cred.user.email || "").toLowerCase();
+            const esAdmin = emailBajo === EMAIL_ADMIN.toLowerCase();
+            const esOficina = emailBajo === EMAIL_OFICINA.toLowerCase();
+
+            if (esAdmin || esOficina) {
+              onLoggedIn?.(cred.user);
+              return;
+            }
+
+            try {
+              const cfgSnap = await getDoc(doc(db, "televentas", "config"));
+              const cfg = cfgSnap.exists() ? JSON.parse(cfgSnap.data().data || "{}") : {};
+              const activa = !!cfg.whitelistActiva;
+              const enWL = cfg.whitelist && cfg.whitelist[emailBajo];
+
+              if (!activa) {
+                await signOut(auth);
+                setMsg("🔒 El acceso a la app aún no está habilitado. Te avisamos cuando esté listo.");
+                setMsgTipo("err");
+                return;
+              }
+              if (!enWL) {
+                await signOut(auth);
+                setMsg("⚠️ Este email no está autorizado. Escríbele al administrador.");
+                setMsgTipo("err");
+                return;
+              }
+              onLoggedIn?.(cred.user);
+            } catch (e) {
+              console.error("Error validando whitelist:", e);
+              await signOut(auth);
+              setMsg("Error validando acceso. Escríbele al administrador.");
+              setMsgTipo("err");
+            }
           })
           .catch((err) => {
             setMsg("El link expiró o no es válido. Pide uno nuevo.");
