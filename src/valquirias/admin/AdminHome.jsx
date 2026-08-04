@@ -19,6 +19,7 @@ import { VENDEDORAS_DEFAULT } from "../../lib/constantes.js";
 import GestionVendedoras from "./GestionVendedoras.jsx";
 import NominaComisiones from "./NominaComisiones.jsx";
 import MagicLinks from "./MagicLinks.jsx";
+import CargarMetas from "./CargarMetas.jsx";
 import ProximamentePanel from "./ProximamentePanel.jsx";
 
 const TILES = [
@@ -29,7 +30,7 @@ const TILES = [
   { id: "magic",         emoji: "📧", titulo: "Magic Links",      desc: "Enviar acceso individual" },
   { id: "premios",       emoji: "💎", titulo: "Premios trim.",    desc: "Editar Q3, Q4..." },
   { id: "backup",        emoji: "💾", titulo: "Backup",           desc: "Descargar JSON" },
-  { id: "links",         emoji: "🔗", titulo: "Links ciudad",     desc: "Copiar URLs MED / BOG" },
+  { id: "accesos",       emoji: "📊", titulo: "Log accesos",      desc: "Quién entró y cuándo" },
 ];
 
 export default function AdminHome({ datosGlobales }) {
@@ -45,6 +46,9 @@ export default function AdminHome({ datosGlobales }) {
   }
   if (seccion === "magic") {
     return <MagicLinks onVolver={() => setSeccion(null)} />;
+  }
+  if (seccion === "metas") {
+    return <CargarMetas onVolver={() => setSeccion(null)} />;
   }
   if (seccion) {
     return <ProximamentePanel titulo={TILES.find(t => t.id === seccion)?.titulo || "En construcción"} onVolver={() => setSeccion(null)} />;
