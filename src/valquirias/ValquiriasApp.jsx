@@ -47,10 +47,22 @@ function datosMockDurley() {
     semana: {
       efectivo: 3_400_000,
       gano50k: true,
+      // Top 3 para el mini-ranking dentro de TabHoy
       top3: [
         { n: 1, nombre: "Durley", valor: 3_400_000, esYo: true },
         { n: 2, nombre: "Lorena", valor: 3_100_000, gap: "-$300k" },
         { n: 3, nombre: "Elena",  valor: 2_900_000, gap: "-$500k" },
+      ],
+      // Ranking completo de la ciudad para el sub-tab "Sem ef." en TabRanking
+      rankingCiudad: [
+        { n: 1, nombre: "Durley",    valor: 3_400_000, esYo: true, gano50k: true,  extra: true  },
+        { n: 2, nombre: "Lorena",    valor: 3_100_000, gano50k: true },
+        { n: 3, nombre: "Elena",     valor: 2_900_000, gano50k: true },
+        { n: 4, nombre: "Luisa",     valor: 2_600_000, gano50k: true },
+        { n: 5, nombre: "Dayana",    valor: 2_400_000, gano50k: false },
+        { n: 6, nombre: "Jennifer",  valor: 1_800_000, gano50k: false },
+        { n: 7, nombre: "Manuela",   valor: 1_200_000, gano50k: false },
+        { n: 8, nombre: "Betzabeth", valor:   900_000, gano50k: false },
       ],
     },
     mes: {
@@ -222,7 +234,13 @@ export default function ValquiriasApp() {
             subValor: i === 0 ? `Nota: ${datos.mes.nota}` : r.gap,
           }))}
           rankingTrim={[]}
-          rankingSem={datos.semana.top3.map(v => ({ ...v, rolLabel: "Semana en efectivo", subValor: v.gap }))}
+          rankingSem={datos.semana.rankingCiudad.map((v, i) => ({
+            ...v,
+            rolLabel: v.gano50k ? "✅ ganó $50k" : "sin premio esta semana",
+            detalle: v.extra ? "+ $50k EXTRA (top 1)" : "",
+            medal: i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : String(i + 1),
+            subValor: v.esYo ? "TÚ" : (v.gano50k ? "+$50k" : ""),
+          }))}
         />
       ) : tab === "año" ? (
         <TabMiAno

@@ -46,15 +46,18 @@ export default function TabRanking({
         </div>
       )}
 
-      <div className={"v-team-header " + (ciudadEfectiva === "BOG" ? "bog" : "")}>
-        <div className="v-team-h-title">
-          {ciudadEfectiva === "BOG"
-            ? "🟡 Team Valquirias Bogotá"
-            : ciudadEfectiva === "MED"
-              ? "🟢 Team Valquirias Medellín"
-              : "🏆 Team Valquirias · Todas"}
+      {/* Header de equipo solo si admin cambió a otra ciudad distinta de la vendedora — evita duplicar el saludo */}
+      {esAdmin && ciudadEfectiva !== ciudad && (
+        <div className={"v-team-header " + (ciudadEfectiva === "BOG" ? "bog" : "")}>
+          <div className="v-team-h-title">
+            {ciudadEfectiva === "BOG"
+              ? "🟡 Viendo como: Team Valquirias Bogotá"
+              : ciudadEfectiva === "MED"
+                ? "🟢 Viendo como: Team Valquirias Medellín"
+                : "🏆 Viendo Todas · MED + BOG"}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Selector histórico de meses */}
       <div style={{ display: "flex", gap: 4, overflowX: "auto", padding: "4px 0 8px", marginBottom: 6 }}>
