@@ -69,18 +69,85 @@ export const CONFETTI_PIECES = Array.from({ length: 18 }, (_, i) => {
   };
 });
 
-// Tramos de comisión (2026 — fijo)
+// Tramos de comisión 2026 (rangos EXACTOS según Luis)
+// Aplica desde $0 en BOG. En MED aplica solo si ventasMes >= PISO_MED ($15M).
+export const TRAMOS_2026 = [
+  { min: 0,          max: 19_278_642, pctAsesora: 0.01, pctAdmin: 0.02, label: "Tramo 1" },
+  { min: 19_278_643, max: 39_309_157, pctAsesora: 0.02, pctAdmin: 0.04, label: "Tramo 2" },
+  { min: 39_309_158, max: Infinity,   pctAsesora: 0.03, pctAdmin: 0.06, label: "Tramo 3" },
+];
+
+export const PISO_MED = 15_000_000;
+
+// Devuelve el tramo aplicable según ventas totales del mes
+export function tramoParaVentas(ventasMes) {
+  return TRAMOS_2026.find(t => ventasMes >= t.min && ventasMes <= t.max) || TRAMOS_2026[0];
+}
+
+// Calcula la comisión mensual de UNA vendedora para un mes específico
+// - ciudad: "MED" | "BOG"
+// - rol: "asesora" | "admin"
+// - ventasMes: número (ya viene neto de devoluciones/cambios de systemlap)
+// - datosCambioRol: opcional { desde: "asesora", hasta: "admin", diaCambio: 15, diasMes: 31 }
+//                   → si viene, aplica pro-rata
+// Devuelve: { comision, tramo, aplicaPiso, aplicoPiso, detalle, proRata? }
+export function calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol = null }) {
+  const aplicaPiso = ciudad === "MED";
+  const pasoPiso = ventasMes >= PISO_MED;
+
+  // Si es MED y no pasó el piso → gana $0
+  if (aplicaPiso && !pasoPiso) {
+    return {
+      comision: 0,
+      tramo: null,
+      aplicaPiso: true,
+      pasoPiso: false,
+      detalle: `No superó el piso $${PISO_MED.toLocaleString("es-CO")} — comisión $0`,
+    };
+  }
+
+  const tramo = tramoParaVentas(ventasMes);
+
+  // Sin cambio de rol → cálculo directo
+  if (!datosCambioRol) {
+    const pct = rol === "admin" ? tramo.pctAdmin : tramo.pctAsesora;
+    return {
+      comision: Math.round(ventasMes * pct),
+      tramo,
+      aplicaPiso,
+      pasoPiso,
+      pct,
+      detalle: `${(pct * 100).toFixed(0)}% × $${ventasMes.toLocaleString("es-CO")}`,
+    };
+  }
+
+  // Pro-rata por cambio de rol mid-mes
+  const { desde, hasta, diaCambio, diasMes } = datosCambioRol;
+  const diasDesde = diaCambio - 1;              // días con rol anterior
+  const diasHasta = diasMes - diasDesde;         // días con rol nuevo
+  const fracDesde = diasDesde / diasMes;
+  const fracHasta = diasHasta / diasMes;
+  const pctDesde = desde === "admin" ? tramo.pctAdmin : tramo.pctAsesora;
+  const pctHasta = hasta === "admin" ? tramo.pctAdmin : tramo.pctAsesora;
+  const comDesde = Math.round(ventasMes * pctDesde * fracDesde);
+  const comHasta = Math.round(ventasMes * pctHasta * fracHasta);
+  return {
+    comision: comDesde + comHasta,
+    tramo,
+    aplicaPiso,
+    pasoPiso,
+    proRata: {
+      desde: { rol: desde, dias: diasDesde, frac: fracDesde, pct: pctDesde, comision: comDesde },
+      hasta: { rol: hasta, dias: diasHasta, frac: fracHasta, pct: pctHasta, comision: comHasta },
+    },
+    detalle: `Pro-rata: ${diasDesde}d ${desde} + ${diasHasta}d ${hasta}`,
+  };
+}
+
+// Compat con código anterior
 export const TRAMOS = {
-  asesora: [
-    { nombre: "META 1", pct: 0.01, minVentas: 15_000_000 },
-    { nombre: "META 2", pct: 0.02, minVentas: 25_000_000 },
-    { nombre: "META 3", pct: 0.03, minVentas: 35_000_000 },
-  ],
-  admin: [
-    { nombre: "META 1", pct: 0.02, minVentas: 15_000_000 },
-    { nombre: "META 2", pct: 0.04, minVentas: 25_000_000 },
-    { nombre: "META 3", pct: 0.06, minVentas: 35_000_000 },
-  ],
+  asesora: TRAMOS_2026.map(t => ({ nombre: t.label, pct: t.pctAsesora, minVentas: t.min })),
+  admin:   TRAMOS_2026.map(t => ({ nombre: t.label, pct: t.pctAdmin,   minVentas: t.min })),
 };
 
 export function tramoActual(ventasMes, rol) {

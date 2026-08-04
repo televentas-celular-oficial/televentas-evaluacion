@@ -17,17 +17,18 @@ import { auth } from "../../firebase.js";
 import { formatoPesos, hoyColombia } from "../lib/helpers.js";
 import { VENDEDORAS_DEFAULT } from "../../lib/constantes.js";
 import GestionVendedoras from "./GestionVendedoras.jsx";
+import NominaComisiones from "./NominaComisiones.jsx";
 import ProximamentePanel from "./ProximamentePanel.jsx";
 
 const TILES = [
+  { id: "nomina",        emoji: "💰", titulo: "Nómina mensual",   desc: "Comisiones del mes anterior", destacado: true },
   { id: "vendedoras",    emoji: "👥", titulo: "Vendedoras",       desc: "Activar / desactivar / editar" },
   { id: "metas",         emoji: "🎯", titulo: "Metas del mes",    desc: "Cargar MED y BOG" },
   { id: "cerrar",        emoji: "🔒", titulo: "Cerrar mes",       desc: "Fijar notas del mes" },
   { id: "magic",         emoji: "📧", titulo: "Magic Links",      desc: "Enviar acceso individual" },
   { id: "premios",       emoji: "💎", titulo: "Premios trim.",    desc: "Editar Q3, Q4..." },
   { id: "backup",        emoji: "💾", titulo: "Backup",           desc: "Descargar JSON" },
-  { id: "links",         emoji: "🔗", titulo: "Links por ciudad", desc: "Copiar URLs MED / BOG" },
-  { id: "accesos",       emoji: "📊", titulo: "Log accesos",      desc: "Quién entró y cuándo" },
+  { id: "links",         emoji: "🔗", titulo: "Links ciudad",     desc: "Copiar URLs MED / BOG" },
 ];
 
 export default function AdminHome({ datosGlobales }) {
@@ -37,6 +38,9 @@ export default function AdminHome({ datosGlobales }) {
   // Sub-pantallas
   if (seccion === "vendedoras") {
     return <GestionVendedoras vendedoras={VENDEDORAS_DEFAULT} onVolver={() => setSeccion(null)} />;
+  }
+  if (seccion === "nomina") {
+    return <NominaComisiones onVolver={() => setSeccion(null)} />;
   }
   if (seccion) {
     return <ProximamentePanel titulo={TILES.find(t => t.id === seccion)?.titulo || "En construcción"} onVolver={() => setSeccion(null)} />;
@@ -99,20 +103,26 @@ export default function AdminHome({ datosGlobales }) {
             key={t.id}
             onClick={() => setSeccion(t.id)}
             style={{
-              background: "#fff",
+              background: t.destacado
+                ? "linear-gradient(135deg, #10b981, #059669)"
+                : "#fff",
               borderRadius: 14,
               padding: "16px 12px",
               textAlign: "center",
-              boxShadow: "0 2px 8px rgba(236, 72, 153, 0.1)",
-              border: "1px solid rgba(236, 72, 153, 0.12)",
+              boxShadow: t.destacado
+                ? "0 4px 14px rgba(16, 185, 129, 0.35)"
+                : "0 2px 8px rgba(236, 72, 153, 0.1)",
+              border: t.destacado
+                ? "1px solid rgba(16, 185, 129, 0.4)"
+                : "1px solid rgba(236, 72, 153, 0.12)",
               cursor: "pointer",
               fontFamily: "inherit",
-              transition: "transform 0.1s",
+              color: t.destacado ? "#fff" : "inherit",
             }}
           >
             <div style={{ fontSize: 32, marginBottom: 4, lineHeight: 1 }}>{t.emoji}</div>
-            <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>{t.titulo}</div>
-            <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginTop: 3, lineHeight: 1.3 }}>{t.desc}</div>
+            <div style={{ fontSize: 13, fontWeight: 900, color: t.destacado ? "#fff" : "#1e1b4b" }}>{t.titulo}</div>
+            <div style={{ fontSize: 10, color: t.destacado ? "rgba(255,255,255,0.9)" : "#64748b", fontWeight: 700, marginTop: 3, lineHeight: 1.3 }}>{t.desc}</div>
           </button>
         ))}
       </div>
