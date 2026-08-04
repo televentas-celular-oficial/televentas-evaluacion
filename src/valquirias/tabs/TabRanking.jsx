@@ -6,6 +6,7 @@ import { useState } from "react";
 import { formatoK, primerNombre } from "../lib/helpers.js";
 
 const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const TRIMESTRE_ACTUAL = 3; // Q3 en agosto — luego se calcula automático
 
 export default function TabRanking({
   vendedora,
@@ -22,6 +23,7 @@ export default function TabRanking({
   rankingSem,
 }) {
   const [subTab, setSubTab] = useState("mes");
+  const [qSel, setQSel] = useState(TRIMESTRE_ACTUAL);
   const esAdmin = rol === "admin";
   const ciudadEfectiva = esAdmin ? filtroCiudadAdmin : ciudad;
 
@@ -59,41 +61,44 @@ export default function TabRanking({
         </div>
       )}
 
-      {/* Selector histórico de meses */}
-      <div style={{ display: "flex", gap: 4, overflowX: "auto", padding: "4px 0 8px", marginBottom: 6 }}>
-        {MESES.slice(3, mesActual).map((m, i) => {
-          const numMes = i + 4; // abril=4, mayo=5, ...
-          const activo = mesSeleccionado?.mes === numMes;
-          return (
-            <button
-              key={m}
-              onClick={() => setMesSeleccionado({ año: añoActual, mes: numMes })}
-              style={{
-                padding: "6px 10px",
-                fontSize: 11,
-                fontWeight: 800,
-                background: activo ? "linear-gradient(135deg, #7c3aed, #ec4899)" : "#fff",
-                color: activo ? "#fff" : "#7c3aed",
-                border: "1.5px solid " + (activo ? "#7c3aed" : "#e2e8f0"),
-                borderRadius: 8,
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-            >{m}</button>
-          );
-        })}
-      </div>
-
       <div className="v-rank-tabs">
         <button className={"v-rank-tab-btn" + (subTab === "mes" ? " active" : "")} onClick={() => setSubTab("mes")}>📅 Mes</button>
         <button className={"v-rank-tab-btn" + (subTab === "trim" ? " active" : "")} onClick={() => setSubTab("trim")}>💎 Trimestre</button>
         <button className={"v-rank-tab-btn" + (subTab === "sem" ? " active" : "")} onClick={() => setSubTab("sem")}>⚡ Sem ef.</button>
       </div>
 
-      {/* Chips de semanas para Sem Ef */}
-      {subTab === "sem" && (
-        <ChipsSemanas />
+      {/* Chips por sub-tab: meses / trimestres / semanas */}
+      {subTab === "mes" && (
+        <div style={chipsRow}>
+          {MESES.slice(3, mesActual).map((m, i) => {
+            const numMes = i + 4;
+            const activo = mesSeleccionado?.mes === numMes;
+            return (
+              <button
+                key={m}
+                onClick={() => setMesSeleccionado({ año: añoActual, mes: numMes })}
+                style={chipStyle(activo, "purple")}
+              >{m}</button>
+            );
+          })}
+        </div>
       )}
+      {subTab === "trim" && (
+        <div style={chipsRow}>
+          {[1, 2, 3, 4].filter(n => n <= TRIMESTRE_ACTUAL).map(n => {
+            const activo = qSel === n;
+            const label = ["Q1 · ene-mar", "Q2 · abr-jun", "Q3 · jul-sep", "Q4 · oct-dic"][n - 1];
+            return (
+              <button
+                key={n}
+                onClick={() => setQSel(n)}
+                style={chipStyle(activo, "amber")}
+              >{label}</button>
+            );
+          })}
+        </div>
+      )}
+      {subTab === "sem" && <ChipsSemanas />}
 
       {(data || []).map((r, i) => (
         <div key={i} className={"v-rank-big " + (r.esYo ? "tu" : "")}>
@@ -103,7 +108,11 @@ export default function TabRanking({
             <div className="rol">{r.rolLabel} {r.detalle && `· ${r.detalle}`}</div>
           </div>
           <div className="valores">
-            <div className="v">{formatoK(r.valor)}</div>
+            <div className="v">
+              {subTab === "trim"
+                ? (typeof r.valor === "number" ? r.valor.toFixed(2) : r.valor)
+                : formatoK(r.valor)}
+            </div>
             {r.subValor && <div className="g">{r.subValor}</div>}
           </div>
         </div>
@@ -114,6 +123,26 @@ export default function TabRanking({
       )}
     </>
   );
+}
+
+// Estilos compartidos para chips de meses/trimestres
+const chipsRow = { display: "flex", gap: 4, overflowX: "auto", padding: "0 0 8px", marginBottom: 6 };
+function chipStyle(activo, color) {
+  const bg = color === "amber"
+    ? "linear-gradient(135deg, #f59e0b, #ea580c)"
+    : "linear-gradient(135deg, #7c3aed, #ec4899)";
+  const text = color === "amber" ? "#b45309" : "#7c3aed";
+  return {
+    padding: "6px 10px",
+    fontSize: 11,
+    fontWeight: 800,
+    background: activo ? bg : "#fff",
+    color: activo ? "#fff" : text,
+    border: "1.5px solid " + (activo ? "transparent" : "#e2e8f0"),
+    borderRadius: 8,
+    cursor: "pointer",
+    flexShrink: 0,
+  };
 }
 
 // Chips de últimas semanas (para navegar histórico en Sem Ef)

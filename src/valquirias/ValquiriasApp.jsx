@@ -246,7 +246,16 @@ export default function ValquiriasApp() {
             medal: i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : String(i + 1),
             subValor: i === 0 ? `Nota: ${datos.mes.nota}` : r.gap,
           }))}
-          rankingTrim={[]}
+          rankingTrim={[
+            { esYo: true,  nombre: "Durley",    valor: 4.32, rolLabel: "Administradora · Q3 en curso", medal: "🥇", subValor: "$46.8M vendido" },
+            { esYo: false, nombre: "Lorena",    valor: 4.18, rolLabel: "Administradora",                medal: "🥈", subValor: "$38.5M vendido" },
+            { esYo: false, nombre: "Elena",     valor: 4.05, rolLabel: "Asesora",                       medal: "🥉", subValor: "$32.1M vendido" },
+            { esYo: false, nombre: "Luisa",     valor: 3.92, rolLabel: "Asesora",                       medal: "4",  subValor: "$28.7M vendido" },
+            { esYo: false, nombre: "Dayana",    valor: 3.68, rolLabel: "Asesora",                       medal: "5",  subValor: "$22.4M vendido" },
+            { esYo: false, nombre: "Jennifer",  valor: 3.42, rolLabel: "Asesora",                       medal: "6",  subValor: "$18.2M vendido" },
+            { esYo: false, nombre: "Manuela",   valor: 2.98, rolLabel: "Asesora · pre-piso",            medal: "7",  subValor: "$14.6M vendido" },
+            { esYo: false, nombre: "Betzabeth", valor: 2.65, rolLabel: "Asesora · pre-piso",            medal: "8",  subValor: "$9.8M vendido" },
+          ]}
           rankingSem={datos.semana.rankingCiudad.map((v, i) => ({
             ...v,
             rolLabel: v.gano50k ? "✅ ganó $50k" : "sin premio esta semana",
