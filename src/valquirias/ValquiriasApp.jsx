@@ -206,7 +206,7 @@ export default function ValquiriasApp() {
             { id: "resenas", nombre: "Reseñas", emoji: "⭐", peso: 5, nota: 4.7, detalle: "12 reseñas · promedio 4.7 estrellas", estado: "star" },
           ]}
           tip={{
-            titulo: "Cuida tu patrón",
+            titulo: "Cada día suma",
             mensaje: <>Los indicadores son <strong>observaciones diarias</strong> — lo que pasó ya pasó. Faltan <strong>16 días</strong> para cerrar agosto: mantén tu ritmo con puntualidad, actitud y detalles y cierras el mes con nota alta 💪</>,
           }}
           onVolver={() => setDetalle(null)}
