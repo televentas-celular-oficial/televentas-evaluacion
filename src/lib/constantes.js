@@ -2,21 +2,34 @@
 // Versión 2 (mayo 2026 en adelante)
 
 // Vendedoras por defecto (se sobreescribe con Firebase si existe)
+// Roster REAL 2026-08 según Luis:
+// - 13 activas: 6 MED + 7 BOG
+// - 3 inactivas: Elena, Betzabeth (MED) + Vanessa (BOG)
+// - Laura Sánchez NO está aquí (es eventual, solo en systemlap)
+// - rolTienda: "admin" (administradora) o "asesora" — determina tramos de comisión
+// - Emails ya cargados (para whitelist de Magic Link)
 export const VENDEDORAS_DEFAULT = [
-  { id: 1, nombre: "Lorena Castrillón", ciudad: "MED", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 2, nombre: "Dayana Restrepo", ciudad: "MED", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 3, nombre: "Jennifer Gómez", ciudad: "MED", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 4, nombre: "Durley Castaño", ciudad: "MED", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 5, nombre: "Manuela Arenas", ciudad: "MED", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 6, nombre: "Xiomara Neuta", ciudad: "BOG", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 7, nombre: "Luisa Chavarría", ciudad: "MED", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 8, nombre: "Elena Ricardo", ciudad: "MED", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 9, nombre: "Leydy Sánchez", ciudad: "BOG", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 10, nombre: "Jackeline Solorza", ciudad: "BOG", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 11, nombre: "Yessica Acevedo", ciudad: "BOG", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 12, nombre: "Vanessa González", ciudad: "BOG", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 13, nombre: "Alisson González", ciudad: "BOG", activa: true, fechaIngreso: "2026-04-01" },
-  { id: 14, nombre: "Betzabeth Leal", ciudad: "MED", activa: true, fechaIngreso: "2026-04-01" },
+  // MEDELLÍN — 3 admin + 3 asesoras
+  { id: 1,  nombre: "Angie Lorena Castrillón Quintana",   ciudad: "MED", rolTienda: "admin",   email: "castrillonlorena9@gmail.com",       activa: true, fechaIngreso: "2026-04-01" },
+  { id: 2,  nombre: "Dayana Alejandra Restrepo Torres",   ciudad: "MED", rolTienda: "admin",   email: "dayana.aleja.2020@gmail.com",       activa: true, fechaIngreso: "2026-04-01" },
+  { id: 3,  nombre: "Jennifer Andrea Gómez Moreno",       ciudad: "MED", rolTienda: "asesora", email: "jennifergomezm1011@gmail.com",      activa: true, fechaIngreso: "2026-04-01" },
+  { id: 4,  nombre: "Durley Omaira Castaño García",       ciudad: "MED", rolTienda: "admin",   email: "durleycastanogarcia1026@gmail.com", activa: true, fechaIngreso: "2026-04-01" },
+  { id: 5,  nombre: "Manuela Arenas Flórez",              ciudad: "MED", rolTienda: "asesora", email: "manuelaflorez2120@gmail.com",       activa: true, fechaIngreso: "2026-04-01" },
+  { id: 7,  nombre: "Luisa Fernanda Chavarría Chavarría", ciudad: "MED", rolTienda: "asesora", email: "luixa.fer96@gmail.com",             activa: true, fechaIngreso: "2026-04-01" },
+
+  // BOGOTÁ — 5 admin + 2 asesoras
+  { id: 6,  nombre: "Beatriz Xiomara Neuta Umaña",        ciudad: "BOG", rolTienda: "admin",   email: "xiomineuta@gmail.com",                          activa: true, fechaIngreso: "2026-04-01" },
+  { id: 9,  nombre: "Leydy Juliet Sánchez Ballesteros",   ciudad: "BOG", rolTienda: "admin",   email: "leydysanchez738@gmail.com",                     activa: true, fechaIngreso: "2026-04-01" },
+  { id: 10, nombre: "Mary Jacqueline Solorza Rodríguez",  ciudad: "BOG", rolTienda: "admin",   email: "mjakyrs@hotmail.com",                           activa: true, fechaIngreso: "2026-04-01" },
+  { id: 11, nombre: "Yesica Yusney Acevedo Barreto",      ciudad: "BOG", rolTienda: "admin",   email: "yesidiana320@gmail.com",                        activa: true, fechaIngreso: "2026-04-01" },
+  { id: 13, nombre: "Alisson Nicol González Medina",      ciudad: "BOG", rolTienda: "admin",   email: "alissonnicolgonzalesmedina2005@gmail.com",      activa: true, fechaIngreso: "2026-04-01" },
+  { id: 15, nombre: "Norvy Johanna Pérez Pacheco",        ciudad: "BOG", rolTienda: "asesora", email: "norvyjohanna37@gmail.com",                      activa: true, fechaIngreso: "2026-06-01" },
+  { id: 16, nombre: "Paula Liseth Camacho López",         ciudad: "BOG", rolTienda: "asesora", email: "paulaliseth.camacholopez8@gmail.com",           activa: true, fechaIngreso: "2026-06-01" },
+
+  // INACTIVAS — se mantienen en el roster para preservar histórico
+  { id: 8,  nombre: "Elena Ricardo",     ciudad: "MED", rolTienda: "asesora", activa: false, fechaIngreso: "2026-04-01" },
+  { id: 14, nombre: "Betzabeth Leal",    ciudad: "MED", rolTienda: "admin",   activa: false, fechaIngreso: "2026-04-01" },
+  { id: 12, nombre: "Vanessa González",  ciudad: "BOG", rolTienda: "asesora", activa: false, fechaIngreso: "2026-04-01" },
 ];
 
 // Colores de ciudad

@@ -9,15 +9,28 @@ import { useDatos } from "../data/DatosContext.jsx";
 
 const MES_NOMBRES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
-// Fallback (modo demo): ventas mock si Firestore no tiene datos del mes
+// Fallback (modo demo): ventas mock si Firestore no tiene datos del mes.
+// IDs alineados con VENDEDORAS_DEFAULT del roster real.
 const MOCK_VENTAS = {
-  1: 24_800_000, 2: 18_400_000, 3: 22_100_000, 4: 28_500_000, 5: 13_200_000,
-  6: 26_300_000, 7: 21_600_000, 8: 19_800_000, 9: 23_100_000, 10: 17_500_000,
-  11: 12_400_000, 12: 8_900_000, 13: 6_200_000, 14: 14_500_000,
+  // MED
+  1: 24_800_000,   // Lorena (admin)
+  2: 22_600_000,   // Dayana (admin)
+  3: 19_400_000,   // Jennifer (asesora)
+  4: 28_500_000,   // Durley (admin)
+  5: 13_200_000,   // Manuela (asesora) — NO llega al piso $15M → $0
+  7: 21_600_000,   // Luisa (asesora)
+  // BOG
+  6: 26_300_000,   // Xiomara (admin)
+  9: 23_100_000,   // Leydy (admin)
+  10: 20_800_000,  // Mary Jacqueline (admin)
+  11: 18_500_000,  // Yesica (admin)
+  13: 16_200_000,  // Alisson (admin)
+  15: 8_400_000,   // Norvy (asesora)
+  16: 6_900_000,   // Paula (asesora)
 };
 
-// Roles de tienda mock — en producción cada vendedora tendrá su rolTienda desde systemlap
-const ROL_TIENDA_MOCK = { 1: "admin", 4: "admin", 6: "admin" }; // Lorena, Durley, Xiomara
+// rolTienda ya viene del roster real en constantes.js — no necesita mock
+const ROL_TIENDA_MOCK = {};
 
 export default function NominaComisiones({ onVolver }) {
   const datos = useDatos();
