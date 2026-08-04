@@ -1059,6 +1059,251 @@
     font-weight: 600;
     line-height: 1.55;
   }
+
+  /* ================================================================
+     CAROLINA (rol oficina) — lista y formulario
+     ================================================================ */
+  .carolina-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 8px;
+    border-radius: 8px;
+    margin-bottom: 3px;
+    background: rgba(255,255,255,0.6);
+  }
+  .carolina-row.done { background: linear-gradient(90deg, #ecfdf5, rgba(255,255,255,0.5)); }
+  .carolina-row.pending {
+    background: linear-gradient(90deg, #fef3c7, rgba(255,255,255,0.5));
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    cursor: pointer;
+  }
+  .cr-name {
+    font-size: 12px;
+    font-weight: 800;
+    color: #1e1b4b;
+  }
+  .cr-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 8px;
+    font-weight: 900;
+    margin-left: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .cr-badge.admin {
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+  }
+  .cr-status {
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .cr-status.ok { color: #047857; }
+  .cr-status.pending {
+    color: #b45309;
+    background: #fbbf24;
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: #78350f;
+  }
+
+  .ingreso-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    border: 1px solid rgba(168, 85, 247, 0.1);
+  }
+  .ingreso-titulo {
+    font-size: 13px;
+    font-weight: 900;
+    color: #1e1b4b;
+    margin-bottom: 8px;
+  }
+  .ingreso-opciones {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .ing-opt {
+    flex: 1;
+    min-width: 60px;
+    padding: 8px 4px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1.5px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .ing-opt.selected {
+    color: #fff;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #10b981;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+  }
+
+  /* ================================================================
+     ADMIN (Luis) — tiles y gestión
+     ================================================================ */
+  .tile-admin {
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.08);
+    border: 1px solid rgba(236, 72, 153, 0.1);
+    cursor: pointer;
+  }
+  .tile-emoji {
+    font-size: 26px;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  .tile-titulo {
+    font-size: 12px;
+    font-weight: 900;
+    color: #1e1b4b;
+  }
+  .tile-sub {
+    font-size: 9px;
+    color: #64748b;
+    font-weight: 700;
+    margin-top: 2px;
+    line-height: 1.3;
+  }
+
+  .vend-admin-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+  }
+  .vend-admin-row.activa { border-left-color: #10b981; }
+  .vend-admin-row.inactiva { border-left-color: #ef4444; opacity: 0.6; }
+  .va-info { flex: 1; }
+  .va-nom {
+    font-size: 12px;
+    font-weight: 900;
+    color: #1e1b4b;
+  }
+  .va-email {
+    font-size: 9px;
+    color: #94a3b8;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .va-actions { text-align: right; }
+  .va-status { font-size: 14px; }
+
+  /* ================================================================
+     TAB CÓMO — Acordeones
+     ================================================================ */
+  .acordeon {
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    border: 1px solid rgba(168, 85, 247, 0.1);
+    overflow: hidden;
+  }
+  .acordeon.abierto {
+    border-color: rgba(124, 58, 237, 0.3);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.12);
+  }
+  .acordeon-header {
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 900;
+    color: #1e1b4b;
+    cursor: pointer;
+    background: linear-gradient(90deg, #faf5ff, #fff);
+  }
+  .acordeon.abierto .acordeon-header {
+    background: linear-gradient(90deg, #f3e8ff, #fdf4ff);
+    color: #5b21b6;
+  }
+  .ac-flecha {
+    color: #a855f7;
+    font-size: 10px;
+    font-weight: 900;
+  }
+  .acordeon-body {
+    padding: 4px 14px 14px;
+    font-size: 12px;
+    color: #475569;
+    font-weight: 600;
+    line-height: 1.55;
+  }
+  .ac-linea {
+    padding: 4px 0;
+  }
+  .ac-linea strong { color: #1e1b4b; font-weight: 900; }
+  .ac-mini-lista {
+    background: rgba(168, 85, 247, 0.06);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-top: 6px;
+  }
+  .ac-mini-item {
+    padding: 3px 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+  }
+  .ac-tabla {
+    background: rgba(168, 85, 247, 0.05);
+    border-radius: 10px;
+    padding: 6px;
+    margin-top: 8px;
+  }
+  .ac-tabla-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 6px 8px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #1e1b4b;
+    border-bottom: 1px dashed rgba(168, 85, 247, 0.15);
+  }
+  .ac-tabla-row:last-child { border-bottom: none; }
+  .ac-tabla-row.header {
+    background: linear-gradient(135deg, #7c3aed, #ec4899);
+    color: #fff;
+    border-radius: 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    border-bottom: none;
+  }
+  .ac-premio-item {
+    background: linear-gradient(90deg, #ecfdf5, #fff);
+    border-left: 3px solid #10b981;
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin: 6px 0;
+    font-size: 12px;
+    color: #064e3b;
+    font-weight: 700;
+  }
+  .ac-premio-item strong { color: #047857; font-weight: 900; }
 </style>
 </head>
 <body>
@@ -1687,6 +1932,917 @@
       </div>
     </div>
     <div class="phone-label">📋 Detalle COMPORTAMIENTO</div>
+  </div>
+
+</div>
+
+<!-- ==================================================================
+     SECCIÓN BOG — Team Valquirias Bogotá (6 vendedoras)
+     Sin mención de piso $15M · Sin comparación con Medellín
+     ================================================================== -->
+<h2 style="text-align:center; color:#fbbf24; font-size:22px; margin:40px 0 6px; font-weight:900; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; background-clip: text; color: transparent;">🟡 Versión Bogotá — Team Valquirias Bogotá</h2>
+<div class="subtitulo">Sin piso · Sin mención de Medellín · Mismos premios semanales, mensuales y trimestrales</div>
+
+<div class="grid">
+
+  <!-- CELULAR 7: Tab HOY — Xiomara BOG líder + confetti -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="confetti-container">
+          <div class="confetti-piece c1"></div>
+          <div class="confetti-piece c2 round"></div>
+          <div class="confetti-piece c3"></div>
+          <div class="confetti-piece c4 thin"></div>
+          <div class="confetti-piece c5"></div>
+          <div class="confetti-piece c6 round"></div>
+          <div class="confetti-piece c7"></div>
+          <div class="confetti-piece c8 thin"></div>
+          <div class="confetti-piece c9"></div>
+          <div class="confetti-piece c10 round"></div>
+          <div class="confetti-piece c11"></div>
+          <div class="confetti-piece c12 thin"></div>
+          <div class="confetti-piece c13"></div>
+          <div class="confetti-piece c14 round"></div>
+        </div>
+
+        <div class="header">
+          <div class="brand">Indicadores TLV</div>
+          <div class="chip-2026">💎 $17M en 2026 ›</div>
+        </div>
+        <div class="greeting">
+          Hola <strong>Xiomara</strong> <span class="role-mini admin">Admin</span>
+          <div style="margin-top: 4px; font-size: 12px; color: #b45309; font-weight: 900;">🟡 Team Valquirias Bogotá</div>
+        </div>
+
+        <div class="content">
+          <div class="hoy">
+            <div class="titulo">📆 Hoy · mar 4 ago · 3:14pm</div>
+            <div class="dato">$680.000 vendidos · 2 tickets</div>
+            <div class="sub">💵 Efectivo del día: $280.000</div>
+          </div>
+
+          <div class="foco">
+            <div class="titulo">🎯 Foco de hoy</div>
+            <div class="msg">Vende $420k más y aseguras el #1 del EXTRA de $50k 🔥</div>
+          </div>
+
+          <div class="card semana">
+            <div class="card-title">⚡ Esta semana · efectivo <span class="cierra">cierra dom</span></div>
+            <div class="semana-row">
+              <span class="semana-num">$3.100.000</span>
+              <span class="semana-of ok">✓ +$50k</span>
+            </div>
+            <div class="semana-bar"><div class="semana-bar-fill" style="width: 100%"></div></div>
+
+            <div class="mini-rank-title">🏆 Peleando los $50k EXTRA</div>
+            <div class="mini-rank-row tu">
+              <span><span class="rank">1.</span><span class="nombre">TÚ</span></span>
+              <span class="valor">$3.1M</span>
+            </div>
+            <div class="mini-rank-row">
+              <span><span class="rank">2.</span><span class="nombre">Leydy</span></span>
+              <span><span class="valor">$2.8M</span><span class="delta">-$300k</span></span>
+            </div>
+            <div class="mini-rank-cierra">Faltan 3 días · sigue rompiéndola 💪</div>
+          </div>
+
+          <div class="card mes">
+            <div class="card-title">📅 Este mes <span class="cierra">día 15 de 31</span></div>
+            <div class="mes-header">
+              <span class="mes-num">$18.000.000</span>
+              <span class="mes-dia">vendidos</span>
+            </div>
+            <div class="mes-linea-premio">
+              <span class="tramo">Vas en META 2 (4%)</span> · llevas <span class="ganado">$720.000</span>
+            </div>
+            <div class="mes-siguiente">
+              🚀 Con <span class="plus">$12M más</span> pasas a <strong>META 3 (6%)</strong> = $1.8M
+            </div>
+            <div class="mes-nota-line">
+              <span>⭐ Aporte a tu nota: 62% de meta</span>
+              <span class="mes-nota-badge">4.28</span>
+            </div>
+          </div>
+
+          <div class="card ranking-mes">
+            <div class="card-title">🏅 Ranking del mes · Bogotá</div>
+            <div class="rank-full tu">
+              <span><span class="n top">1.</span><span class="nom">TÚ (Xiomara)</span></span>
+              <span><span class="val">$18.0M</span><span class="medalla">⭐</span></span>
+            </div>
+            <div class="rank-full"><span><span class="n">2.</span><span class="nom">Leydy</span></span><span><span class="val">$15.2M</span><span class="gap">-$2.8M</span></span></div>
+            <div class="rank-full"><span><span class="n">3.</span><span class="nom">Jackeline</span></span><span><span class="val">$13.4M</span><span class="gap">-$1.8M</span></span></div>
+            <div class="rank-full"><span><span class="n">4.</span><span class="nom">Yessica</span></span><span><span class="val">$10.8M</span><span class="gap">-$2.6M</span></span></div>
+            <div class="rank-full"><span><span class="n">5.</span><span class="nom">Vanessa</span></span><span><span class="val">$8.3M</span><span class="gap">-$2.5M</span></span></div>
+            <div class="rank-full"><span><span class="n">6.</span><span class="nom">Alisson</span></span><span><span class="val">$6.1M</span><span class="gap">-$2.2M</span></span></div>
+          </div>
+
+          <div class="chip-clickable chip-trim">
+            <div class="left">💎 Trimestre Q3: <strong>4.15</strong> · #1 · <span style="color:#ea580c;">TV en juego</span></div>
+            <div class="arrow">›</div>
+          </div>
+          <div class="chip-clickable chip-comp">
+            <div class="left">📋 Comportamiento: ✅ ✅ 4.6⭐</div>
+            <div class="arrow">›</div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab active"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">📊 Tab HOY · Xiomara BOG líder + 🎉</div>
+  </div>
+
+  <!-- CELULAR 8: Tab HOY — Yessica BOG #4 (media tabla) -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header">
+          <div class="brand">Indicadores TLV</div>
+          <div class="chip-2026">💎 $11M en 2026 ›</div>
+        </div>
+        <div class="greeting">
+          Hola <strong>Yessica</strong> <span class="role-mini">Asesora</span>
+          <div style="margin-top: 4px; font-size: 12px; color: #b45309; font-weight: 900;">🟡 Team Valquirias Bogotá</div>
+        </div>
+
+        <div class="content">
+          <div class="hoy">
+            <div class="titulo">📆 Hoy · mar 4 ago · 3:14pm</div>
+            <div class="dato">$380.000 vendidos · 1 ticket</div>
+            <div class="sub">💵 Efectivo del día: $160.000</div>
+          </div>
+
+          <div class="foco">
+            <div class="titulo">🎯 Foco de hoy</div>
+            <div class="msg">Con $350k más en efectivo entras al club de los $50k semanales 💪</div>
+          </div>
+
+          <div class="card semana">
+            <div class="card-title">⚡ Esta semana · efectivo <span class="cierra">cierra dom</span></div>
+            <div class="semana-row">
+              <span class="semana-num">$2.150.000</span>
+              <span class="semana-of" style="font-size:11px; color:#b45309; font-weight:800;">$350k para +$50k</span>
+            </div>
+            <div class="semana-bar"><div class="semana-bar-fill" style="width: 86%; background: linear-gradient(90deg, #fbbf24, #f59e0b);"></div></div>
+
+            <div class="mini-rank-title">🏆 Peleando los $50k EXTRA</div>
+            <div class="mini-rank-row"><span><span class="rank">1.</span><span class="nombre">Xiomara</span></span><span><span class="valor">$3.1M</span></span></div>
+            <div class="mini-rank-row"><span><span class="rank">2.</span><span class="nombre">Leydy</span></span><span><span class="valor">$2.8M</span></span></div>
+            <div class="mini-rank-cierra">Aún puedes entrar · $350k y estás dentro</div>
+          </div>
+
+          <div class="card mes">
+            <div class="card-title">📅 Este mes <span class="cierra">día 15 de 31</span></div>
+            <div class="mes-header">
+              <span class="mes-num">$10.800.000</span>
+              <span class="mes-dia">vendidos</span>
+            </div>
+            <div class="mes-linea-premio">
+              <span class="tramo">Vas en META 1 (1%)</span> · llevas <span class="ganado">$108.000</span>
+            </div>
+            <div class="mes-siguiente">
+              🚀 Con <span class="plus">$4.2M más</span> pasas a <strong>META 2 (2%)</strong> = $300k
+            </div>
+            <div class="mes-nota-line">
+              <span>⭐ Aporte a tu nota: 45% de meta</span>
+              <span class="mes-nota-badge amarillo">3.68</span>
+            </div>
+          </div>
+
+          <div class="card ranking-mes">
+            <div class="card-title">🏅 Ranking del mes · Bogotá</div>
+            <div class="rank-full"><span><span class="n top">1.</span><span class="nom">Xiomara</span></span><span><span class="val">$18.0M</span><span class="medalla">⭐</span></span></div>
+            <div class="rank-full"><span><span class="n">2.</span><span class="nom">Leydy</span></span><span><span class="val">$15.2M</span></span></div>
+            <div class="rank-full"><span><span class="n">3.</span><span class="nom">Jackeline</span></span><span><span class="val">$13.4M</span></span></div>
+            <div class="rank-full tu"><span><span class="n">4.</span><span class="nom">TÚ</span></span><span><span class="val">$10.8M</span><span class="gap">-$2.6M</span></span></div>
+            <div class="rank-full"><span><span class="n">5.</span><span class="nom">Vanessa</span></span><span><span class="val">$8.3M</span></span></div>
+            <div class="rank-full"><span><span class="n">6.</span><span class="nom">Alisson</span></span><span><span class="val">$6.1M</span></span></div>
+          </div>
+
+          <div class="chip-clickable chip-trim">
+            <div class="left">💎 Trimestre Q3: <strong>3.72</strong> · sigue creciendo</div>
+            <div class="arrow">›</div>
+          </div>
+          <div class="chip-clickable chip-comp">
+            <div class="left">📋 Comportamiento: ✅ ⚠️ 4.4⭐</div>
+            <div class="arrow">›</div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab active"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">📊 Tab HOY · Yessica BOG #4 media</div>
+  </div>
+
+  <!-- CELULAR 9: Tab RANKING BOG con team header amarillo -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header">
+          <div class="brand">Indicadores TLV</div>
+          <div class="chip-2026" style="background: linear-gradient(135deg, #1e1b4b, #312e81); color:#fbbf24; border-color: rgba(251, 191, 36, 0.4);">📊 Hoy ›</div>
+        </div>
+        <div class="greeting">
+          Hola <strong>Xiomara</strong> <span class="role-mini admin">Admin</span>
+        </div>
+
+        <div class="content">
+          <div class="team-header bog">
+            <div class="team-title">🟡 Team Valquirias Bogotá</div>
+          </div>
+
+          <div class="rank-tabs">
+            <button class="rank-tab-btn active">📅 Mes</button>
+            <button class="rank-tab-btn">💎 Trimestre</button>
+            <button class="rank-tab-btn">⚡ Semana ef.</button>
+          </div>
+
+          <div class="rank-big tu">
+            <div class="medal">🥇</div>
+            <div class="info">
+              <div class="nom">TÚ (Xiomara)</div>
+              <div class="rol">Administradora · 62% meta</div>
+            </div>
+            <div class="valores">
+              <div class="v">$18.0M</div>
+              <div class="g">Nota: 4.28</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">🥈</div>
+            <div class="info">
+              <div class="nom">Leydy</div>
+              <div class="rol">Asesora · 52%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$15.2M</div>
+              <div class="g">-$2.8M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">🥉</div>
+            <div class="info">
+              <div class="nom">Jackeline</div>
+              <div class="rol">Asesora · 46%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$13.4M</div>
+              <div class="g">-$1.8M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">4</div>
+            <div class="info">
+              <div class="nom">Yessica</div>
+              <div class="rol">Asesora · 37%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$10.8M</div>
+              <div class="g">-$2.6M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">5</div>
+            <div class="info">
+              <div class="nom">Vanessa</div>
+              <div class="rol">Asesora · 29%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$8.3M</div>
+              <div class="g">-$2.5M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">6</div>
+            <div class="info">
+              <div class="nom">Alisson</div>
+              <div class="rol">Asesora · 21%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$6.1M</div>
+              <div class="g">-$2.2M</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab active"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">📈 Tab RANKING · Team Valquirias Bogotá</div>
+  </div>
+
+</div>
+
+<!-- ==================================================================
+     SECCIÓN CAROLINA (rol oficina) — llenado diario de indicadores
+     ================================================================== -->
+<h2 style="text-align:center; color:#a855f7; font-size:22px; margin:40px 0 6px; font-weight:900; background: linear-gradient(135deg, #a855f7, #ec4899); -webkit-background-clip: text; background-clip: text; color: transparent;">🧑‍💼 Vista Carolina — Ingreso diario</h2>
+<div class="subtitulo">Login con Firebase Auth · rol oficina · SIN bottom nav de vendedora · pantalla dedicada a llenar</div>
+
+<div class="grid">
+
+  <!-- CELULAR 10: Carolina — vista principal (lista vendedoras) -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header-detalle">
+          <div class="back-btn" style="background: rgba(168, 85, 247, 0.1); width: 44px;">☰</div>
+          <div class="header-title">📝 Ingreso · mar 4 ago</div>
+          <div style="width: 44px; font-size: 11px; color: #7c3aed; font-weight: 900; text-align: right;">Carolina</div>
+        </div>
+
+        <div class="content" style="padding-bottom: 20px;">
+
+          <div style="background: linear-gradient(135deg, #f3e8ff, #fdf4ff); border-left: 4px solid #a855f7; padding: 12px 14px; border-radius: 12px; margin-bottom: 10px; border: 1px solid rgba(168, 85, 247, 0.2);">
+            <div style="font-size: 11px; color: #7c3aed; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px;">Progreso del día</div>
+            <div style="font-size: 20px; font-weight: 900; color: #4c1d95;">5 de 14 <span style="font-size: 12px; color: #64748b;">llenadas</span></div>
+            <div style="background: rgba(168, 85, 247, 0.15); height: 6px; border-radius: 3px; margin-top: 6px; overflow: hidden;">
+              <div style="height: 100%; width: 36%; background: linear-gradient(90deg, #a855f7, #7c3aed); border-radius: 3px;"></div>
+            </div>
+          </div>
+
+          <!-- Selector ciudad -->
+          <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+            <button class="rank-ciudad-btn active">🟢 MED (8)</button>
+            <button class="rank-ciudad-btn bog">🟡 BOG (6)</button>
+          </div>
+
+          <!-- Lista vendedoras MED con estado -->
+          <div class="card" style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-left: 4px solid #10b981; padding: 8px 10px;">
+            <div class="card-title" style="color: #047857;">🟢 Team Valquirias Medellín</div>
+
+            <div class="carolina-row done">
+              <div class="cr-name">Durley Castaño <span class="cr-badge admin">Admin</span></div>
+              <div class="cr-status ok">✅ Llenada</div>
+            </div>
+            <div class="carolina-row done">
+              <div class="cr-name">Lorena Castrillón <span class="cr-badge admin">Admin</span></div>
+              <div class="cr-status ok">✅ Llenada</div>
+            </div>
+            <div class="carolina-row done">
+              <div class="cr-name">Elena Ricardo</div>
+              <div class="cr-status ok">✅ Llenada</div>
+            </div>
+            <div class="carolina-row done">
+              <div class="cr-name">Luisa Chavarría</div>
+              <div class="cr-status ok">✅ Llenada</div>
+            </div>
+            <div class="carolina-row pending">
+              <div class="cr-name">Dayana Restrepo</div>
+              <div class="cr-status pending">Llenar ›</div>
+            </div>
+            <div class="carolina-row pending">
+              <div class="cr-name">Jennifer Gómez</div>
+              <div class="cr-status pending">Llenar ›</div>
+            </div>
+            <div class="carolina-row pending">
+              <div class="cr-name">Manuela Arenas</div>
+              <div class="cr-status pending">Llenar ›</div>
+            </div>
+            <div class="carolina-row pending">
+              <div class="cr-name">Betzabeth Ruiz</div>
+              <div class="cr-status pending">Llenar ›</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px; text-align: center; font-size: 11px; color: #64748b; font-weight: 700;">
+            💡 Toca "Llenar ›" para abrir el formulario del día
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">🧑‍💼 CAROLINA · Lista del día</div>
+  </div>
+
+  <!-- CELULAR 11: Carolina — Formulario ingreso individual -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header-detalle">
+          <div class="back-btn">‹</div>
+          <div class="header-title">Dayana · mar 4 ago</div>
+          <div style="width: 44px;"></div>
+        </div>
+
+        <div class="content" style="padding-bottom: 90px;">
+
+          <!-- Indicador 1: Puntualidad -->
+          <div class="ingreso-card">
+            <div class="ingreso-titulo">⏰ Puntualidad</div>
+            <div class="ingreso-opciones">
+              <button class="ing-opt selected">A tiempo</button>
+              <button class="ing-opt">Tarde leve</button>
+              <button class="ing-opt">Tarde grave</button>
+              <button class="ing-opt">Falta</button>
+            </div>
+          </div>
+
+          <!-- Indicador 2: Tienda -->
+          <div class="ingreso-card">
+            <div class="ingreso-titulo">🏪 Tienda (orden y limpieza)</div>
+            <div class="ingreso-opciones">
+              <button class="ing-opt selected">Bien</button>
+              <button class="ing-opt">Regular</button>
+              <button class="ing-opt">Mal</button>
+            </div>
+          </div>
+
+          <!-- Indicador 3: Planilla -->
+          <div class="ingreso-card">
+            <div class="ingreso-titulo">📋 Planilla</div>
+            <div class="ingreso-opciones">
+              <button class="ing-opt">Llenada</button>
+              <button class="ing-opt selected">No llenada</button>
+            </div>
+          </div>
+
+          <!-- Indicador 4: Actitud -->
+          <div class="ingreso-card">
+            <div class="ingreso-titulo">😊 Actitud</div>
+            <div class="ingreso-opciones">
+              <button class="ing-opt">Bien</button>
+              <button class="ing-opt selected">Regular</button>
+              <button class="ing-opt">Mal</button>
+            </div>
+            <textarea placeholder="¿Qué pasó? (motivo obligatorio si es regular/mal)" style="width:100%; margin-top:8px; padding:8px 10px; border:1.5px solid #fbbf24; border-radius:10px; font-size:12px; font-family:inherit; min-height:60px; background:#fffbeb;">Llegó desanimada después de reclamo de cliente</textarea>
+          </div>
+
+          <!-- Indicador 5: Reseñas -->
+          <div class="ingreso-card">
+            <div class="ingreso-titulo">⭐ Reseñas (cantidad hoy)</div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <input type="number" value="2" style="width:70px; padding:8px 10px; border:1.5px solid #eab308; border-radius:10px; font-size:16px; font-weight:900; text-align:center; background:#fefce8;" />
+              <span style="font-size: 12px; color: #64748b; font-weight: 700;">reseñas nuevas hoy</span>
+            </div>
+          </div>
+
+          <button style="width:100%; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; padding:14px; border-radius:14px; font-size:15px; font-weight:900; margin-top:8px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); cursor:pointer;">
+            💾 Guardar día
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">🧑‍💼 CAROLINA · Formulario diario</div>
+  </div>
+
+</div>
+
+<!-- ==================================================================
+     SECCIÓN LUIS (admin) — panel completo
+     ================================================================== -->
+<h2 style="text-align:center; color:#f472b6; font-size:22px; margin:40px 0 6px; font-weight:900; background: linear-gradient(135deg, #ec4899, #f472b6, #a855f7); -webkit-background-clip: text; background-clip: text; color: transparent;">🛡️ Vista Luis — Panel Admin</h2>
+<div class="subtitulo">Simular vista vendedora · gestionar equipo · metas · cerrar mes · backup · logs de acceso</div>
+
+<div class="grid">
+
+  <!-- CELULAR 12: Admin — home -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header-detalle">
+          <div class="back-btn" style="background: linear-gradient(135deg, #ec4899, #f472b6); color: #fff; width: 44px;">☰</div>
+          <div class="header-title">🛡️ Admin · Luis</div>
+          <div style="width: 44px; font-size: 11px; color: #ec4899; font-weight: 900; text-align: right;">MED+BOG</div>
+        </div>
+
+        <div class="content" style="padding-bottom: 20px;">
+
+          <div style="background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #7c3aed 100%); color: #fff; padding: 18px; border-radius: 18px; margin-bottom: 10px; box-shadow: 0 12px 28px rgba(236, 72, 153, 0.35); position: relative; overflow: hidden;">
+            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; opacity: 0.95; margin-bottom: 4px;">💫 Ventas del mes · agosto</div>
+            <div style="font-size: 34px; font-weight: 900; letter-spacing: -1px; line-height: 1;">$132.400.000</div>
+            <div style="font-size: 12px; margin-top: 6px; opacity: 0.95; font-weight: 700;">MED $92M · BOG $40M · 15 de 31 días</div>
+          </div>
+
+          <!-- Grid de tiles -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <div class="tile-admin">
+              <div class="tile-emoji">👥</div>
+              <div class="tile-titulo">Vendedoras</div>
+              <div class="tile-sub">14 activas · gestionar</div>
+            </div>
+            <div class="tile-admin">
+              <div class="tile-emoji">🎯</div>
+              <div class="tile-titulo">Metas Q3</div>
+              <div class="tile-sub">MED $270M · BOG $120M</div>
+            </div>
+            <div class="tile-admin">
+              <div class="tile-emoji">🛡️</div>
+              <div class="tile-titulo">Valquirias</div>
+              <div class="tile-sub">Ranking en vivo</div>
+            </div>
+            <div class="tile-admin">
+              <div class="tile-emoji">🔒</div>
+              <div class="tile-titulo">Cerrar mes</div>
+              <div class="tile-sub">Snapshot agosto</div>
+            </div>
+            <div class="tile-admin">
+              <div class="tile-emoji">💾</div>
+              <div class="tile-titulo">Backup</div>
+              <div class="tile-sub">Descargar JSON</div>
+            </div>
+            <div class="tile-admin">
+              <div class="tile-emoji">🔗</div>
+              <div class="tile-titulo">Magic Links</div>
+              <div class="tile-sub">Enviar acceso</div>
+            </div>
+            <div class="tile-admin">
+              <div class="tile-emoji">📊</div>
+              <div class="tile-titulo">Accesos log</div>
+              <div class="tile-sub">Últimos 30 días</div>
+            </div>
+            <div class="tile-admin">
+              <div class="tile-emoji">⚙️</div>
+              <div class="tile-titulo">Config</div>
+              <div class="tile-sub">Tramos, pesos</div>
+            </div>
+          </div>
+
+          <!-- Simular vista -->
+          <div class="card" style="background: linear-gradient(135deg, #f3e8ff, #fdf4ff); border-left: 4px solid #a855f7; padding: 10px 12px;">
+            <div class="card-title" style="color: #7c3aed;">👁️ Simular vista de vendedora</div>
+            <div style="display: flex; gap: 6px; margin-top: 6px;">
+              <button class="rank-ciudad-btn active" style="font-size:10px;">🟢 Ver como MED</button>
+              <button class="rank-ciudad-btn bog" style="font-size:10px;">🟡 Ver como BOG</button>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; border-radius: 8px; font-size: 11px; color: #047857; font-weight: 700;">
+            ✅ Sync systemlap: hace 3 min
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">🛡️ ADMIN · Home Luis</div>
+  </div>
+
+  <!-- CELULAR 13: Admin — Gestión vendedoras -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header-detalle">
+          <div class="back-btn">‹</div>
+          <div class="header-title">👥 Vendedoras (14)</div>
+          <div style="width: 44px; font-size: 20px; color: #10b981; text-align: right; font-weight: 900;">+</div>
+        </div>
+
+        <div class="content" style="padding-bottom: 20px;">
+
+          <!-- Filtro ciudad -->
+          <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+            <button class="rank-ciudad-btn active">🟢 MED (8)</button>
+            <button class="rank-ciudad-btn bog">🟡 BOG (6)</button>
+            <button class="rank-ciudad-btn" style="flex:0.5; background:#f1f5f9; color:#64748b;">Inactivas (2)</button>
+          </div>
+
+          <!-- Lista con estado -->
+          <div class="vend-admin-row activa">
+            <div class="va-info">
+              <div class="va-nom">Durley Castaño <span class="cr-badge admin">Admin</span></div>
+              <div class="va-email">durley.castano@televentas.com · desde abr/26</div>
+            </div>
+            <div class="va-actions">
+              <span class="va-status ok">🟢</span>
+            </div>
+          </div>
+          <div class="vend-admin-row activa">
+            <div class="va-info">
+              <div class="va-nom">Lorena Castrillón <span class="cr-badge admin">Admin</span></div>
+              <div class="va-email">lorena.castrillon@televentas.com · desde abr/26</div>
+            </div>
+            <div class="va-actions">
+              <span class="va-status ok">🟢</span>
+            </div>
+          </div>
+          <div class="vend-admin-row activa">
+            <div class="va-info">
+              <div class="va-nom">Elena Ricardo</div>
+              <div class="va-email">elena.ricardo@televentas.com · desde abr/26</div>
+            </div>
+            <div class="va-actions">
+              <span class="va-status ok">🟢</span>
+            </div>
+          </div>
+          <div class="vend-admin-row activa">
+            <div class="va-info">
+              <div class="va-nom">Luisa Chavarría</div>
+              <div class="va-email">luisa.chavarria@televentas.com · desde abr/26</div>
+            </div>
+            <div class="va-actions">
+              <span class="va-status ok">🟢</span>
+            </div>
+          </div>
+          <div class="vend-admin-row activa">
+            <div class="va-info">
+              <div class="va-nom">Dayana Restrepo</div>
+              <div class="va-email">dayana.restrepo@televentas.com · desde abr/26</div>
+            </div>
+            <div class="va-actions">
+              <span class="va-status ok">🟢</span>
+            </div>
+          </div>
+          <div class="vend-admin-row activa">
+            <div class="va-info">
+              <div class="va-nom">Jennifer Gómez</div>
+              <div class="va-email">jennifer.gomez@televentas.com · desde abr/26</div>
+            </div>
+            <div class="va-actions">
+              <span class="va-status ok">🟢</span>
+            </div>
+          </div>
+          <div class="vend-admin-row activa">
+            <div class="va-info">
+              <div class="va-nom">Manuela Arenas</div>
+              <div class="va-email">manuela.arenas@televentas.com · desde abr/26</div>
+            </div>
+            <div class="va-actions">
+              <span class="va-status ok">🟢</span>
+            </div>
+          </div>
+          <div class="vend-admin-row activa">
+            <div class="va-info">
+              <div class="va-nom">Betzabeth Ruiz</div>
+              <div class="va-email">betzabeth.ruiz@televentas.com · desde jul/26</div>
+            </div>
+            <div class="va-actions">
+              <span class="va-status ok">🟢</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px; padding: 10px 12px; background: rgba(168, 85, 247, 0.08); border-radius: 10px; font-size: 11px; color: #64748b; font-weight: 700; line-height: 1.5;">
+            🟢 activa &nbsp;·&nbsp; 🔴 inactiva (revoca sesión) &nbsp;·&nbsp; tocar fila = editar
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">🛡️ ADMIN · Gestión vendedoras</div>
+  </div>
+
+</div>
+
+<!-- ==================================================================
+     TAB CÓMO FUNCIONA — 2 versiones (MED con piso · BOG sin piso)
+     ================================================================== -->
+<h2 style="text-align:center; color:#22d3ee; font-size:22px; margin:40px 0 6px; font-weight:900; background: linear-gradient(135deg, #06b6d4, #22d3ee, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent;">❓ Tab Cómo funciona — 2 versiones</h2>
+<div class="subtitulo">MED incluye piso $15M · BOG NUNCA menciona piso ni compara con MED</div>
+
+<div class="grid">
+
+  <!-- CELULAR 14: Tab Cómo — versión MED -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header">
+          <div class="brand">Indicadores TLV</div>
+          <div class="chip-2026" style="background: linear-gradient(135deg, #1e1b4b, #312e81); color:#fbbf24; border-color: rgba(251, 191, 36, 0.4);">📊 Hoy ›</div>
+        </div>
+        <div class="greeting">
+          Hola <strong>Durley</strong> <span class="role-mini admin">Admin</span>
+          <div style="margin-top: 4px; font-size: 12px; color: #047857; font-weight: 900;">🟢 Team Valquirias Medellín</div>
+        </div>
+
+        <div class="content">
+
+          <div style="background: linear-gradient(135deg, #7c3aed, #ec4899); color:#fff; padding:16px 18px; border-radius:16px; margin-bottom: 10px; box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);">
+            <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; opacity: 0.95; margin-bottom: 4px;">💡 Todo lo que puedes ganar</div>
+            <div style="font-size: 18px; font-weight: 900;">Salario base + 4 tipos de premios</div>
+          </div>
+
+          <!-- Acordeón: cómo se calcula la nota -->
+          <div class="acordeon abierto">
+            <div class="acordeon-header">
+              <span>📊 Tu nota mensual</span>
+              <span class="ac-flecha">▼</span>
+            </div>
+            <div class="acordeon-body">
+              <div class="ac-linea"><strong>60%</strong> viene de tus <strong>ventas</strong> (qué tanto cumples tu meta)</div>
+              <div class="ac-linea"><strong>40%</strong> viene de tu <strong>comportamiento</strong> (5 indicadores):</div>
+              <div class="ac-mini-lista">
+                <div class="ac-mini-item">⏰ Puntualidad — 11%</div>
+                <div class="ac-mini-item">🏪 Tienda — 9%</div>
+                <div class="ac-mini-item">📋 Planilla — 9%</div>
+                <div class="ac-mini-item">😊 Actitud — 6%</div>
+                <div class="ac-mini-item">⭐ Reseñas — 5%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Premio mensual con piso MED -->
+          <div class="acordeon">
+            <div class="acordeon-header">
+              <span>💰 Premio mensual por ventas</span>
+              <span class="ac-flecha">▶</span>
+            </div>
+            <div class="acordeon-body" style="display:none;">
+              <div class="ac-linea">Necesitas vender al menos <strong>$15.000.000</strong> en el mes para ganar este premio.</div>
+              <div class="ac-tabla">
+                <div class="ac-tabla-row header">
+                  <span>Tramo</span><span>Asesora</span><span>Admin</span>
+                </div>
+                <div class="ac-tabla-row">
+                  <span>Meta 1</span><span>1%</span><span>2%</span>
+                </div>
+                <div class="ac-tabla-row">
+                  <span>Meta 2</span><span>2%</span><span>4%</span>
+                </div>
+                <div class="ac-tabla-row">
+                  <span>Meta 3</span><span>3%</span><span>6%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Semanal efectivo -->
+          <div class="acordeon">
+            <div class="acordeon-header">
+              <span>⚡ Premio semanal en efectivo</span>
+              <span class="ac-flecha">▶</span>
+            </div>
+            <div class="acordeon-body" style="display:none;">
+              <div class="ac-linea">Cada semana (lun-dom) puedes ganar:</div>
+              <div class="ac-premio-item">💵 <strong>$50.000</strong> si vendes ≥$2.500.000 en efectivo</div>
+              <div class="ac-premio-item">🏆 <strong>$50.000 EXTRA</strong> a la que más vendió en efectivo entre las que ya ganaron los $50k</div>
+              <div class="ac-linea" style="color:#64748b;">Se cierra domingo · se paga lunes</div>
+            </div>
+          </div>
+
+          <!-- Trimestral -->
+          <div class="acordeon">
+            <div class="acordeon-header">
+              <span>💎 Premio trimestral</span>
+              <span class="ac-flecha">▶</span>
+            </div>
+            <div class="acordeon-body" style="display:none;">
+              <div class="ac-premio-item">💰 <strong>$1.000.000</strong> si tu nota trimestral llega a <strong>4.50</strong></div>
+              <div class="ac-premio-item">🌟 <strong>$1.000.000 EXTRA</strong> a la mejor de la ciudad si hay 2+ que pasan 4.50</div>
+              <div class="ac-linea">🏆 <strong>Reconocimiento sorpresa</strong> a la #1 (este trimestre: TV 42")</div>
+            </div>
+          </div>
+
+          <!-- Publicación del ranking -->
+          <div class="acordeon">
+            <div class="acordeon-header">
+              <span>📆 Cuándo se publica el ranking</span>
+              <span class="ac-flecha">▶</span>
+            </div>
+            <div class="acordeon-body" style="display:none;">
+              <div class="ac-linea"><strong>Martes y viernes</strong> de <strong>6pm a 12am</strong></div>
+              <div class="ac-linea" style="color:#64748b;">Zona horaria Colombia. Fuera de esos días la app te avisa cuándo abre.</div>
+            </div>
+          </div>
+
+          <div style="text-align:center; margin-top: 12px; padding: 10px; background: rgba(168, 85, 247, 0.06); border-radius: 10px; font-size: 11px; color: #64748b; font-weight: 700;">
+            💬 ¿Dudas? Escríbele a Luis directo
+          </div>
+
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab active"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">❓ Tab CÓMO · versión MED (con piso)</div>
+  </div>
+
+  <!-- CELULAR 15: Tab Cómo — versión BOG -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header">
+          <div class="brand">Indicadores TLV</div>
+          <div class="chip-2026" style="background: linear-gradient(135deg, #1e1b4b, #312e81); color:#fbbf24; border-color: rgba(251, 191, 36, 0.4);">📊 Hoy ›</div>
+        </div>
+        <div class="greeting">
+          Hola <strong>Xiomara</strong> <span class="role-mini admin">Admin</span>
+          <div style="margin-top: 4px; font-size: 12px; color: #b45309; font-weight: 900;">🟡 Team Valquirias Bogotá</div>
+        </div>
+
+        <div class="content">
+
+          <div style="background: linear-gradient(135deg, #f59e0b, #ec4899); color:#fff; padding:16px 18px; border-radius:16px; margin-bottom: 10px; box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);">
+            <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; opacity: 0.95; margin-bottom: 4px;">💡 Todo lo que puedes ganar</div>
+            <div style="font-size: 18px; font-weight: 900;">Salario base + 4 tipos de premios</div>
+          </div>
+
+          <!-- Acordeón: cómo se calcula la nota -->
+          <div class="acordeon abierto">
+            <div class="acordeon-header">
+              <span>📊 Tu nota mensual</span>
+              <span class="ac-flecha">▼</span>
+            </div>
+            <div class="acordeon-body">
+              <div class="ac-linea"><strong>60%</strong> viene de tus <strong>ventas</strong> (qué tanto cumples tu meta)</div>
+              <div class="ac-linea"><strong>40%</strong> viene de tu <strong>comportamiento</strong> (5 indicadores):</div>
+              <div class="ac-mini-lista">
+                <div class="ac-mini-item">⏰ Puntualidad — 11%</div>
+                <div class="ac-mini-item">🏪 Tienda — 9%</div>
+                <div class="ac-mini-item">📋 Planilla — 9%</div>
+                <div class="ac-mini-item">😊 Actitud — 6%</div>
+                <div class="ac-mini-item">⭐ Reseñas — 5%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Premio mensual SIN piso (versión BOG) -->
+          <div class="acordeon">
+            <div class="acordeon-header">
+              <span>💰 Premio mensual por ventas</span>
+              <span class="ac-flecha">▶</span>
+            </div>
+            <div class="acordeon-body" style="display:none;">
+              <div class="ac-linea">Ganas premio según cuánto vendas en el mes:</div>
+              <div class="ac-tabla">
+                <div class="ac-tabla-row header">
+                  <span>Tramo</span><span>Asesora</span><span>Admin</span>
+                </div>
+                <div class="ac-tabla-row">
+                  <span>Meta 1</span><span>1%</span><span>2%</span>
+                </div>
+                <div class="ac-tabla-row">
+                  <span>Meta 2</span><span>2%</span><span>4%</span>
+                </div>
+                <div class="ac-tabla-row">
+                  <span>Meta 3</span><span>3%</span><span>6%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Semanal efectivo -->
+          <div class="acordeon">
+            <div class="acordeon-header">
+              <span>⚡ Premio semanal en efectivo</span>
+              <span class="ac-flecha">▶</span>
+            </div>
+            <div class="acordeon-body" style="display:none;">
+              <div class="ac-linea">Cada semana (lun-dom) puedes ganar:</div>
+              <div class="ac-premio-item">💵 <strong>$50.000</strong> si vendes ≥$2.500.000 en efectivo</div>
+              <div class="ac-premio-item">🏆 <strong>$50.000 EXTRA</strong> a la que más vendió en efectivo entre las que ya ganaron los $50k</div>
+              <div class="ac-linea" style="color:#64748b;">Se cierra domingo · se paga lunes</div>
+            </div>
+          </div>
+
+          <!-- Trimestral -->
+          <div class="acordeon">
+            <div class="acordeon-header">
+              <span>💎 Premio trimestral</span>
+              <span class="ac-flecha">▶</span>
+            </div>
+            <div class="acordeon-body" style="display:none;">
+              <div class="ac-premio-item">💰 <strong>$1.000.000</strong> si tu nota trimestral llega a <strong>4.50</strong></div>
+              <div class="ac-premio-item">🌟 <strong>$1.000.000 EXTRA</strong> a la mejor de la ciudad si hay 2+ que pasan 4.50</div>
+              <div class="ac-linea">🏆 <strong>Reconocimiento sorpresa</strong> a la #1 (este trimestre: TV 42")</div>
+            </div>
+          </div>
+
+          <!-- Publicación del ranking -->
+          <div class="acordeon">
+            <div class="acordeon-header">
+              <span>📆 Cuándo se publica el ranking</span>
+              <span class="ac-flecha">▶</span>
+            </div>
+            <div class="acordeon-body" style="display:none;">
+              <div class="ac-linea"><strong>Martes y viernes</strong> de <strong>6pm a 12am</strong></div>
+              <div class="ac-linea" style="color:#64748b;">Zona horaria Colombia. Fuera de esos días la app te avisa cuándo abre.</div>
+            </div>
+          </div>
+
+          <div style="text-align:center; margin-top: 12px; padding: 10px; background: rgba(245, 158, 11, 0.06); border-radius: 10px; font-size: 11px; color: #64748b; font-weight: 700;">
+            💬 ¿Dudas? Escríbele a Luis directo
+          </div>
+
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab active"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">❓ Tab CÓMO · versión BOG (sin piso)</div>
   </div>
 
 </div>
