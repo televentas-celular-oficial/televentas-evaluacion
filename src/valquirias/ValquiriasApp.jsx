@@ -33,7 +33,9 @@ import "./valquirias.css";
 // ===========================================================================
 function datosMockDurley() {
   return {
-    vendedora: { id: 4, nombre: "Durley Castaño", ciudad: "MED", rol: "admin" },
+    // rolTienda: "admin" (administradora) o "asesora" — determina tramos de comisión
+    // rolApp: se determina por Firebase Auth (Luis=admin, Carolina=oficina, resto=vendedora)
+    vendedora: { id: 4, nombre: "Durley Castaño", ciudad: "MED", rolTienda: "admin" },
     hoy: {
       fecha: fechaBonita(hoyColombia().iso) + " · 3:14pm",
       ventasDia: 850_000,
@@ -121,15 +123,12 @@ export default function ValquiriasApp() {
     return <LoginMagicLink onLoggedIn={setUser} />;
   }
 
-  // Rol del usuario logueado (o admin en demo)
-  const rol = esDemo ? "admin" : rolDe(user);
+  // Rol de la app (Firebase Auth): admin=Luis, oficina=Carolina, otro=vendedora
+  // En modo demo simulamos vendedora normal (para ver la vista tal como la ven ellas)
+  const rol = esDemo ? "otro" : rolDe(user);
 
-  // Vendedora fuera de ventana martes/viernes → pantalla bloqueada
-  // Admin y oficina siempre pueden entrar
-  const esVendedora = rol === "otro"; // hoy: cualquier email autenticado que no sea admin/oficina
-  if (esVendedora && !estaEnVentanaAutoEncendido()) {
-    return <PantallaBloqueada />;
-  }
+  // App 24/7 — la restricción de ventana martes/viernes ya NO aplica.
+  // La PantallaBloqueada queda disponible por si el admin decide reactivarla en el futuro.
 
   // Vista vendedora
   const { vendedora } = datos;
@@ -142,7 +141,12 @@ export default function ValquiriasApp() {
       <ConfettiRain trigger={datos.semana.gano50k && !detalle} />
 
       {!detalle && (
-        <TeamHeader vendedora={vendedora} rol={rol === "otro" ? "asesora" : rol === "admin" ? "admin" : rol} ciudad={ciudad} totalAño={datos.totalAño} />
+        <TeamHeader
+          vendedora={vendedora}
+          rol={vendedora.rolTienda === "admin" ? "admin" : "asesora"}
+          ciudad={ciudad}
+          totalAño={datos.totalAño}
+        />
       )}
 
       {/* Contenido según tab */}
@@ -188,7 +192,7 @@ export default function ValquiriasApp() {
         <TabHoy
           vendedora={vendedora}
           ciudad={ciudad}
-          rol={vendedora.rol}
+          rol={vendedora.rolTienda}
           hoy={datos.hoy}
           foco={datos.foco}
           focoTipo={datos.focoTipo}

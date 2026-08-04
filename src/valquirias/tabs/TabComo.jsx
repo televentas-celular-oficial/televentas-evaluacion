@@ -104,9 +104,6 @@ export default function TabComo({ ciudad }) {
         </div>
       </Acordeon>
 
-      <div style={{ textAlign: "center", marginTop: 12, padding: 10, background: "rgba(168, 85, 247, 0.06)", borderRadius: 10, fontSize: 12, color: "#64748b", fontWeight: 700 }}>
-        💬 ¿Dudas? Escríbele al administrador
-      </div>
     </>
   );
 }
