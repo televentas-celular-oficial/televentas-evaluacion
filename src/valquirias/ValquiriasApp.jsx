@@ -23,6 +23,7 @@ import TabMiAno from "./tabs/TabMiAno.jsx";
 import TabComo from "./tabs/TabComo.jsx";
 import DetalleTrimestre from "./detalles/DetalleTrimestre.jsx";
 import DetalleComportamiento from "./detalles/DetalleComportamiento.jsx";
+import IngresoDiario from "./oficina/IngresoDiario.jsx";
 import { estaEnVentanaAutoEncendido, hoyColombia, fechaBonita, esLunesEnColombia, rangoSemanaAnterior, diasParaFinMes, nombreMesActual } from "./lib/helpers.js";
 
 import "./valquirias.css";
@@ -123,9 +124,11 @@ export default function ValquiriasApp() {
     return { año: h.año, mes: h.mes };
   });
 
-  // Modo demo (?demo=1): salta auth para probar la vista sin necesidad de login
-  const esDemo = typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("demo") === "1";
+  // Modo demo: ?demo=1 (vendedora Durley MED) · ?demo=carolina (rol oficina) · ?demo=admin (rol admin)
+  const demoParam = typeof window !== "undefined"
+    ? (new URLSearchParams(window.location.search).get("demo") || "")
+    : "";
+  const esDemo = demoParam !== "";
 
   useEffect(() => {
     if (esDemo) { setLoadingAuth(false); return; }
@@ -147,12 +150,23 @@ export default function ValquiriasApp() {
   }
 
   // Rol de la app (Firebase Auth): admin=Luis, oficina=Carolina, otro=vendedora
-  // En modo demo simulamos vendedora normal (para ver la vista tal como la ven ellas)
-  const rol = esDemo ? "otro" : rolDe(user);
+  // En modo demo simulamos según parámetro
+  const rol = esDemo
+    ? (demoParam === "admin" ? "admin" : demoParam === "carolina" || demoParam === "oficina" ? "oficina" : "otro")
+    : rolDe(user);
 
   // App 24/7 — la restricción de ventana martes/viernes ya NO aplica.
   // La PantallaBloqueada queda disponible por si el admin decide reactivarla en el futuro.
 
+  // Rol OFICINA (Carolina): vista dedicada al ingreso diario
+  if (rol === "oficina") {
+    return <IngresoDiario onGuardar={({ fecha, filas }) => {
+      // TODO: cuando conectemos Firestore, guardar aquí
+      console.log("[Carolina] Guardar día", fecha, filas);
+    }} />;
+  }
+
+  // Rol ADMIN (Luis): TODO — panel admin nuevo. Por ahora ve la vista vendedora con filtros.
   // Vista vendedora
   const { vendedora } = datos;
   const ciudad = vendedora?.ciudad || "MED";
