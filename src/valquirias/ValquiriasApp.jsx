@@ -98,26 +98,31 @@ export default function ValquiriasApp() {
     return { año: h.año, mes: h.mes };
   });
 
+  // Modo demo (?demo=1): salta auth para probar la vista sin necesidad de login
+  const esDemo = typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("demo") === "1";
+
   useEffect(() => {
+    if (esDemo) { setLoadingAuth(false); return; }
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoadingAuth(false);
     });
     return unsub;
-  }, []);
+  }, [esDemo]);
 
   // Loading
   if (loadingAuth) {
     return <div className="v-app"><div className="v-loading">⏳ Cargando...</div></div>;
   }
 
-  // Sin login → magic link
-  if (!user) {
+  // Sin login (y sin demo) → magic link
+  if (!user && !esDemo) {
     return <LoginMagicLink onLoggedIn={setUser} />;
   }
 
-  // Rol del usuario logueado
-  const rol = rolDe(user);
+  // Rol del usuario logueado (o admin en demo)
+  const rol = esDemo ? "admin" : rolDe(user);
 
   // Vendedora fuera de ventana martes/viernes → pantalla bloqueada
   // Admin y oficina siempre pueden entrar
