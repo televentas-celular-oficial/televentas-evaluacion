@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Valquirias TLV — Mockup v4 (Cálido + Confetti)</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: linear-gradient(135deg, #1e1b4b, #0f172a);
+    padding: 24px 10px 60px;
+    color: #0f172a;
+    min-height: 100vh;
+  }
+  h1.titulo-comparativa {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 6px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #fbbf24, #f472b6, #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitulo {
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 12px;
+    margin-bottom: 28px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 26px;
+    max-width: 1700px;
+    margin: 0 auto 40px;
+  }
+  .phone {
+    background: linear-gradient(135deg, #1e1b4b, #312e81);
+    border-radius: 38px;
+    padding: 6px;
+    box-shadow: 0 25px 65px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
+    border: 3px solid #0f0e2a;
+  }
+  .screen {
+    background: linear-gradient(180deg, #fef7f0 0%, #fdf4ff 100%);
+    border-radius: 32px;
+    padding: 16px 14px 0;
+    min-height: 830px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .phone-label {
+    text-align: center;
+    color: #fbbf24;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    opacity: 0.9;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(236, 72, 153, 0.15);
+    margin-bottom: 10px;
+    z-index: 10;
+    position: relative;
+  }
+  .brand {
+    font-size: 16px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #f472b6, #a855f7, #f59e0b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.3px;
+  }
+  .chip-2026 {
+    font-size: 10px;
+    font-weight: 800;
+    color: #7c3aed;
+    background: linear-gradient(135deg, #f3e8ff, #fdf4ff);
+    padding: 5px 10px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+  }
+
+  .greeting {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: 8px;
+    z-index: 10;
+    position: relative;
+  }
+  .greeting strong { color: #1e1b4b; font-size: 15px; }
+  .role-mini {
+    display: inline-block;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 900;
+    margin-left: 2px;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.25);
+  }
+  .role-mini.admin { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+  .role-mini.bog { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+
+  .content {
+    flex: 1;
+    padding-bottom: 74px;
+    overflow: hidden;
+    z-index: 10;
+    position: relative;
+  }
+
+  /* CONFETTI cayendo por toda la pantalla */
+  .confetti-container {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 100;
+    border-radius: 32px;
+  }
+  .confetti-piece {
+    position: absolute;
+    top: -20px;
+    width: 10px;
+    height: 14px;
+    animation: fall 3.5s ease-in infinite;
+    opacity: 0.9;
+  }
+  @keyframes fall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    50% { opacity: 1; }
+    100% { transform: translateY(850px) rotate(720deg); opacity: 0.3; }
+  }
+  .c1 { left: 5%; background: #f472b6; animation-delay: 0s; animation-duration: 3s; }
+  .c2 { left: 12%; background: #fbbf24; animation-delay: 0.3s; animation-duration: 3.8s; }
+  .c3 { left: 20%; background: #34d399; animation-delay: 0.6s; animation-duration: 3.2s; }
+  .c4 { left: 28%; background: #60a5fa; animation-delay: 0.9s; animation-duration: 4s; }
+  .c5 { left: 36%; background: #a855f7; animation-delay: 0.2s; animation-duration: 3.5s; }
+  .c6 { left: 44%; background: #f97316; animation-delay: 0.7s; animation-duration: 3.3s; }
+  .c7 { left: 52%; background: #ec4899; animation-delay: 0.4s; animation-duration: 3.7s; }
+  .c8 { left: 60%; background: #10b981; animation-delay: 0.1s; animation-duration: 4.1s; }
+  .c9 { left: 68%; background: #eab308; animation-delay: 0.8s; animation-duration: 3.4s; }
+  .c10 { left: 76%; background: #06b6d4; animation-delay: 0.5s; animation-duration: 3.6s; }
+  .c11 { left: 84%; background: #f472b6; animation-delay: 1s; animation-duration: 3.9s; }
+  .c12 { left: 92%; background: #fbbf24; animation-delay: 0.15s; animation-duration: 3.1s; }
+  .c13 { left: 8%; background: #34d399; animation-delay: 1.2s; animation-duration: 3.6s; }
+  .c14 { left: 24%; background: #a855f7; animation-delay: 1.4s; animation-duration: 3.4s; }
+  .c15 { left: 40%; background: #ec4899; animation-delay: 1.6s; animation-duration: 3.8s; }
+  .c16 { left: 56%; background: #60a5fa; animation-delay: 1.8s; animation-duration: 3.2s; }
+  .c17 { left: 72%; background: #f97316; animation-delay: 2s; animation-duration: 3.6s; }
+  .c18 { left: 88%; background: #10b981; animation-delay: 2.2s; animation-duration: 3.4s; }
+  .confetti-piece.round { border-radius: 50%; width: 8px; height: 8px; }
+  .confetti-piece.thin { width: 6px; height: 16px; }
+
+  /* HOY - rosa coral pastel */
+  .hoy {
+    background: linear-gradient(135deg, #fff1f2, #fff);
+    border-radius: 14px;
+    padding: 11px 13px;
+    margin-bottom: 8px;
+    border-left: 4px solid #f472b6;
+    box-shadow: 0 2px 8px rgba(244, 114, 182, 0.12);
+    border: 1px solid rgba(244, 114, 182, 0.15);
+  }
+  .hoy .titulo {
+    font-size: 10px;
+    font-weight: 800;
+    color: #be185d;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 4px;
+  }
+  .hoy .dato { font-size: 16px; font-weight: 900; color: #1e1b4b; letter-spacing: -0.3px; }
+  .hoy .sub { font-size: 11px; color: #64748b; font-weight: 600; margin-top: 3px; }
+
+  /* Foco del día — gradiente vibrante */
+  .foco {
+    background: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #f472b6 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 13px 15px;
+    margin-bottom: 8px;
+    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .foco::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -20%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(255,255,255,0.25), transparent 60%);
+    border-radius: 50%;
+  }
+  .foco .titulo {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.95;
+    margin-bottom: 6px;
+    position: relative;
+  }
+  .foco .msg { font-size: 14px; font-weight: 800; line-height: 1.4; position: relative; }
+  .foco.piso {
+    background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%);
+    box-shadow: 0 10px 25px rgba(8, 145, 178, 0.3);
+  }
+
+  .card {
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .card-title {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #64748b;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-title .cierra { font-size: 9px; color: #94a3b8; font-weight: 700; }
+
+  /* Semana - mint pastel */
+  .semana {
+    background: linear-gradient(135deg, #f0fdfa, #ecfdf5);
+    border-left: 4px solid #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.15);
+  }
+  .semana .card-title { color: #047857; }
+  .semana-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .semana-num { font-size: 22px; font-weight: 900; color: #047857; letter-spacing: -0.5px; }
+  .semana-of.ok {
+    color: #047857;
+    font-weight: 900;
+    background: #a7f3d0;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+  .semana-bar {
+    background: rgba(16, 185, 129, 0.15);
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .semana-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399, #86efac);
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  }
+  .mini-rank-title {
+    font-size: 10px;
+    font-weight: 900;
+    color: #b45309;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 8px 0 6px;
+    padding: 4px 8px;
+    background: linear-gradient(90deg, #fef3c7, transparent);
+    border-radius: 6px;
+  }
+  .mini-rank-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    border-radius: 8px;
+    margin-bottom: 1px;
+  }
+  .mini-rank-row.tu {
+    background: linear-gradient(90deg, #fef3c7, #fef9c3);
+    color: #78350f;
+    font-weight: 900;
+    border: 1.5px solid #fbbf24;
+    box-shadow: 0 2px 6px rgba(251, 191, 36, 0.2);
+  }
+  .mini-rank-row .rank { display: inline-block; width: 18px; font-weight: 900; }
+  .mini-rank-row .nombre { flex: 1; padding-left: 4px; }
+  .mini-rank-row .valor { font-weight: 900; color: #1e1b4b; }
+  .mini-rank-row.tu .valor { color: #78350f; }
+  .mini-rank-row .delta { font-size: 10px; color: #94a3b8; margin-left: 4px; font-weight: 700; }
+  .mini-rank-cierra { font-size: 10px; color: #64748b; text-align: center; margin-top: 6px; font-weight: 700; }
+
+  /* Mes - durazno pastel */
+  .mes {
+    background: linear-gradient(135deg, #fff7ed, #fffbeb);
+    border-left: 4px solid #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.15);
+  }
+  .mes .card-title { color: #9a3412; }
+  .mes.pre-piso {
+    background: linear-gradient(135deg, #ecfeff, #f0f9ff);
+    border-left-color: #06b6d4;
+    border-color: rgba(6, 182, 212, 0.15);
+  }
+  .mes.pre-piso .card-title { color: #155e75; }
+  .mes-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .mes-num { font-size: 22px; font-weight: 900; color: #9a3412; letter-spacing: -0.5px; }
+  .mes.pre-piso .mes-num { color: #155e75; }
+  .mes-dia { font-size: 11px; color: #64748b; font-weight: 700; }
+  .mes-linea-premio {
+    background: linear-gradient(90deg, #ecfdf5, #fff);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 8px 0;
+    font-size: 12px;
+    color: #0f172a;
+    font-weight: 700;
+    border: 1px solid rgba(16, 185, 129, 0.15);
+  }
+  .mes-linea-premio .tramo { color: #047857; font-weight: 900; }
+  .mes-linea-premio .ganado { color: #047857; font-weight: 900; font-size: 13px; }
+  .mes-siguiente {
+    background: linear-gradient(90deg, #fef9c3, #fef3c7);
+    border: 1px dashed #fbbf24;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    color: #78350f;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  .mes-siguiente .plus { color: #b45309; font-weight: 900; }
+  .mes-nota-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px dashed rgba(249, 115, 22, 0.25);
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 700;
+  }
+  .mes-nota-badge {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #047857;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
+  }
+  .mes-nota-badge.naranja {
+    background: linear-gradient(135deg, #fed7aa, #fdba74);
+    color: #9a3412;
+  }
+  .pre-piso-note {
+    background: linear-gradient(90deg, #f0f9ff, #fff);
+    border-left: 3px solid #38bdf8;
+    padding: 8px 10px;
+    border-radius: 10px;
+    margin-top: 6px;
+    font-size: 11px;
+    color: #0c4a6e;
+    font-weight: 700;
+    line-height: 1.5;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+  }
+  .pre-piso-note .highlight {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1e40af;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 900;
+  }
+
+  /* Ranking mes - dorado */
+  .ranking-mes {
+    background: linear-gradient(135deg, #fefce8, #fef9c3);
+    border-left: 4px solid #eab308;
+    border: 1px solid rgba(234, 179, 8, 0.15);
+  }
+  .ranking-mes .card-title { color: #854d0e; }
+  .rank-full {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    border-radius: 8px;
+    margin-bottom: 2px;
+    background: rgba(255,255,255,0.5);
+  }
+  .rank-full.tu {
+    background: linear-gradient(90deg, #fef3c7, #fde68a);
+    color: #78350f;
+    font-weight: 900;
+    border: 2px solid #eab308;
+    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.25);
+  }
+  .rank-full .n { display: inline-block; width: 20px; font-weight: 900; color: #94a3b8; }
+  .rank-full.tu .n { color: #92400e; }
+  .rank-full .n.top { color: #eab308; }
+  .rank-full .nom { flex: 1; padding-left: 6px; }
+  .rank-full .val { font-weight: 900; color: #1e1b4b; }
+  .rank-full.tu .val { color: #78350f; }
+  .rank-full .gap { font-size: 10px; color: #94a3b8; margin-left: 6px; font-weight: 700; }
+  .rank-full .medalla { font-size: 12px; margin-left: 4px; }
+
+  /* Chips - lavanda */
+  .chip-clickable {
+    background: linear-gradient(135deg, #faf5ff, #fdf4ff);
+    padding: 11px 13px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(168, 85, 247, 0.08);
+    border: 1px solid rgba(168, 85, 247, 0.15);
+  }
+  .chip-clickable .left { display: flex; align-items: center; gap: 8px; }
+  .chip-clickable .arrow { color: #a855f7; font-weight: 900; }
+  .chip-trim { border-left: 3px solid #eab308; }
+  .chip-comp { border-left: 3px solid #a855f7; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255,255,255,0.98);
+    backdrop-filter: blur(16px);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 12px;
+    border-top: 1px solid rgba(168, 85, 247, 0.15);
+    border-radius: 0 0 30px 30px;
+    box-shadow: 0 -4px 16px rgba(168, 85, 247, 0.08);
+    z-index: 20;
+  }
+  .nav-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 12px;
+  }
+  .nav-tab .ico { font-size: 22px; line-height: 1; margin-bottom: 2px; }
+  .nav-tab .lb {
+    font-size: 9px;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .nav-tab.active {
+    background: linear-gradient(135deg, #7c3aed, #ec4899);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+  }
+  .nav-tab.active .lb { color: #fff; }
+
+  /* Tab RANKING */
+  .team-header {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border-left: 4px solid #10b981;
+    padding: 12px 14px;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
+  }
+  .team-header.bog {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-left-color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.2);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12);
+  }
+  .team-header .team-title {
+    font-size: 15px;
+    font-weight: 900;
+    color: #047857;
+    letter-spacing: -0.3px;
+  }
+  .team-header.bog .team-title { color: #92400e; }
+  .team-header .team-sub {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 700;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .team-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #047857;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 900;
+    margin-left: 4px;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
+  }
+  .team-badge.bog {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
+  }
+
+  .rank-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    background: rgba(168, 85, 247, 0.1);
+    padding: 4px;
+    border-radius: 12px;
+  }
+  .rank-tab-btn {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #7c3aed;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .rank-tab-btn.active {
+    background: linear-gradient(135deg, #7c3aed, #ec4899);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+  }
+  .rank-ciudad-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .rank-ciudad-btn {
+    flex: 1;
+    padding: 6px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .rank-ciudad-btn.active {
+    color: #fff;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #10b981;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  }
+  .rank-ciudad-btn.bog.active {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border-color: #fbbf24;
+  }
+  .rank-big {
+    background: #fff;
+    border-radius: 14px;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .rank-big.tu {
+    background: linear-gradient(90deg, #fef3c7, #fde68a);
+    border: 2px solid #eab308;
+    box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);
+  }
+  .rank-big .medal { font-size: 22px; width: 34px; text-align: center; font-weight: 900; color: #94a3b8; }
+  .rank-big .info { flex: 1; }
+  .rank-big .info .nom { font-size: 13px; font-weight: 900; color: #1e1b4b; }
+  .rank-big.tu .info .nom { color: #78350f; }
+  .rank-big .info .rol { font-size: 10px; color: #64748b; font-weight: 700; margin-top: 1px; }
+  .rank-big .valores { text-align: right; }
+  .rank-big .valores .v { font-size: 14px; font-weight: 900; color: #1e1b4b; }
+  .rank-big.tu .valores .v { color: #78350f; }
+  .rank-big .valores .g { font-size: 10px; color: #94a3b8; font-weight: 700; margin-top: 1px; }
+
+  /* Tab MI AÑO */
+  .hero-year {
+    background: linear-gradient(135deg, #7c3aed 0%, #ec4899 40%, #f97316 80%, #eab308 100%);
+    color: #fff;
+    padding: 24px 20px;
+    border-radius: 22px;
+    margin-bottom: 10px;
+    box-shadow: 0 18px 40px rgba(124, 58, 237, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-year::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -30%;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, rgba(255,255,255,0.3), transparent 60%);
+    border-radius: 50%;
+  }
+  .hero-year .label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.95;
+    margin-bottom: 4px;
+    position: relative;
+  }
+  .hero-year .valor {
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    position: relative;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .hero-year .sub { font-size: 12px; opacity: 0.95; position: relative; font-weight: 600; }
+  .proy-year {
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    color: #fff;
+    padding: 18px 18px;
+    border-radius: 18px;
+    margin-bottom: 10px;
+    box-shadow: 0 12px 28px rgba(168, 85, 247, 0.35);
+  }
+  .proy-year .label {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.9;
+    margin-bottom: 6px;
+  }
+  .proy-year .valor { font-size: 30px; font-weight: 900; letter-spacing: -1px; margin-bottom: 4px; }
+  .proy-year .desc { font-size: 12px; opacity: 0.95; font-weight: 600; }
+  .historial-list {
+    background: linear-gradient(135deg, #fef7f0, #fff);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid rgba(244, 114, 182, 0.15);
+  }
+  .historial-list .titulo {
+    font-size: 10px;
+    font-weight: 900;
+    color: #be185d;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .historial-list .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 0;
+    font-size: 12px;
+    border-bottom: 1px dashed rgba(244, 114, 182, 0.2);
+  }
+  .historial-list .row:last-child { border-bottom: none; }
+  .historial-list .row .lbl { color: #475569; font-weight: 700; }
+  .historial-list .row .val { color: #1e1b4b; font-weight: 800; }
+  .historial-list .total {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 10px;
+    margin-top: 6px;
+    border-top: 2px solid #a855f7;
+  }
+  .historial-list .total .lbl {
+    color: #5b21b6;
+    font-weight: 900;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .historial-list .total .val { color: #5b21b6; font-weight: 900; font-size: 19px; }
+
+  /* ================================================================
+     PANTALLAS DE DETALLE (Trimestre + Comportamiento)
+     ================================================================ */
+  .header-detalle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 12px;
+    border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+    margin-bottom: 12px;
+    z-index: 10;
+    position: relative;
+  }
+  .back-btn {
+    font-size: 13px;
+    font-weight: 800;
+    color: #7c3aed;
+    padding: 6px 10px;
+    background: rgba(168, 85, 247, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    width: 40px;
+    text-align: center;
+  }
+  .header-title {
+    font-size: 15px;
+    font-weight: 900;
+    color: #1e1b4b;
+    letter-spacing: -0.3px;
+  }
+
+  /* HERO Trimestre */
+  .trim-hero {
+    background: linear-gradient(135deg, #fbbf24 0%, #f97316 60%, #ec4899 100%);
+    color: #fff;
+    padding: 22px 20px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    box-shadow: 0 15px 35px rgba(245, 158, 11, 0.35);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .trim-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -30%;
+    width: 250px; height: 250px;
+    background: radial-gradient(circle, rgba(255,255,255,0.25), transparent 60%);
+    border-radius: 50%;
+  }
+  .trim-hero-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.95;
+    margin-bottom: 4px;
+    position: relative;
+  }
+  .trim-hero-valor {
+    font-size: 56px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -2px;
+    margin: 4px 0 6px;
+    position: relative;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .trim-hero-meta {
+    font-size: 12px;
+    opacity: 0.95;
+    font-weight: 600;
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .trim-hero-meta strong { font-weight: 900; }
+  .trim-hero-progress {
+    background: rgba(255,255,255,0.25);
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    max-width: 220px;
+    margin: 0 auto;
+  }
+  .trim-hero-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #fff, #fef3c7);
+    border-radius: 4px;
+    box-shadow: 0 0 12px rgba(255,255,255,0.6);
+  }
+
+  /* Simulador */
+  .card.sim {
+    background: linear-gradient(135deg, #fef9c3, #fef3c7);
+    border-left: 4px solid #eab308;
+    border: 1px solid rgba(234, 179, 8, 0.2);
+  }
+  .sim-msg {
+    font-size: 13px;
+    color: #78350f;
+    font-weight: 700;
+    line-height: 1.55;
+    padding: 8px 0;
+  }
+  .sim-tip {
+    background: rgba(255,255,255,0.6);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 11px;
+    color: #78350f;
+    font-weight: 700;
+    margin-top: 8px;
+    border-left: 3px solid #fbbf24;
+  }
+
+  /* Desglose por mes */
+  .mes-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 8px;
+    background: rgba(168, 85, 247, 0.04);
+    border-radius: 10px;
+    margin-bottom: 4px;
+  }
+  .mes-row-info { flex: 1; }
+  .mes-nombre {
+    font-size: 13px;
+    font-weight: 900;
+    color: #1e1b4b;
+  }
+  .mes-peso {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 700;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .mes-row-nota {
+    font-size: 18px;
+    font-weight: 900;
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+  .mes-row-nota.completo {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #047857;
+  }
+  .mes-row-nota.progreso {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+  }
+  .mes-row-nota.pendiente {
+    background: #f1f5f9;
+    color: #94a3b8;
+  }
+
+  /* Premios en juego */
+  .card.premio-juego {
+    background: linear-gradient(135deg, #fef3c7, #fed7aa);
+    border-left: 4px solid #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.2);
+  }
+  .premio-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px dashed rgba(249, 115, 22, 0.2);
+  }
+  .premio-item:last-child { border-bottom: none; }
+  .premio-emoji {
+    font-size: 32px;
+    width: 44px;
+    text-align: center;
+  }
+  .premio-info { flex: 1; }
+  .premio-nombre {
+    font-size: 14px;
+    font-weight: 900;
+    color: #7c2d12;
+  }
+  .premio-cond {
+    font-size: 11px;
+    color: #9a3412;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* Historial trimestres */
+  .hist-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(168, 85, 247, 0.04);
+    border-radius: 10px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .hist-row.activo {
+    background: linear-gradient(90deg, #fef3c7, #fde68a);
+    border: 1.5px solid #fbbf24;
+    color: #78350f;
+  }
+  .hist-tri { color: #475569; font-weight: 900; width: 70px; }
+  .hist-row.activo .hist-tri { color: #78350f; }
+  .hist-nota {
+    font-size: 15px;
+    font-weight: 900;
+    color: #1e1b4b;
+    width: 50px;
+    text-align: center;
+  }
+  .hist-row.activo .hist-nota { color: #78350f; }
+  .hist-premio {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 700;
+    text-align: right;
+    flex: 1;
+  }
+  .hist-row.activo .hist-premio { color: #78350f; }
+
+  /* HERO Comportamiento */
+  .comp-hero {
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 50%, #4f46e5 100%);
+    color: #fff;
+    padding: 22px 20px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    box-shadow: 0 15px 35px rgba(124, 58, 237, 0.35);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .comp-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -30%;
+    width: 250px; height: 250px;
+    background: radial-gradient(circle, rgba(255,255,255,0.25), transparent 60%);
+    border-radius: 50%;
+  }
+  .comp-hero-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.95;
+    margin-bottom: 4px;
+    position: relative;
+  }
+  .comp-hero-valor {
+    font-size: 52px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -2px;
+    margin: 4px 0 8px;
+    position: relative;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .comp-hero-desc {
+    font-size: 12px;
+    opacity: 0.95;
+    font-weight: 600;
+    position: relative;
+  }
+
+  /* Indicadores comportamiento */
+  .ind-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 10px;
+    background: rgba(168, 85, 247, 0.04);
+    border-radius: 12px;
+    margin-bottom: 4px;
+    border-left: 3px solid transparent;
+  }
+  .ind-row.good {
+    background: linear-gradient(90deg, #f0fdf4, #fff);
+    border-left-color: #10b981;
+  }
+  .ind-row.warn {
+    background: linear-gradient(90deg, #fef3c7, #fff);
+    border-left-color: #f59e0b;
+  }
+  .ind-row.star {
+    background: linear-gradient(90deg, #fef9c3, #fff);
+    border-left-color: #eab308;
+  }
+  .ind-icon { font-size: 22px; width: 30px; text-align: center; }
+  .ind-info { flex: 1; }
+  .ind-nombre {
+    font-size: 13px;
+    font-weight: 900;
+    color: #1e1b4b;
+  }
+  .ind-detalle {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .ind-derecha { text-align: right; }
+  .ind-nota {
+    font-size: 16px;
+    font-weight: 900;
+    color: #047857;
+  }
+  .ind-nota.warn { color: #b45309; }
+  .ind-peso {
+    font-size: 9px;
+    color: #94a3b8;
+    font-weight: 700;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Tip card */
+  .tip-card {
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    border: 1.5px dashed #10b981;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .tip-title {
+    font-size: 11px;
+    font-weight: 900;
+    color: #047857;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 6px;
+  }
+  .tip-msg {
+    font-size: 12px;
+    color: #064e3b;
+    font-weight: 600;
+    line-height: 1.55;
+  }
+</style>
+</head>
+<body>
+
+<h1 class="titulo-comparativa">⚡ Valquirias TLV — Dashboard v4</h1>
+<div class="subtitulo">Paleta cálida · Cards diferenciadas · 🎉 Confetti animado · Bottom nav 4 tabs</div>
+
+<div class="grid">
+
+  <!-- CELULAR 1: Tab HOY — Durley con CONFETTI -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="confetti-container">
+          <div class="confetti-piece c1"></div>
+          <div class="confetti-piece c2 round"></div>
+          <div class="confetti-piece c3"></div>
+          <div class="confetti-piece c4 thin"></div>
+          <div class="confetti-piece c5"></div>
+          <div class="confetti-piece c6 round"></div>
+          <div class="confetti-piece c7"></div>
+          <div class="confetti-piece c8 thin"></div>
+          <div class="confetti-piece c9"></div>
+          <div class="confetti-piece c10 round"></div>
+          <div class="confetti-piece c11"></div>
+          <div class="confetti-piece c12 thin"></div>
+          <div class="confetti-piece c13"></div>
+          <div class="confetti-piece c14 round"></div>
+          <div class="confetti-piece c15"></div>
+          <div class="confetti-piece c16 thin"></div>
+          <div class="confetti-piece c17"></div>
+          <div class="confetti-piece c18 round"></div>
+        </div>
+
+        <div class="header">
+          <div class="brand">Indicadores TLV</div>
+          <div class="chip-2026">💎 $19M en 2026 ›</div>
+        </div>
+        <div class="greeting">
+          Hola <strong>Durley</strong> <span class="role-mini admin">Admin</span>
+          <div style="margin-top: 4px; font-size: 12px; color: #047857; font-weight: 900;">🟢 Team Valquirias Medellín</div>
+        </div>
+
+        <div class="content">
+          <div class="hoy">
+            <div class="titulo">📆 Hoy · lun 4 ago · 3:14pm</div>
+            <div class="dato">$850.000 vendidos · 2 tickets</div>
+            <div class="sub">💵 Efectivo del día: $340.000</div>
+          </div>
+
+          <div class="foco">
+            <div class="titulo">🎯 Foco de hoy</div>
+            <div class="msg">Vende $340k más y mantienes el #1 del EXTRA de $50k 🔥</div>
+          </div>
+
+          <div class="card semana">
+            <div class="card-title">⚡ Esta semana · efectivo <span class="cierra">cierra dom</span></div>
+            <div class="semana-row">
+              <span class="semana-num">$3.400.000</span>
+              <span class="semana-of ok">✓ +$50k</span>
+            </div>
+            <div class="semana-bar"><div class="semana-bar-fill" style="width: 100%"></div></div>
+
+            <div class="mini-rank-title">🏆 Peleando los $50k EXTRA</div>
+            <div class="mini-rank-row tu">
+              <span><span class="rank">1.</span><span class="nombre">TÚ</span></span>
+              <span class="valor">$3.4M</span>
+            </div>
+            <div class="mini-rank-row">
+              <span><span class="rank">2.</span><span class="nombre">Lorena</span></span>
+              <span><span class="valor">$3.1M</span><span class="delta">-$300k</span></span>
+            </div>
+            <div class="mini-rank-row">
+              <span><span class="rank">3.</span><span class="nombre">Elena</span></span>
+              <span><span class="valor">$2.9M</span><span class="delta">-$500k</span></span>
+            </div>
+            <div class="mini-rank-cierra">Faltan 3 días · rompe la marca 💪</div>
+          </div>
+
+          <div class="card mes">
+            <div class="card-title">📅 Este mes <span class="cierra">día 15 de 31</span></div>
+            <div class="mes-header">
+              <span class="mes-num">$22.500.000</span>
+              <span class="mes-dia">vendidos</span>
+            </div>
+            <div class="mes-linea-premio">
+              <span class="tramo">Vas en META 2 (4%)</span> · llevas <span class="ganado">$900.000</span>
+            </div>
+            <div class="mes-siguiente">
+              🚀 Con <span class="plus">$16.9M más</span> pasas a <strong>META 3 (6%)</strong> = $2.36M
+            </div>
+            <div class="mes-nota-line">
+              <span>⭐ Aporte a tu nota: 68% de meta</span>
+              <span class="mes-nota-badge">4.32</span>
+            </div>
+          </div>
+
+          <div class="card ranking-mes">
+            <div class="card-title">🏅 Ranking del mes · Medellín</div>
+            <div class="rank-full tu">
+              <span><span class="n top">1.</span><span class="nom">TÚ (Durley)</span></span>
+              <span><span class="val">$22.5M</span><span class="medalla">⭐</span></span>
+            </div>
+            <div class="rank-full"><span><span class="n">2.</span><span class="nom">Lorena</span></span><span><span class="val">$18.3M</span><span class="gap">-$4.2M</span></span></div>
+            <div class="rank-full"><span><span class="n">3.</span><span class="nom">Elena</span></span><span><span class="val">$16.1M</span><span class="gap">-$2.2M</span></span></div>
+            <div class="rank-full"><span><span class="n">4.</span><span class="nom">Luisa</span></span><span><span class="val">$13.8M</span><span class="gap">-$2.3M</span></span></div>
+            <div class="rank-full"><span><span class="n">5.</span><span class="nom">Dayana</span></span><span><span class="val">$10.4M</span><span class="gap">-$3.4M</span></span></div>
+            <div class="rank-full"><span><span class="n">6.</span><span class="nom">Jennifer</span></span><span><span class="val">$8.1M</span><span class="gap">-$2.3M</span></span></div>
+            <div class="rank-full"><span><span class="n">7.</span><span class="nom">Manuela</span></span><span><span class="val">$6.9M</span><span class="gap">-$1.2M</span></span></div>
+            <div class="rank-full"><span><span class="n">8.</span><span class="nom">Betzabeth</span></span><span><span class="val">$4.2M</span><span class="gap">-$2.7M</span></span></div>
+          </div>
+
+          <div class="chip-clickable chip-trim">
+            <div class="left">💎 Trimestre Q3: <strong>4.10</strong> · #1 · <span style="color:#ea580c;">TV en juego</span></div>
+            <div class="arrow">›</div>
+          </div>
+          <div class="chip-clickable chip-comp">
+            <div class="left">📋 Comportamiento: ✅ ⚠️ 4.7⭐</div>
+            <div class="arrow">›</div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab active"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">📊 Tab HOY · Durley + 🎉 confetti</div>
+  </div>
+
+  <!-- CELULAR 2: Tab HOY — Manuela pre-piso -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="confetti-container">
+          <div class="confetti-piece c2 round"></div>
+          <div class="confetti-piece c4"></div>
+          <div class="confetti-piece c6"></div>
+          <div class="confetti-piece c8 thin"></div>
+          <div class="confetti-piece c10"></div>
+          <div class="confetti-piece c12 round"></div>
+          <div class="confetti-piece c14"></div>
+          <div class="confetti-piece c16"></div>
+        </div>
+
+        <div class="header">
+          <div class="brand">Indicadores TLV</div>
+          <div class="chip-2026">💎 $13M en 2026 ›</div>
+        </div>
+        <div class="greeting">
+          Hola <strong>Manuela</strong> <span class="role-mini">Asesora</span>
+          <div style="margin-top: 4px; font-size: 12px; color: #047857; font-weight: 900;">🟢 Team Valquirias Medellín</div>
+        </div>
+
+        <div class="content">
+          <div class="hoy">
+            <div class="titulo">📆 Hoy · lun 4 ago · 3:14pm</div>
+            <div class="dato">$420.000 vendidos · 1 ticket</div>
+            <div class="sub">💵 Efectivo del día: $180.000</div>
+          </div>
+
+          <div class="foco piso">
+            <div class="titulo">🎯 Foco de hoy</div>
+            <div class="msg">Con $200k más al día llegas al piso en 29 días 💪</div>
+          </div>
+
+          <div class="card semana">
+            <div class="card-title">⚡ Esta semana · efectivo <span class="cierra">cierra dom</span></div>
+            <div class="semana-row">
+              <span class="semana-num">$2.700.000</span>
+              <span class="semana-of ok">✓ +$50k</span>
+            </div>
+            <div class="semana-bar"><div class="semana-bar-fill" style="width: 100%"></div></div>
+
+            <div class="mini-rank-title">🏆 Peleando los $50k EXTRA</div>
+            <div class="mini-rank-row"><span><span class="rank">1.</span><span class="nombre">Durley</span></span><span><span class="valor">$3.4M</span></span></div>
+            <div class="mini-rank-row"><span><span class="rank">2.</span><span class="nombre">Lorena</span></span><span><span class="valor">$3.1M</span></span></div>
+            <div class="mini-rank-row tu">
+              <span><span class="rank">3.</span><span class="nombre">TÚ</span></span>
+              <span><span class="valor">$2.7M</span><span class="delta">-$700k</span></span>
+            </div>
+            <div class="mini-rank-cierra">Faltan 3 días · sube más 💪</div>
+          </div>
+
+          <div class="card mes pre-piso">
+            <div class="card-title">📅 Este mes <span class="cierra">día 15 de 31</span></div>
+            <div class="mes-header">
+              <span class="mes-num">$9.200.000</span>
+              <span class="mes-dia">vendidos</span>
+            </div>
+            <div class="pre-piso-note">
+              💙 <strong>Piso Medellín: $15M</strong> — vas al <span class="highlight">61%</span>
+              <div style="margin-top:4px;">Cuando pases el piso, entras a META 1 (1%)</div>
+            </div>
+            <div class="mes-siguiente" style="margin-top: 8px;">
+              🚀 Con <span class="plus">$5.8M más</span> arrancas a ganar premio ventas
+            </div>
+            <div class="mes-nota-line">
+              <span>⭐ Aporte a tu nota: 28% de meta</span>
+              <span class="mes-nota-badge naranja">2.98</span>
+            </div>
+          </div>
+
+          <div class="card ranking-mes">
+            <div class="card-title">🏅 Ranking del mes · Medellín</div>
+            <div class="rank-full"><span><span class="n top">1.</span><span class="nom">Durley</span></span><span><span class="val">$22.5M</span><span class="medalla">⭐</span></span></div>
+            <div class="rank-full"><span><span class="n">2.</span><span class="nom">Lorena</span></span><span><span class="val">$18.3M</span></span></div>
+            <div class="rank-full"><span><span class="n">3.</span><span class="nom">Elena</span></span><span><span class="val">$16.1M</span></span></div>
+            <div class="rank-full"><span><span class="n">4.</span><span class="nom">Luisa</span></span><span><span class="val">$13.8M</span></span></div>
+            <div class="rank-full"><span><span class="n">5.</span><span class="nom">Dayana</span></span><span><span class="val">$10.4M</span></span></div>
+            <div class="rank-full"><span><span class="n">6.</span><span class="nom">Jennifer</span></span><span><span class="val">$8.1M</span></span></div>
+            <div class="rank-full tu"><span><span class="n">7.</span><span class="nom">TÚ</span></span><span><span class="val">$6.9M</span><span class="gap">-$1.2M</span></span></div>
+            <div class="rank-full"><span><span class="n">8.</span><span class="nom">Betzabeth</span></span><span><span class="val">$4.2M</span></span></div>
+          </div>
+
+          <div class="chip-clickable chip-trim">
+            <div class="left">💎 Trimestre Q3: <strong>2.76</strong> · sigue creciendo</div>
+            <div class="arrow">›</div>
+          </div>
+          <div class="chip-clickable chip-comp">
+            <div class="left">📋 Comportamiento: ✅ ✅ 3.8⭐</div>
+            <div class="arrow">›</div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab active"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">📊 Tab HOY · Manuela pre-piso #7</div>
+  </div>
+
+  <!-- CELULAR 3: Tab RANKING con tabs -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header">
+          <div class="brand">Indicadores TLV</div>
+          <div class="chip-2026" style="background: linear-gradient(135deg, #1e1b4b, #312e81); color:#fbbf24; border-color: rgba(251, 191, 36, 0.4);">📊 Hoy ›</div>
+        </div>
+        <div class="greeting">
+          Hola <strong>Durley</strong> · <span class="role-mini admin">Admin</span>
+        </div>
+
+        <div class="content">
+          <div class="team-header">
+            <div class="team-title">🟢 Team Valquirias Medellín</div>
+          </div>
+
+          <div class="rank-tabs">
+            <button class="rank-tab-btn active">📅 Mes</button>
+            <button class="rank-tab-btn">💎 Trimestre</button>
+            <button class="rank-tab-btn">⚡ Semana ef.</button>
+          </div>
+
+          <div class="rank-big tu">
+            <div class="medal">🥇</div>
+            <div class="info">
+              <div class="nom">TÚ (Durley)</div>
+              <div class="rol">Administradora · 68% meta</div>
+            </div>
+            <div class="valores">
+              <div class="v">$22.5M</div>
+              <div class="g">Nota: 4.32</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">🥈</div>
+            <div class="info">
+              <div class="nom">Lorena</div>
+              <div class="rol">Administradora · 55%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$18.3M</div>
+              <div class="g">-$4.2M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">🥉</div>
+            <div class="info">
+              <div class="nom">Elena</div>
+              <div class="rol">Asesora · 49%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$16.1M</div>
+              <div class="g">-$2.2M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">4</div>
+            <div class="info">
+              <div class="nom">Luisa</div>
+              <div class="rol">Asesora · 42%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$13.8M</div>
+              <div class="g">-$2.3M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">5</div>
+            <div class="info">
+              <div class="nom">Dayana</div>
+              <div class="rol">Asesora · 31%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$10.4M</div>
+              <div class="g">-$3.4M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">6</div>
+            <div class="info">
+              <div class="nom">Jennifer</div>
+              <div class="rol">Asesora · 24%</div>
+            </div>
+            <div class="valores">
+              <div class="v">$8.1M</div>
+              <div class="g">-$2.3M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">7</div>
+            <div class="info">
+              <div class="nom">Manuela</div>
+              <div class="rol">Asesora · pre-piso</div>
+            </div>
+            <div class="valores">
+              <div class="v">$6.9M</div>
+              <div class="g">-$1.2M</div>
+            </div>
+          </div>
+          <div class="rank-big">
+            <div class="medal">8</div>
+            <div class="info">
+              <div class="nom">Betzabeth</div>
+              <div class="rol">Asesora · pre-piso</div>
+            </div>
+            <div class="valores">
+              <div class="v">$4.2M</div>
+              <div class="g">-$2.7M</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab active"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">📈 Tab RANKING · Mes MED (con tabs)</div>
+  </div>
+
+  <!-- CELULAR 4: Tab MI AÑO -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header">
+          <div class="brand">Indicadores TLV</div>
+          <div class="chip-2026" style="background: linear-gradient(135deg, #1e1b4b, #312e81); color:#fbbf24; border-color: rgba(251, 191, 36, 0.4);">📊 Hoy ›</div>
+        </div>
+        <div class="greeting">
+          Hola <strong>Durley</strong> <span class="role-mini admin">Admin</span>
+          <div style="margin-top: 4px; font-size: 12px; color: #047857; font-weight: 900;">🟢 Team Valquirias Medellín</div>
+        </div>
+
+        <div class="content">
+          <div class="hero-year">
+            <div class="label">💎 Llevas ganado en 2026</div>
+            <div class="valor">$22.250.000</div>
+            <div class="sub">🏆 Eres la #1 de Medellín este trimestre</div>
+          </div>
+
+          <div class="proy-year">
+            <div class="label">🌟 Si sigues así hasta diciembre</div>
+            <div class="valor">$42.200.000</div>
+            <div class="desc">Proyección total 2026 al ritmo actual</div>
+          </div>
+
+          <div class="historial-list">
+            <div class="titulo">💫 Desglose 2026</div>
+            <div class="row"><span class="lbl">Salario base (8 meses)</span><span class="val">$16.000.000</span></div>
+            <div class="row"><span class="lbl">Premios mensuales por ventas</span><span class="val">$5.400.000</span></div>
+            <div class="row"><span class="lbl">Premios semanales</span><span class="val">$850.000</span></div>
+            <div class="row"><span class="lbl">Premios trimestrales</span><span class="val">$0</span></div>
+            <div class="row"><span class="lbl">Reconocimientos</span><span class="val">2 días libres</span></div>
+            <div class="total"><span class="lbl">Total 2026</span><span class="val">$22.250.000</span></div>
+          </div>
+
+          <div style="text-align:center; font-size:11px; color:#94a3b8; margin-top:12px; padding: 0 20px; line-height:1.5; font-weight: 600;">
+            💡 Desliza abajo para ver histórico mensual
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab active"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">💎 Tab MI AÑO · Durley histórico</div>
+  </div>
+
+  <!-- CELULAR 5: DETALLE TRIMESTRE Q3 -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header-detalle">
+          <div class="back-btn">‹ Volver</div>
+          <div class="header-title">💎 Trimestre Q3 · 2026</div>
+          <div style="width: 40px;"></div>
+        </div>
+
+        <div class="content" style="padding-bottom: 74px;">
+          <!-- HERO nota trimestral -->
+          <div class="trim-hero">
+            <div class="trim-hero-label">Tu nota trimestral</div>
+            <div class="trim-hero-valor">4.10</div>
+            <div class="trim-hero-meta">Meta: 4.50 · faltan <strong>0.40</strong></div>
+            <div class="trim-hero-progress">
+              <div class="trim-hero-fill" style="width: 82%;"></div>
+            </div>
+          </div>
+
+          <!-- Simulador -->
+          <div class="card sim">
+            <div class="card-title" style="color: #b45309;">🎯 Simulador · qué necesitas</div>
+            <div class="sim-msg">
+              Sacando <strong style="color:#059669; font-size: 16px;">4.75</strong> este mes,
+              cierras el trimestre en <strong>4.52</strong> y ganas el premio de
+              <strong style="color:#059669;">$1.000.000</strong> 🏆
+            </div>
+            <div class="sim-tip">
+              💡 Tu mejor nota mensual este año fue <strong>4.68</strong> (junio) — este mes es alcanzable
+            </div>
+          </div>
+
+          <!-- Desglose por mes -->
+          <div class="card">
+            <div class="card-title">📊 Desglose por mes</div>
+            <div class="mes-row">
+              <div class="mes-row-info">
+                <div class="mes-nombre">Julio 2026</div>
+                <div class="mes-peso">Peso: 20%</div>
+              </div>
+              <div class="mes-row-nota completo">4.15</div>
+            </div>
+            <div class="mes-row">
+              <div class="mes-row-info">
+                <div class="mes-nombre">Agosto 2026</div>
+                <div class="mes-peso">Peso: 30% · en curso</div>
+              </div>
+              <div class="mes-row-nota progreso">4.32</div>
+            </div>
+            <div class="mes-row">
+              <div class="mes-row-info">
+                <div class="mes-nombre">Septiembre 2026</div>
+                <div class="mes-peso">Peso: 50% · más importante</div>
+              </div>
+              <div class="mes-row-nota pendiente">—</div>
+            </div>
+          </div>
+
+          <!-- Premio en juego -->
+          <div class="card premio-juego">
+            <div class="card-title" style="color: #7c2d12;">🏆 Premios en juego · Q3</div>
+            <div class="premio-item">
+              <div class="premio-emoji">📺</div>
+              <div class="premio-info">
+                <div class="premio-nombre">TV 42" Smart</div>
+                <div class="premio-cond">A la #1 de Medellín este trimestre</div>
+              </div>
+            </div>
+            <div class="premio-item">
+              <div class="premio-emoji">💰</div>
+              <div class="premio-info">
+                <div class="premio-nombre">$1.000.000</div>
+                <div class="premio-cond">Si tu nota trimestral llega a 4.50</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Historial -->
+          <div class="card">
+            <div class="card-title">📅 Historial de trimestres</div>
+            <div class="hist-row">
+              <span class="hist-tri">Q1 2026</span>
+              <span class="hist-nota">4.28</span>
+              <span class="hist-premio">💰 $1M ganado</span>
+            </div>
+            <div class="hist-row">
+              <span class="hist-tri">Q2 2026</span>
+              <span class="hist-nota">4.42</span>
+              <span class="hist-premio">🎁 2 días libres</span>
+            </div>
+            <div class="hist-row activo">
+              <span class="hist-tri">Q3 2026</span>
+              <span class="hist-nota">4.10</span>
+              <span class="hist-premio">📺 TV en juego</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab active"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">💎 Detalle TRIMESTRE Q3</div>
+  </div>
+
+  <!-- CELULAR 6: DETALLE COMPORTAMIENTO -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header-detalle">
+          <div class="back-btn">‹ Volver</div>
+          <div class="header-title">📋 Comportamiento</div>
+          <div style="width: 40px;"></div>
+        </div>
+
+        <div class="content" style="padding-bottom: 74px;">
+          <!-- HERO 40% -->
+          <div class="comp-hero">
+            <div class="comp-hero-label">Tu 40% de la nota · Agosto</div>
+            <div class="comp-hero-valor">3.86</div>
+            <div class="comp-hero-desc">De 5.0 posibles · aporta 1.54 a tu nota total</div>
+          </div>
+
+          <!-- Indicadores -->
+          <div class="card">
+            <div class="card-title">📊 Los 5 indicadores</div>
+
+            <div class="ind-row good">
+              <div class="ind-icon">✅</div>
+              <div class="ind-info">
+                <div class="ind-nombre">Puntualidad</div>
+                <div class="ind-detalle">0 retardos este mes · perfecta</div>
+              </div>
+              <div class="ind-derecha">
+                <div class="ind-nota">5.0</div>
+                <div class="ind-peso">peso 11%</div>
+              </div>
+            </div>
+
+            <div class="ind-row good">
+              <div class="ind-icon">✅</div>
+              <div class="ind-info">
+                <div class="ind-nombre">Tienda</div>
+                <div class="ind-detalle">Limpieza y orden impecables</div>
+              </div>
+              <div class="ind-derecha">
+                <div class="ind-nota">4.8</div>
+                <div class="ind-peso">peso 9%</div>
+              </div>
+            </div>
+
+            <div class="ind-row warn">
+              <div class="ind-icon">⚠️</div>
+              <div class="ind-info">
+                <div class="ind-nombre">Planilla</div>
+                <div class="ind-detalle">Faltan 2 días sin llenar · lun 4 y mar 5</div>
+              </div>
+              <div class="ind-derecha">
+                <div class="ind-nota warn">3.2</div>
+                <div class="ind-peso">peso 9%</div>
+              </div>
+            </div>
+
+            <div class="ind-row good">
+              <div class="ind-icon">✅</div>
+              <div class="ind-info">
+                <div class="ind-nombre">Actitud</div>
+                <div class="ind-detalle">Sin observaciones negativas</div>
+              </div>
+              <div class="ind-derecha">
+                <div class="ind-nota">4.5</div>
+                <div class="ind-peso">peso 6%</div>
+              </div>
+            </div>
+
+            <div class="ind-row star">
+              <div class="ind-icon">⭐</div>
+              <div class="ind-info">
+                <div class="ind-nombre">Reseñas</div>
+                <div class="ind-detalle">12 reseñas · promedio 4.7 estrellas</div>
+              </div>
+              <div class="ind-derecha">
+                <div class="ind-nota">4.7</div>
+                <div class="ind-peso">peso 5%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Consejo -->
+          <div class="tip-card">
+            <div class="tip-title">💡 Cómo subir tu nota</div>
+            <div class="tip-msg">
+              Llena las <strong>2 planillas atrasadas</strong> y tu comportamiento
+              del mes sube de <strong>3.86</strong> a <strong style="color: #047857;">4.42</strong> — impacta directo a tu premio trimestral.
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab active"><div class="ico">📊</div><div class="lb">Hoy</div></div>
+          <div class="nav-tab"><div class="ico">📈</div><div class="lb">Ranking</div></div>
+          <div class="nav-tab"><div class="ico">💎</div><div class="lb">Mi año</div></div>
+          <div class="nav-tab"><div class="ico">❓</div><div class="lb">Cómo</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">📋 Detalle COMPORTAMIENTO</div>
+  </div>
+
+</div>
+
+</body>
+</html>
