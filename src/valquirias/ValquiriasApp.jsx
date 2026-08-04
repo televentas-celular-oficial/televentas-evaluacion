@@ -24,6 +24,7 @@ import TabComo from "./tabs/TabComo.jsx";
 import DetalleTrimestre from "./detalles/DetalleTrimestre.jsx";
 import DetalleComportamiento from "./detalles/DetalleComportamiento.jsx";
 import IngresoDiario from "./oficina/IngresoDiario.jsx";
+import AdminHome from "./admin/AdminHome.jsx";
 import { estaEnVentanaAutoEncendido, hoyColombia, fechaBonita, esLunesEnColombia, rangoSemanaAnterior, diasParaFinMes, nombreMesActual } from "./lib/helpers.js";
 
 import "./valquirias.css";
@@ -166,7 +167,14 @@ export default function ValquiriasApp() {
     }} />;
   }
 
-  // Rol ADMIN (Luis): TODO — panel admin nuevo. Por ahora ve la vista vendedora con filtros.
+  // Rol ADMIN (Luis): panel admin nuevo
+  if (rol === "admin") {
+    return <AdminHome datosGlobales={{
+      ventasMesTotal: 132_400_000,
+      ventasMED: 92_000_000,
+      ventasBOG: 40_400_000,
+    }} />;
+  }
   // Vista vendedora
   const { vendedora } = datos;
   const ciudad = vendedora?.ciudad || "MED";
