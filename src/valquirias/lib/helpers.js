@@ -105,6 +105,30 @@ export function premioTramo(ventasMes, tramo) {
   return Math.round(ventasMes * tramo.pct);
 }
 
+// Lunes de premio: true si HOY es lunes en hora Colombia
+// Se usa para mostrar el card celebratorio de ganadoras de la semana pasada
+export function esLunesEnColombia() {
+  const now = new Date();
+  const tz = "America/Bogota";
+  const wd = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(now);
+  return wd === "Mon";
+}
+
+// Etiqueta de rango de semana (lun-dom) para mostrar
+export function rangoSemanaAnterior() {
+  const now = new Date();
+  const tz = "America/Bogota";
+  const wdMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const wd = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(now);
+  const hoyIdx = wdMap[wd] ?? 0;
+  // Retroceder al domingo pasado
+  const diasAtras = hoyIdx === 0 ? 7 : hoyIdx;
+  const dom = new Date(now); dom.setDate(now.getDate() - diasAtras);
+  const lun = new Date(dom); lun.setDate(dom.getDate() - 6);
+  const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  return `${lun.getDate()} ${meses[lun.getMonth()]} – ${dom.getDate()} ${meses[dom.getMonth()]}`;
+}
+
 // Auto-encendido martes/viernes 6pm-12am hora Colombia
 export function estaEnVentanaAutoEncendido() {
   const now = new Date();

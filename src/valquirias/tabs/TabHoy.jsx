@@ -2,6 +2,7 @@
 // Responde en 2 segundos "cómo voy AHORA".
 
 import { formatoPesos, formatoK, primerNombre } from "../lib/helpers.js";
+import CardSemanaCerrada from "../common/CardSemanaCerrada.jsx";
 
 export default function TabHoy({
   vendedora,
@@ -15,6 +16,8 @@ export default function TabHoy({
   rankingMes,   // array de {n, nombre, valor, gap, esYo, medal}
   trimestre,    // { nota, posicion, premio }
   comportamiento, // { estado: 'ok'|'warn', resenas }
+  semanaCerrada,  // {fechaLabel, extra, ganadoras50k} — se muestra los lunes
+  onCerrarSemanaCerrada,
   onDetalleTrim,
   onDetalleComp,
 }) {
@@ -23,6 +26,10 @@ export default function TabHoy({
 
   return (
     <>
+      {semanaCerrada && (
+        <CardSemanaCerrada semanaCerrada={semanaCerrada} onCerrar={onCerrarSemanaCerrada} />
+      )}
+
       <div className="v-hoy">
         <div className="v-hoy-titulo">📆 {hoy?.fecha || "Hoy"}</div>
         <div className="v-hoy-dato">

@@ -90,6 +90,11 @@ export default function TabRanking({
         <button className={"v-rank-tab-btn" + (subTab === "sem" ? " active" : "")} onClick={() => setSubTab("sem")}>⚡ Sem ef.</button>
       </div>
 
+      {/* Chips de semanas para Sem Ef */}
+      {subTab === "sem" && (
+        <ChipsSemanas />
+      )}
+
       {(data || []).map((r, i) => (
         <div key={i} className={"v-rank-big " + (r.esYo ? "tu" : "")}>
           <div className="medal">{r.medal || i + 1}</div>
@@ -108,5 +113,47 @@ export default function TabRanking({
         <div className="v-loading">Sin datos aún para este período</div>
       )}
     </>
+  );
+}
+
+// Chips de últimas semanas (para navegar histórico en Sem Ef)
+// Por ahora estático — cuando conectemos Firestore, viene de las semanas cerradas reales
+function ChipsSemanas() {
+  const [semSel, setSemSel] = useState(0); // 0 = semana actual
+  const semanas = [
+    { i: 0, label: "Actual",  rango: "4 – 10 ago" },
+    { i: 1, label: "Cerrada", rango: "28 jul – 3 ago" },
+    { i: 2, label: "-2 sem",  rango: "21 – 27 jul" },
+    { i: 3, label: "-3 sem",  rango: "14 – 20 jul" },
+    { i: 4, label: "-4 sem",  rango: "7 – 13 jul" },
+  ];
+  return (
+    <div style={{ display: "flex", gap: 4, overflowX: "auto", padding: "0 0 8px", marginBottom: 6 }}>
+      {semanas.map(s => {
+        const activo = semSel === s.i;
+        return (
+          <button
+            key={s.i}
+            onClick={() => setSemSel(s.i)}
+            style={{
+              padding: "6px 10px",
+              fontSize: 11,
+              fontWeight: 800,
+              background: activo ? "linear-gradient(135deg, #10b981, #059669)" : "#fff",
+              color: activo ? "#fff" : "#047857",
+              border: "1.5px solid " + (activo ? "#10b981" : "#e2e8f0"),
+              borderRadius: 8,
+              cursor: "pointer",
+              flexShrink: 0,
+              textAlign: "center",
+              lineHeight: 1.2,
+            }}
+          >
+            <div>{s.label}</div>
+            <div style={{ fontSize: 9, opacity: 0.85, marginTop: 1 }}>{s.rango}</div>
+          </button>
+        );
+      })}
+    </div>
   );
 }

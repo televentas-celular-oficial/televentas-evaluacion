@@ -23,7 +23,7 @@ import TabMiAno from "./tabs/TabMiAno.jsx";
 import TabComo from "./tabs/TabComo.jsx";
 import DetalleTrimestre from "./detalles/DetalleTrimestre.jsx";
 import DetalleComportamiento from "./detalles/DetalleComportamiento.jsx";
-import { estaEnVentanaAutoEncendido, hoyColombia, fechaBonita } from "./lib/helpers.js";
+import { estaEnVentanaAutoEncendido, hoyColombia, fechaBonita, esLunesEnColombia, rangoSemanaAnterior } from "./lib/helpers.js";
 
 import "./valquirias.css";
 
@@ -87,6 +87,16 @@ function datosMockDurley() {
       { n: 8, nombre: "Betzabeth", valor: 4_200_000, gap: "-$2.7M" },
     ],
     trimestre: { q: "Q3", nota: 4.10, posicion: 1, premio: "TV en juego" },
+    semanaCerrada: {
+      fechaLabel: rangoSemanaAnterior(),
+      extra: { nombre: "Durley Castaño", monto: 3_400_000, esYo: true },
+      ganadoras50k: [
+        { nombre: "Durley Castaño", esYo: true },
+        { nombre: "Lorena", esYo: false },
+        { nombre: "Elena", esYo: false },
+        { nombre: "Luisa", esYo: false },
+      ],
+    },
     comportamiento: { estado: "warn", resenas: 4.7 },
     totalAño: 22_250_000,
     proyeccion: 42_200_000,
@@ -105,6 +115,7 @@ export default function ValquiriasApp() {
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [tab, setTab] = useState("hoy");
   const [detalle, setDetalle] = useState(null); // 'trim' | 'comp' | null
+  const [semanaCerradaOculta, setSemanaCerradaOculta] = useState(false);
   const [datos] = useState(datosMockDurley()); // TODO: cargar de Firestore
   const [filtroCiudadAdmin, setFiltroCiudadAdmin] = useState("MED");
   const [mesSeleccionado, setMesSeleccionado] = useState(() => {
@@ -213,6 +224,8 @@ export default function ValquiriasApp() {
           rankingMes={datos.rankingMes}
           trimestre={datos.trimestre}
           comportamiento={datos.comportamiento}
+          semanaCerrada={(esLunesEnColombia() || esDemo) && !semanaCerradaOculta ? datos.semanaCerrada : null}
+          onCerrarSemanaCerrada={() => setSemanaCerradaOculta(true)}
           onDetalleTrim={() => setDetalle("trim")}
           onDetalleComp={() => setDetalle("comp")}
         />
