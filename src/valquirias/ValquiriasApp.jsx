@@ -23,7 +23,7 @@ import TabMiAno from "./tabs/TabMiAno.jsx";
 import TabComo from "./tabs/TabComo.jsx";
 import DetalleTrimestre from "./detalles/DetalleTrimestre.jsx";
 import DetalleComportamiento from "./detalles/DetalleComportamiento.jsx";
-import { estaEnVentanaAutoEncendido, hoyColombia, fechaBonita, esLunesEnColombia, rangoSemanaAnterior } from "./lib/helpers.js";
+import { estaEnVentanaAutoEncendido, hoyColombia, fechaBonita, esLunesEnColombia, rangoSemanaAnterior, diasParaFinMes, nombreMesActual } from "./lib/helpers.js";
 
 import "./valquirias.css";
 
@@ -207,7 +207,13 @@ export default function ValquiriasApp() {
           ]}
           tip={{
             titulo: "Cada día suma",
-            mensaje: <>Los indicadores son <strong>observaciones diarias</strong> — lo que pasó ya pasó. Faltan <strong>16 días</strong> para cerrar agosto: mantén tu ritmo con puntualidad, actitud y detalles y cierras el mes con nota alta 💪</>,
+            mensaje: (() => {
+              const dias = diasParaFinMes();
+              const mes = nombreMesActual();
+              return (
+                <>Los indicadores son <strong>observaciones diarias</strong> — lo que pasó ya pasó. {dias > 0 ? <>Faltan <strong>{dias} {dias === 1 ? "día" : "días"}</strong> para cerrar {mes}: mantén tu ritmo con puntualidad, actitud y detalles y cierras el mes con nota alta 💪</> : <>Hoy cierra {mes}. Mañana arranca un mes nuevo — todo empieza de cero 💪</>}</>
+              );
+            })(),
           }}
           onVolver={() => setDetalle(null)}
         />

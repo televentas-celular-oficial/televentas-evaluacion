@@ -105,6 +105,20 @@ export function premioTramo(ventasMes, tramo) {
   return Math.round(ventasMes * tramo.pct);
 }
 
+// Días restantes hasta fin del mes actual (hora Colombia)
+// Ej: si hoy es día 15 y el mes tiene 31 → devuelve 16
+export function diasParaFinMes() {
+  const h = hoyColombia();
+  const ultimoDia = new Date(h.año, h.mes, 0).getDate(); // día 0 del siguiente = último del actual
+  return Math.max(0, ultimoDia - h.dia);
+}
+
+// Nombre del mes actual en español
+export function nombreMesActual() {
+  const nombres = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  return nombres[hoyColombia().mes - 1];
+}
+
 // Lunes de premio: true si HOY es lunes en hora Colombia
 // Se usa para mostrar el card celebratorio de ganadoras de la semana pasada
 export function esLunesEnColombia() {
