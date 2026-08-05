@@ -99,7 +99,7 @@ export default function LoginMagicLink({ onLoggedIn }) {
       setMsg("¡Listo! Revisa tu correo y toca el link que te enviamos.");
       setMsgTipo("ok");
     } catch (err) {
-      setMsg("No pudimos enviar el link. Escríbele a Luis.");
+      setMsg("No pudimos enviar el link. Escríbele al administrador.");
       setMsgTipo("err");
       console.error(err);
     } finally {
@@ -133,7 +133,7 @@ export default function LoginMagicLink({ onLoggedIn }) {
             <div className={"v-login-msg " + msgTipo}>{msg}</div>
           )}
           <div style={{ marginTop: 20, fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>
-            💬 ¿No tienes email de acceso? Escríbele a Luis.
+            💬 ¿No tienes email de acceso? Escríbele al administrador.
           </div>
         </div>
       </div>
