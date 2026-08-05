@@ -1,135 +1,78 @@
 rules_version = '2';
 
 // ============================================================
-// Reglas Firestore v2 — Valquirias TLV (blindadas)
+// Reglas Firestore Valquirias TLV — v3 (SIN Cloud Functions)
 // ============================================================
 //
-// Modelo de auth:
-// - TODOS los usuarios entran con Firebase Auth (Magic Link).
-// - Cada usuario tiene CUSTOM CLAIMS asignados por Cloud Functions:
-//     * ciudad : 'MED' | 'BOG'          (ciudad de la vendedora/oficina; admin puede ser 'MED')
-//     * rol    : 'vendedora' | 'oficina' | 'admin'
-//     * activa : true | false            (si es false → sin acceso)
+// Modelo de auth simplificado (sin custom claims):
+// - Todos entran con Firebase Auth (Magic Link).
+// - La whitelist real vive en Firestore doc `config` → campo `whitelist`.
+// - Estas rules controlan solo qué email puede leer/escribir qué doc.
+// - El bloqueo whitelistActiva=false lo hace el cliente en LoginMagicLink.jsx
+//   (después signOut si no está autorizada).
 //
-// Regla de oro:
-// - Piso $15M SOLO existe en MED. BOG NUNCA debe poder leer 'config-med'.
-// - Cualquier vendedora con activa != true queda automáticamente FUERA.
-// - La app cliente ya NO puede escribir nada sin ser oficina o admin.
+// Estructura Firestore actual:
+//   colección `televentas` con 5 docs:
+//     - registros   (llenados por Carolina y Luis)
+//     - metas       (cargadas por Luis, incluye ventas sincronizadas de systemlap)
+//     - vendedoras  (roster + emails privados)
+//     - snapshots   (meses cerrados, generados por Luis)
+//     - config      (whitelist, whitelistActiva, premiosTrim, rankingVisible)
 //
-// Colección única: 'televentas' con docs conocidos:
-//   config-med   → parámetros MED (piso 15M, metas MED, etc.) — SOLO MED
-//   config-bog   → parámetros BOG                              — SOLO BOG
-//   config-comun → parámetros compartidos (fecha corte, versión app…)
-//   vendedoras   → roster de vendedoras (nombres, ciudad, activa)
-//   vendidas     → ventas diarias/mensuales
-//   metas        → metas mensuales por ciudad
-//   snapshots    → cierres históricos
-//   registros    → registros diarios crudos
-// ============================================================
+// Emails privilegiados (hardcoded):
+//   Luis      → luisponce.tv@gmail.com     — admin (write TODO)
+//   Carolina  → info@televentas.com        — oficina (write registros y metas)
+//
+// Vendedoras (13): lectura de todos los docs — necesario para ver ranking,
+// nota, ventas propias, config de premios trimestrales, etc.
+// Los DATOS SENSIBLES personales de cada vendedora deben quedar en su UI,
+// no en un doc separado (mismo modelo que la app vieja).
+
+function esAdmin() {
+  return request.auth != null
+      && request.auth.token.email == 'luisponce.tv@gmail.com';
+}
+
+function esOficina() {
+  return request.auth != null
+      && request.auth.token.email == 'info@televentas.com';
+}
+
+function autenticado() {
+  return request.auth != null && request.auth.token.email != null;
+}
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // -------- helpers de auth --------
-
-    // ¿Está autenticado Y activo?
-    function autenticadoActivo() {
-      return request.auth != null
-        && request.auth.token.activa == true;
-    }
-
-    function esAdmin() {
-      return autenticadoActivo()
-        && request.auth.token.rol == 'admin';
-    }
-
-    function esOficina() {
-      return autenticadoActivo()
-        && request.auth.token.rol == 'oficina';
-    }
-
-    function esVendedora() {
-      return autenticadoActivo()
-        && request.auth.token.rol == 'vendedora';
-    }
-
-    // Ciudad del usuario
-    function ciudadUsuario() {
-      return request.auth.token.ciudad;
-    }
-
-    // -------- reglas por documento --------
-
+    // ---------- Colección principal ----------
     match /televentas/{docId} {
 
-      // ============ CONFIG-MED (contiene piso $15M) ============
-      // Solo lo pueden LEER usuarios cuya ciudad sea MED.
-      // BOG NUNCA lo ve — ni siquiera admin BOG (no debería existir, pero blindado).
-      // Escribir: solo admin.
-      allow read: if docId == 'config-med'
-        && autenticadoActivo()
-        && ciudadUsuario() == 'MED';
+      // LECTURA: cualquier autenticado.
+      // (La validación fina — quién ES esta persona, qué puede ver — la hace el cliente.
+      // La whitelist en config decide si el login se completa; si no, signOut inmediato.)
+      allow read: if autenticado();
 
-      allow write: if docId == 'config-med' && esAdmin();
-
-      // ============ CONFIG-BOG ============
-      // Solo lo pueden LEER usuarios cuya ciudad sea BOG.
-      // Escribir: solo admin.
-      allow read: if docId == 'config-bog'
-        && autenticadoActivo()
-        && ciudadUsuario() == 'BOG';
-
-      allow write: if docId == 'config-bog' && esAdmin();
-
-      // ============ CONFIG-COMUN ============
-      // Lectura para cualquier usuario autenticado y activo (MED o BOG).
-      // Escribir: solo admin.
-      allow read: if docId == 'config-comun' && autenticadoActivo();
-      allow write: if docId == 'config-comun' && esAdmin();
-
-      // ============ VENDEDORAS ============
-      // Roster completo. Leer: cualquier autenticado activo (necesario para
-      // ranking/boletines). Escribir: solo admin (crea/desactiva vendedoras).
-      allow read: if docId == 'vendedoras' && autenticadoActivo();
-      allow write: if docId == 'vendedoras' && esAdmin();
-
-      // ============ VENDIDAS / REGISTROS ============
-      // Datos operativos día a día que carga Oficina (Carolina).
-      // Leer: cualquier autenticado activo.
-      // Escribir: oficina o admin.
-      allow read: if docId in ['vendidas', 'registros'] && autenticadoActivo();
-      allow write: if docId in ['vendidas', 'registros'] && (esOficina() || esAdmin());
-
-      // ============ METAS ============
-      // Metas mensuales por ciudad. Igual que registros: oficina o admin escriben.
-      allow read: if docId == 'metas' && autenticadoActivo();
-      allow write: if docId == 'metas' && (esOficina() || esAdmin());
-
-      // ============ SNAPSHOTS ============
-      // Cierres históricos. Leer: autenticados activos. Escribir: solo admin.
-      allow read: if docId == 'snapshots' && autenticadoActivo();
-      allow write: if docId == 'snapshots' && esAdmin();
+      // ESCRITURA por doc:
+      // - vendedoras + snapshots: solo admin (Luis)
+      // - registros: admin u oficina (Carolina llena diario)
+      // - metas: admin u oficina (Carolina puede corregir ventas)
+      // - config: solo admin
+      allow write: if (docId == 'vendedoras'  && esAdmin())
+                   || (docId == 'snapshots'   && esAdmin())
+                   || (docId == 'config'      && esAdmin())
+                   || (docId == 'registros'   && (esAdmin() || esOficina()))
+                   || (docId == 'metas'       && (esAdmin() || esOficina()));
     }
 
-    // ============ ACCESOS_LOG ============
-    // Colección separada donde Cloud Functions registra cada login.
-    // Nadie escribe desde el cliente. Solo admin puede leer para auditoría.
-    match /accesos_log/{eventoId} {
+    // ---------- Log de accesos (fase 2, cuando activemos Blaze) ----------
+    match /accesos_log/{logId} {
       allow read: if esAdmin();
-      allow write: if false; // solo Cloud Functions (server SDK bypassea reglas)
+      allow write: if false; // solo Cloud Functions escriben aquí (aún no existen)
     }
 
-    // ============ WHITELIST DE EMAILS ============
-    // Documento con la lista blanca de emails autorizados a recibir magic link.
-    // Solo admin lee/escribe. Cloud Function la consulta con Admin SDK.
-    match /whitelist/{emailNormalizado} {
-      allow read: if esAdmin();
-      allow write: if esAdmin();
-    }
-
-    // ============ DENY-ALL por defecto ============
-    // Cualquier ruta no listada arriba queda cerrada.
-    match /{document=**} {
+    // ---------- Deny-all al final: cualquier otra ruta bloqueada ----------
+    match /{path=**} {
       allow read, write: if false;
     }
   }

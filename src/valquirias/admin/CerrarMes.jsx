@@ -244,10 +244,25 @@ export default function CerrarMes({ onVolver }) {
                 style={{ flex: 1, padding: "10px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 800, cursor: "pointer" }}
               >Cancelar</button>
               <button
+                disabled={confirmarCierre.faltantes.length > 0}
                 onClick={() => ejecutarCierre(confirmarCierre.año, confirmarCierre.mes)}
-                style={{ flex: 1, padding: "10px", background: "linear-gradient(135deg, #dc2626, #b91c1c)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 800, cursor: "pointer" }}
+                style={{
+                  flex: 1, padding: "10px",
+                  background: confirmarCierre.faltantes.length > 0
+                    ? "#e2e8f0"
+                    : "linear-gradient(135deg, #dc2626, #b91c1c)",
+                  color: confirmarCierre.faltantes.length > 0 ? "#94a3b8" : "#fff",
+                  border: "none", borderRadius: 8, fontWeight: 800,
+                  cursor: confirmarCierre.faltantes.length > 0 ? "not-allowed" : "pointer",
+                }}
+                title={confirmarCierre.faltantes.length > 0 ? "Completa los faltantes antes de cerrar" : "Cerrar mes"}
               >🔒 Cerrar</button>
             </div>
+            {confirmarCierre.faltantes.length > 0 && (
+              <div style={{ marginTop: 8, fontSize: 10, color: "#991b1b", fontWeight: 700, textAlign: "center" }}>
+                ⚠️ No se puede cerrar mientras haya datos faltantes.
+              </div>
+            )}
           </div>
         </div>
       )}

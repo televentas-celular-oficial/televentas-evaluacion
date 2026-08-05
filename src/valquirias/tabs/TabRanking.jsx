@@ -2,8 +2,32 @@
 // 3 sub-tabs: Mes / Trimestre / Semana efectivo
 // Selector histórico de meses (chips ene-dic)
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { formatoK, primerNombre } from "../lib/helpers.js";
+
+// Calcula las últimas N semanas (lun-dom) desde HOY hora Colombia
+function calcularUltimasSemanas(n) {
+  const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const tz = "America/Bogota";
+  const wd = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(new Date());
+  const wdMap = { Sun: 6, Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
+  const diasDesdeLunes = wdMap[wd] ?? 0;
+
+  const lunActual = new Date();
+  lunActual.setDate(lunActual.getDate() - diasDesdeLunes);
+
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const lun = new Date(lunActual);
+    lun.setDate(lunActual.getDate() - i * 7);
+    const dom = new Date(lun);
+    dom.setDate(lun.getDate() + 6);
+    const rango = `${lun.getDate()} ${meses[lun.getMonth()]} – ${dom.getDate()} ${meses[dom.getMonth()]}`;
+    const label = i === 0 ? "Actual" : i === 1 ? "Cerrada" : `-${i} sem`;
+    out.push({ i, label, rango });
+  }
+  return out;
+}
 
 const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const TRIMESTRE_ACTUAL = 3; // Q3 en agosto — luego se calcula automático
@@ -146,16 +170,10 @@ function chipStyle(activo, color) {
 }
 
 // Chips de últimas semanas (para navegar histórico en Sem Ef)
-// Por ahora estático — cuando conectemos Firestore, viene de las semanas cerradas reales
+// Fechas calculadas dinámicamente desde HOY (hora Colombia)
 function ChipsSemanas() {
   const [semSel, setSemSel] = useState(0); // 0 = semana actual
-  const semanas = [
-    { i: 0, label: "Actual",  rango: "4 – 10 ago" },
-    { i: 1, label: "Cerrada", rango: "28 jul – 3 ago" },
-    { i: 2, label: "-2 sem",  rango: "21 – 27 jul" },
-    { i: 3, label: "-3 sem",  rango: "14 – 20 jul" },
-    { i: 4, label: "-4 sem",  rango: "7 – 13 jul" },
-  ];
+  const semanas = useMemo(() => calcularUltimasSemanas(5), []);
   return (
     <div style={{ display: "flex", gap: 4, overflowX: "auto", padding: "0 0 8px", marginBottom: 6 }}>
       {semanas.map(s => {
