@@ -37,18 +37,15 @@ export default function MagicLinks({ onVolver }) {
     setTimeout(() => setMsg(null), 3500);
   }
 
-  // Cruzar vendedoras con whitelist
+  // Whitelist = vendedoras activas (no eventuales) con email cargado
   const filas = useMemo(() => {
-    const activas = (datos.vendedoras || []).filter(v => v.activa !== false);
-    return activas.map(v => {
-      const emailEnWL = Object.entries(whitelist).find(([, w]) => w.vendedoraId === v.id);
-      return {
-        v,
-        email: emailEnWL?.[0] || v.email || null,
-        enWhitelist: !!emailEnWL,
-      };
-    });
-  }, [datos.vendedoras, whitelist]);
+    const activas = (datos.vendedoras || []).filter(v => v.activa !== false && !v.eventual);
+    return activas.map(v => ({
+      v,
+      email: v.email || null,
+      enWhitelist: !!v.email,
+    }));
+  }, [datos.vendedoras]);
 
   const conEmail = filas.filter(f => f.email);
   const sinEmail = filas.filter(f => !f.email);

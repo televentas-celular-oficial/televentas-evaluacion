@@ -51,17 +51,23 @@ export default function LoginMagicLink({ onLoggedIn }) {
             }
 
             try {
+              // Gate global de acceso (config.whitelistActiva)
               const cfgSnap = await getDoc(doc(db, "televentas", "config"));
               const cfg = cfgSnap.exists() ? JSON.parse(cfgSnap.data().data || "{}") : {};
               const activa = !!cfg.whitelistActiva;
-              const enWL = cfg.whitelist && cfg.whitelist[emailBajo];
-
               if (!activa) {
                 await signOut(auth);
                 setMsg("🔒 El acceso a la app aún no está habilitado. Te avisamos cuando esté listo.");
                 setMsgTipo("err");
                 return;
               }
+
+              // Whitelist = doc vendedoras (email vive ahí, no duplicado)
+              const vendSnap = await getDoc(doc(db, "televentas", "vendedoras"));
+              const vends = vendSnap.exists() ? JSON.parse(vendSnap.data().data || "[]") : [];
+              const enWL = vends.some(v =>
+                v.activa !== false && !v.eventual && (v.email || "").toLowerCase() === emailBajo
+              );
               if (!enWL) {
                 await signOut(auth);
                 setMsg("⚠️ Este email no está autorizado. Escríbele al administrador.");
