@@ -20,6 +20,8 @@ import GestionVendedoras from "./GestionVendedoras.jsx";
 import NominaComisiones from "./NominaComisiones.jsx";
 import MagicLinks from "./MagicLinks.jsx";
 import CargarMetas from "./CargarMetas.jsx";
+import CerrarMes from "./CerrarMes.jsx";
+import Backup from "./Backup.jsx";
 import ProximamentePanel from "./ProximamentePanel.jsx";
 
 const TILES = [
@@ -49,6 +51,12 @@ export default function AdminHome({ datosGlobales }) {
   }
   if (seccion === "metas") {
     return <CargarMetas onVolver={() => setSeccion(null)} />;
+  }
+  if (seccion === "cerrar") {
+    return <CerrarMes onVolver={() => setSeccion(null)} />;
+  }
+  if (seccion === "backup") {
+    return <Backup onVolver={() => setSeccion(null)} />;
   }
   if (seccion) {
     return <ProximamentePanel titulo={TILES.find(t => t.id === seccion)?.titulo || "En construcción"} onVolver={() => setSeccion(null)} />;
