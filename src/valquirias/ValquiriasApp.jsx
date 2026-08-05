@@ -209,8 +209,31 @@ function ValquiriasAppInner({ demoParam, esDemo }) {
 
   const rankingsPorCiudad = filtrarRankingCiudad(datos.rankingMes, filtroCiudadAdmin, ciudad);
 
+  // Admin autenticado en modo "Ver como vendedora" → mostrar banner con botón volver
+  const adminViendoComoVend = esDemo && user && rolDe(user) === "admin";
+
   return (
     <div className="v-app">
+      {adminViendoComoVend && (
+        <a href="/" style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 14px",
+          background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+          color: "#fff",
+          borderRadius: 10,
+          marginBottom: 10,
+          fontSize: 12,
+          fontWeight: 900,
+          textDecoration: "none",
+          boxShadow: "0 4px 12px rgba(124, 58, 237, 0.25)",
+        }}>
+          <span>🛡️ Viendo como vendedora {demoParam === "bog" ? "BOG" : "MED"}</span>
+          <span>← Volver al Admin</span>
+        </a>
+      )}
+
       <ConfettiRain trigger={datos.semana.gano50k && !detalle} />
 
       {!detalle && (
