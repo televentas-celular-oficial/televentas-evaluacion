@@ -13,7 +13,7 @@ html {
   background: linear-gradient(180deg, #fef7f0 0%, #fdf4ff 100%);
   min-height: 100vh;
   color: #0f172a;
-  padding: 16px 14px 90px;
+  padding: max(16px, env(safe-area-inset-top)) 14px 90px;
   max-width: 480px;
   width: 100%;
   margin: 0 auto;
