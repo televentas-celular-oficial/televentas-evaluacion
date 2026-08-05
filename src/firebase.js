@@ -1,6 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth, browserLocalPersistence, setPersistence } from "firebase/auth";
+import {
+  getAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  setPersistence,
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA0dRWJ79Tlb5VwSrjv6pLhE2b5AuQINlg",
@@ -14,5 +19,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-// Persistencia local: el login queda guardado entre sesiones
-setPersistence(auth, browserLocalPersistence).catch(() => {});
+// PERSISTENCIA — IndexedDB primero (más robusto en PWA standalone iOS/Android),
+// fallback a localStorage si el navegador no soporta IndexedDB.
+// browserLocal solo se pierde en Safari PWA "add to home screen" bajo ciertas
+// condiciones; IndexedDB persiste correctamente en ese contexto.
+setPersistence(auth, indexedDBLocalPersistence)
+  .catch(() => setPersistence(auth, browserLocalPersistence).catch(() => {}));

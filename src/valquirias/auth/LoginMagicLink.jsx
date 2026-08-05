@@ -14,6 +14,7 @@ import { auth, db } from "../../firebase.js";
 import { EMAIL_ADMIN, EMAIL_OFICINA } from "../../lib/constantes.js";
 
 const STORAGE_KEY = "valquirias_pending_email";
+const LAST_EMAIL_KEY = "valquirias_last_email";
 
 const actionCodeSettings = {
   // La app abre este link al hacer tap en el correo
@@ -22,7 +23,10 @@ const actionCodeSettings = {
 };
 
 export default function LoginMagicLink({ onLoggedIn }) {
-  const [email, setEmail] = useState("");
+  // Pre-rellenar con el último email logueado (si existe en localStorage)
+  const [email, setEmail] = useState(() => {
+    try { return window.localStorage.getItem(LAST_EMAIL_KEY) || ""; } catch { return ""; }
+  });
   const [enviando, setEnviando] = useState(false);
   const [msg, setMsg] = useState(null);
   const [msgTipo, setMsgTipo] = useState("ok");
@@ -44,6 +48,9 @@ export default function LoginMagicLink({ onLoggedIn }) {
             const emailBajo = (cred.user.email || "").toLowerCase();
             const esAdmin = emailBajo === EMAIL_ADMIN.toLowerCase();
             const esOficina = emailBajo === EMAIL_OFICINA.toLowerCase();
+
+            // Guardar email para pre-rellenar próxima vez que el usuario abra la app
+            try { window.localStorage.setItem(LAST_EMAIL_KEY, emailBajo); } catch {}
 
             if (esAdmin || esOficina) {
               onLoggedIn?.(cred.user);
