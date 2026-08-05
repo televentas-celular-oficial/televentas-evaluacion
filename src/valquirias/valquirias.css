@@ -792,3 +792,74 @@ html {
   border-radius: 6px; margin-bottom: 8px; text-align: center;
 }
 .v-sync-info.stale { background: rgba(239, 68, 68, 0.08); color: #b91c1c; }
+
+/* ============================================================
+   PODIO TOP 3 DEL MES  (common/PodioTop3.jsx)
+   Portado de la clásica App.jsx:829-857 — alturas 60/95/45,
+   el #1 al centro y más alto, con halo dorado animado.
+   ============================================================ */
+.v-podio {
+  background: linear-gradient(135deg, #fff7ed, #fff);
+  border: 2px solid #fed7aa;
+  border-radius: 16px;
+  padding: 14px 12px 0;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(234, 88, 12, 0.08);
+}
+.v-podio-titulo {
+  font-size: 11px; font-weight: 800; color: #ea580c;
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+.v-podio-cols {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  gap: 8px;
+}
+.v-podio-col {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+.v-podio-col.clickable { cursor: pointer; }
+.v-podio-col.clickable:active { transform: translateY(1px); }
+.v-podio-nombre {
+  font-size: 11px; font-weight: 800;
+  margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.v-podio-col.tu .v-podio-nombre { letter-spacing: 0.5px; }
+.v-podio-nota {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 39px; padding: 2px 10px;
+  border-radius: 8px;
+  font-weight: 900; font-size: 14px;
+}
+.v-podio-base {
+  margin-top: 5px;
+  border-radius: 8px 8px 0 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.v-podio-base.oro {
+  height: 95px; font-size: 43px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.55), 0 0 48px rgba(251, 191, 36, 0.25);
+  animation: halo 2s ease-in-out infinite;
+}
+.v-podio-base.plata {
+  height: 60px; font-size: 32px;
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+}
+.v-podio-base.bronce {
+  height: 45px; font-size: 23px;
+  background: linear-gradient(135deg, #fb923c, #c2410c);
+}
+@keyframes halo {
+  0%, 100% { box-shadow: 0 0 24px rgba(251,191,36,0.55), 0 0 48px rgba(251,191,36,0.25); }
+  50%      { box-shadow: 0 0 36px rgba(251,191,36,0.8),  0 0 72px rgba(251,191,36,0.4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-podio-base.oro { animation: none; }
+}

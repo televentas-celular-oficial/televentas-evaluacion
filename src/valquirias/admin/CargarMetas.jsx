@@ -159,37 +159,56 @@ export default function CargarMetas({ onVolver }) {
       </div>
 
       {/* Lista de metas ya cargadas */}
-      {cargadas.length > 0 && (
-        <div className="v-card" style={{ marginTop: 14 }}>
-          <div className="v-card-title">📅 Metas cargadas</div>
-          {cargadas.map(c => (
-            <div key={c.clave} style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr auto",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 10px",
-              background: c.cerrado ? "rgba(251, 191, 36, 0.08)" : "rgba(168, 85, 247, 0.04)",
-              borderRadius: 8,
-              marginBottom: 3,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: c.cerrado ? "default" : "pointer",
-            }} onClick={() => !c.cerrado && (setAñoSel(c.año), setMesSel(c.mes))}>
-              <span style={{ color: "#1e1b4b", fontWeight: 900 }}>
-                {c.cerrado && "🔒 "}{MES_NAMES[c.mes - 1]} {c.año}
-              </span>
-              <span style={{ color: "#047857" }}>{c.med ? formatoPesos(c.med) : "—"}</span>
-              <span style={{ color: "#b45309" }}>{c.bog ? formatoPesos(c.bog) : "—"}</span>
-              {!c.cerrado && <span style={{ color: "#a855f7", fontWeight: 900 }}>›</span>}
-              {c.cerrado && <span style={{ color: "#94a3b8", fontSize: 10 }}>cerrado</span>}
+      <div className="v-card" style={{ marginTop: 14 }}>
+        <div className="v-card-title">📅 Metas cargadas</div>
+        {cargadas.length === 0 ? (
+          <div style={{
+            padding: "18px 14px",
+            background: "rgba(148, 163, 184, 0.08)",
+            border: "1.5px dashed #cbd5e1",
+            borderRadius: 10,
+            fontSize: 12,
+            fontWeight: 700,
+            color: "#64748b",
+            textAlign: "center",
+            lineHeight: 1.5,
+          }}>
+            Aún no hay metas guardadas.
+            <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4, color: "#94a3b8" }}>
+              Usa el formulario de arriba para crear la primera.
             </div>
-          ))}
-          <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginTop: 6, textAlign: "center" }}>
-            Toca un mes no cerrado para editarlo
           </div>
-        </div>
-      )}
+        ) : (
+          <>
+            {cargadas.map(c => (
+              <div key={c.clave} style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr auto",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                background: c.cerrado ? "rgba(251, 191, 36, 0.08)" : "rgba(168, 85, 247, 0.04)",
+                borderRadius: 8,
+                marginBottom: 3,
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: c.cerrado ? "default" : "pointer",
+              }} onClick={() => !c.cerrado && (setAñoSel(c.año), setMesSel(c.mes))}>
+                <span style={{ color: "#1e1b4b", fontWeight: 900 }}>
+                  {c.cerrado && "🔒 "}{MES_NAMES[c.mes - 1]} {c.año}
+                </span>
+                <span style={{ color: "#047857" }}>{c.med ? formatoPesos(c.med) : "—"}</span>
+                <span style={{ color: "#b45309" }}>{c.bog ? formatoPesos(c.bog) : "—"}</span>
+                {!c.cerrado && <span style={{ color: "#a855f7", fontWeight: 900 }}>›</span>}
+                {c.cerrado && <span style={{ color: "#94a3b8", fontSize: 10 }}>cerrado</span>}
+              </div>
+            ))}
+            <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginTop: 6, textAlign: "center" }}>
+              Toca un mes no cerrado para editarlo
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

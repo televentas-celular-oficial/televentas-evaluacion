@@ -4,33 +4,9 @@
 
 import { useState, useMemo } from "react";
 import { formatoPesos, hoyColombia, calcComisionMensual, PISO_MED } from "../lib/helpers.js";
-import { VENDEDORAS_DEFAULT } from "../../lib/constantes.js";
 import { useDatos } from "../data/DatosContext.jsx";
 
 const MES_NOMBRES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-
-// Fallback (modo demo): ventas mock si Firestore no tiene datos del mes.
-// IDs alineados con VENDEDORAS_DEFAULT del roster real.
-const MOCK_VENTAS = {
-  // MED
-  1: 24_800_000,   // Lorena (admin)
-  2: 22_600_000,   // Dayana (admin)
-  3: 19_400_000,   // Jennifer (asesora)
-  4: 28_500_000,   // Durley (admin)
-  5: 13_200_000,   // Manuela (asesora) — NO llega al piso $15M → $0
-  7: 21_600_000,   // Luisa (asesora)
-  // BOG
-  6: 26_300_000,   // Xiomara (admin)
-  9: 23_100_000,   // Leydy (admin)
-  10: 20_800_000,  // Mary Jacqueline (admin)
-  11: 18_500_000,  // Yesica (admin)
-  13: 16_200_000,  // Alisson (admin)
-  15: 8_400_000,   // Norvy (asesora)
-  16: 6_900_000,   // Paula (asesora)
-};
-
-// rolTienda ya viene del roster real en constantes.js — no necesita mock
-const ROL_TIENDA_MOCK = {};
 
 export default function NominaComisiones({ onVolver }) {
   const datos = useDatos();
@@ -39,18 +15,19 @@ export default function NominaComisiones({ onVolver }) {
   // La lista muestra los últimos 12 meses en el selector.
   const [selMes, setSelMes] = useState({ año: hoy.año, mes: hoy.mes });
 
-  // Cálculo automático con datos reales de Firestore (o mock si no hay)
-  const filas = useMemo(() => {
-    const claveMes = `${selMes.año}_${String(selMes.mes).padStart(2, "0")}`;
-    const ventasFS = datos.metas?.[claveMes]?.vendidas || {};
-    const vendedoras = (datos.vendedoras && datos.vendedoras.length > 0) ? datos.vendedoras : VENDEDORAS_DEFAULT;
+  // Cálculo automático con datos reales de Firestore — sin fallbacks mock.
+  const claveMes = `${selMes.año}_${String(selMes.mes).padStart(2, "0")}`;
+  const ventasFS = datos.metas?.[claveMes]?.vendidas || {};
+  const vendedoras = datos.vendedoras || [];
+  const hayVendedoras = vendedoras.length > 0;
+  const hayVentasMes = Object.values(ventasFS).some(v => Number(v) > 0);
 
+  const filas = useMemo(() => {
     return vendedoras
       .filter(v => v.activa !== false)
       .map(v => {
-        const ventasReales = ventasFS[v.id];
-        const ventas = (ventasReales !== undefined) ? ventasReales : (MOCK_VENTAS[v.id] || 0);
-        const rolTienda = v.rolTienda || ROL_TIENDA_MOCK[v.id] || "asesora";
+        const ventas = ventasFS[v.id] || 0;
+        const rolTienda = v.rolTienda || "asesora";
         const calc = calcComisionMensual({
           ciudad: v.ciudad,
           rol: rolTienda,
@@ -139,23 +116,39 @@ export default function NominaComisiones({ onVolver }) {
         💡 Solo comisiones por ventas del mes. <strong>No incluye</strong> premios semanales ($50k) ni trimestrales ($1M) ni reconocimientos. Ventas ya vienen netas de devoluciones y cambios.
       </div>
 
-      {/* Sección MED */}
-      <SeccionCiudad
-        titulo="🟢 Team Valquirias Medellín"
-        subtitulo={`Piso ${formatoPesos(PISO_MED)} · sin llegar al piso → $0`}
-        color="green"
-        filas={filasMed}
-        total={totalMed}
-      />
+      {!hayVendedoras && (
+        <div style={{ padding: "18px 16px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid #ef4444", borderRadius: 10, fontSize: 12, color: "#991b1b", fontWeight: 700, marginBottom: 10, lineHeight: 1.55, textAlign: "center" }}>
+          🚫 Sin vendedoras sincronizadas — verifica el sync desde systemlap.
+        </div>
+      )}
 
-      {/* Sección BOG */}
-      <SeccionCiudad
-        titulo="🟡 Team Valquirias Bogotá"
-        subtitulo="Sin piso · gana desde la primera venta"
-        color="amber"
-        filas={filasBog}
-        total={totalBog}
-      />
+      {hayVendedoras && !hayVentasMes && (
+        <div style={{ padding: "14px 16px", background: "rgba(245, 158, 11, 0.10)", borderLeft: "3px solid #f59e0b", borderRadius: 10, fontSize: 12, color: "#92400e", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
+          ⚠️ Sin ventas cargadas para {MES_NOMBRES[selMes.mes - 1]} {selMes.año} — carga desde la vista de Carolina.
+        </div>
+      )}
+
+      {hayVendedoras && (
+        <>
+          {/* Sección MED */}
+          <SeccionCiudad
+            titulo="🟢 Team Valquirias Medellín"
+            subtitulo={`Piso ${formatoPesos(PISO_MED)} · sin llegar al piso → $0`}
+            color="green"
+            filas={filasMed}
+            total={totalMed}
+          />
+
+          {/* Sección BOG */}
+          <SeccionCiudad
+            titulo="🟡 Team Valquirias Bogotá"
+            subtitulo="Sin piso · gana desde la primera venta"
+            color="amber"
+            filas={filasBog}
+            total={totalBog}
+          />
+        </>
+      )}
 
       <div style={{ marginTop: 14, textAlign: "center", fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>
         📸 Toma pantallazo para pasar a nómina · cálculo generado el {hoy.iso}

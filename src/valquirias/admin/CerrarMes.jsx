@@ -157,6 +157,35 @@ export default function CerrarMes({ onVolver }) {
         )}
       </div>
 
+      {/* Lista de meses cerrados — SIEMPRE visible */}
+      <div className="v-card">
+        <div className="v-card-title">🔒 Meses cerrados</div>
+        {cerrados.length === 0 ? (
+          <div style={{ padding: "12px", fontSize: 12, color: "#64748b", fontWeight: 700, textAlign: "center", fontStyle: "italic" }}>
+            Aún no hay meses cerrados este año.
+          </div>
+        ) : (
+          <>
+            {cerrados.map(c => (
+              <div key={`${c.año}-${c.mes}`} style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                padding: "8px 10px", background: "#fef3c7", borderRadius: 8,
+                marginBottom: 3, fontSize: 12, fontWeight: 800, color: "#92400e",
+              }}>
+                <span>🔒 {MES_NAMES[c.mes - 1]} {c.año}</span>
+                <button
+                  onClick={() => setConfirmarAbrir({ año: c.año, mes: c.mes })}
+                  style={{ background: "transparent", border: "1px solid #dc2626", color: "#dc2626", padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, cursor: "pointer" }}
+                >🔓 Abrir</button>
+              </div>
+            ))}
+            <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginTop: 6, fontStyle: "italic" }}>
+              ⚠️ Abrir un mes descongela sus notas — usa solo en emergencias.
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Toggle avanzado */}
       <button
         onClick={() => setMostrarAvanzado(!mostrarAvanzado)}
@@ -195,29 +224,6 @@ export default function CerrarMes({ onVolver }) {
           >
             🔒 Cerrar {MES_NAMES[mesSel - 1]} {añoSel}
           </button>
-
-          {/* Lista de cerrados */}
-          {cerrados.length > 0 && (
-            <>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#7c3aed", margin: "16px 0 6px" }}>Meses cerrados ({cerrados.length}):</div>
-              {cerrados.map(c => (
-                <div key={`${c.año}-${c.mes}`} style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "8px 10px", background: "#fef3c7", borderRadius: 8,
-                  marginBottom: 3, fontSize: 12, fontWeight: 800, color: "#92400e",
-                }}>
-                  <span>🔒 {MES_NAMES[c.mes - 1]} {c.año}</span>
-                  <button
-                    onClick={() => setConfirmarAbrir({ año: c.año, mes: c.mes })}
-                    style={{ background: "transparent", border: "1px solid #dc2626", color: "#dc2626", padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, cursor: "pointer" }}
-                  >🔓 Abrir</button>
-                </div>
-              ))}
-              <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginTop: 6, fontStyle: "italic" }}>
-                ⚠️ Abrir un mes descongela sus notas — usa solo en emergencias.
-              </div>
-            </>
-          )}
         </div>
       )}
 

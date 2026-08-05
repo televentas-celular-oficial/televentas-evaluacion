@@ -22,7 +22,24 @@ export default function TabHoy({
   onDetalleComp,
 }) {
   const esPrePiso = ciudad === "MED" && mes?.pctMeta < 100 && mes?.ventas < 15_000_000;
-  const semanaPct = Math.min(100, (semana?.efectivo || 0) / 25_000);
+
+  // ---- null vs 0 -----------------------------------------------------------
+  // El motor devuelve `null` cuando el dato NO existe y un número cuando sí.
+  // Un 0 REAL es información válida ("no ha vendido hoy") y debe pintarse.
+  // Sólo `null` (o el flag `disponible:false`) dispara el mensaje de pendiente.
+  const hoyDisponible =
+    hoy?.disponible ??
+    (hoy?.ventasDia != null || hoy?.efectivoDia != null || hoy?.tickets != null);
+
+  const semanaDisponible = semana?.disponible ?? (semana?.efectivo != null);
+  const metaSemana = semana?.meta || 2_500_000;
+  const semanaPct = semanaDisponible
+    ? Math.min(100, ((semana.efectivo || 0) / metaSemana) * 100)
+    : 0;
+
+  // El chip de comportamiento ya no es placeholder si el motor trae indicadores.
+  const compIndicadores = comportamiento?.indicadores?.length || 0;
+  const compNota = compIndicadores > 0 ? comportamiento?.notaTotal ?? null : null;
 
   return (
     <>
@@ -32,10 +49,22 @@ export default function TabHoy({
 
       <div className="v-hoy">
         <div className="v-hoy-titulo">📆 {hoy?.fecha || "Hoy"}</div>
-        <div className="v-hoy-dato">
-          {formatoPesos(hoy?.ventasDia || 0)} vendidos · {hoy?.tickets || 0} tickets
-        </div>
-        <div className="v-hoy-sub">💵 Efectivo del día: {formatoPesos(hoy?.efectivoDia || 0)}</div>
+        {/* null = dato ausente (derivar.js no inventa ceros) · 0 = cero real, se pinta */}
+        {!hoyDisponible ? (
+          <div className="v-hoy-dato">Ventas del día aún no disponibles — próximamente</div>
+        ) : (
+          <>
+            <div className="v-hoy-dato">
+              {hoy.ventasDia != null
+                ? `${formatoPesos(hoy.ventasDia)} vendidos`
+                : "Ventas del día aún no disponibles"}
+              {hoy.tickets != null && ` · ${hoy.tickets} ${hoy.tickets === 1 ? "ticket" : "tickets"}`}
+            </div>
+            {hoy.efectivoDia != null && (
+              <div className="v-hoy-sub">💵 Efectivo del día: {formatoPesos(hoy.efectivoDia)}</div>
+            )}
+          </>
+        )}
       </div>
 
       <div className={"v-foco " + (focoTipo === "piso" ? "piso" : "")}>
@@ -48,22 +77,30 @@ export default function TabHoy({
           <span>⚡ Esta semana · efectivo</span>
           <span className="v-card-title-cierra">cierra dom</span>
         </div>
-        <div className="v-semana-row">
-          <span className="v-semana-num">{formatoPesos(semana?.efectivo || 0)}</span>
-          {semana?.gano50k ? (
-            <span className="v-semana-of-ok">✓ +$50k</span>
-          ) : (
-            <span className="v-semana-of-pending">
-              {formatoK(Math.max(0, 2_500_000 - (semana?.efectivo || 0)))} para +$50k
-            </span>
-          )}
-        </div>
-        <div className="v-semana-bar">
-          <div
-            className={"v-semana-bar-fill" + (semana?.gano50k ? "" : " pending")}
-            style={{ width: `${semanaPct}%` }}
-          />
-        </div>
+        {!semanaDisponible ? (
+          <div className="v-semana-row">
+            <span className="v-semana-of-pending">Efectivo de la semana aún no disponible — próximamente</span>
+          </div>
+        ) : (
+          <>
+            <div className="v-semana-row">
+              <span className="v-semana-num">{formatoPesos(semana.efectivo)}</span>
+              {semana?.gano50k ? (
+                <span className="v-semana-of-ok">✓ +$50k</span>
+              ) : (
+                <span className="v-semana-of-pending">
+                  {formatoK(Math.max(0, metaSemana - semana.efectivo))} para +$50k
+                </span>
+              )}
+            </div>
+            <div className="v-semana-bar">
+              <div
+                className={"v-semana-bar-fill" + (semana?.gano50k ? "" : " pending")}
+                style={{ width: `${semanaPct}%` }}
+              />
+            </div>
+          </>
+        )}
 
         {semana?.gano50k && semana?.top3?.length > 0 && (
           <>
@@ -124,7 +161,9 @@ export default function TabHoy({
 
         <div className="v-mes-nota-line">
           <span>⭐ Aporte a tu nota: {mes?.pctMeta || 0}% de meta</span>
-          <span className={"v-mes-nota-badge " + notaClase(mes?.nota)}>{(mes?.nota || 0).toFixed(2)}</span>
+          <span className={"v-mes-nota-badge " + notaClase(mes?.nota)}>
+            {mes?.nota != null ? mes.nota.toFixed(2) : "—"}
+          </span>
         </div>
       </div>
 
@@ -156,7 +195,21 @@ export default function TabHoy({
       )}
       {comportamiento && (
         <button className="v-chip-clickable comp" onClick={onDetalleComp} style={{ border: "none", width: "100%" }}>
-          <div>📋 Comportamiento: {comportamiento.estado === "warn" ? "✅ ⚠️" : "✅ ✅"} {comportamiento.resenas?.toFixed(1)}⭐</div>
+          <div>
+            📋 Comportamiento:{" "}
+            {compNota != null ? (
+              <>
+                <strong>{compNota.toFixed(2)}</strong>
+                {comportamiento.estado === "warn" && " ⚠️"}
+                {comportamiento.aporteNota != null && (
+                  <> · aporta {comportamiento.aporteNota.toFixed(2)} a tu nota</>
+                )}
+              </>
+            ) : (
+              comportamiento.estado === "warn" ? "✅ ⚠️" : "✅ ✅"
+            )}
+            {comportamiento.resenas != null && <> · {comportamiento.resenas.toFixed(1)}⭐</>}
+          </div>
           <div className="arrow">›</div>
         </button>
       )}

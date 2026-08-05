@@ -8,7 +8,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../../firebase.js";
-import { VENDEDORAS_DEFAULT } from "../../lib/constantes.js";
 
 const DatosContext = createContext(null);
 
@@ -20,10 +19,14 @@ export function useDatos() {
 
 const DOCS = ["registros", "metas", "vendedoras", "snapshots", "config"];
 
+// OJO: `vendedoras` arranca vacío a propósito. Antes usaba VENDEDORAS_DEFAULT
+// (roster hardcodeado en lib/constantes.js) y eso hacía que la UI pudiera pintar
+// un equipo falso si el doc de Firestore no existía o todavía no había llegado.
+// El roster real SIEMPRE viene de Firestore.
 const DEFAULTS = {
   registros: {},
   metas: {},
-  vendedoras: VENDEDORAS_DEFAULT,
+  vendedoras: [],
   snapshots: {},
   config: { rankingVisible: true },
 };
@@ -42,11 +45,31 @@ export function DatosProvider({ modoDemo, datosMock, children }) {
       return;
     }
 
+    // `cargado` sólo puede ser true cuando los 5 docs hayan emitido su PRIMER
+    // snapshot. Si se marcara por doc, la UI se pintaba con el primero que
+    // llegaba y los otros 4 todavía en DEFAULTS (síntoma: Backup en 0 mientras
+    // otra pantalla ya mostraba el ranking real).
+    //
+    // El contador vive en el closure del efecto, NO en state: con state se
+    // perderían actualizaciones porque los callbacks de onSnapshot capturan el
+    // valor viejo de la render en que se suscribieron.
+    let cancelado = false;
+    const pendientes = new Set(DOCS);
+
+    setCargado(false);
+
+    const marcarLlegado = (nombre) => {
+      if (cancelado) return;
+      pendientes.delete(nombre);
+      if (pendientes.size === 0) setCargado(true);
+    };
+
     // Suscripciones en tiempo real a los 5 docs
     const unsubs = DOCS.map(nombre =>
       onSnapshot(
         doc(db, "televentas", nombre),
         (snap) => {
+          if (cancelado) return;
           try {
             if (snap.exists()) {
               const raw = snap.data().data;
@@ -56,21 +79,27 @@ export function DatosProvider({ modoDemo, datosMock, children }) {
               setDatos(d => ({ ...d, [nombre]: DEFAULTS[nombre] }));
             }
             setUltimoSync(new Date());
-            setCargado(true);
           } catch (e) {
             console.error("Error parseando", nombre, e);
             setError(e);
           }
+          // Llegó (haya parseado bien o mal): no debe bloquear a los otros 4.
+          marcarLlegado(nombre);
         },
         (err) => {
           console.error("Error onSnapshot", nombre, err);
+          if (cancelado) return;
           setError(err);
-          setCargado(true); // marca cargado igual, para no bloquear la UI
+          // Se cuenta como llegado igual, si no la UI queda cargando para siempre.
+          marcarLlegado(nombre);
         }
       )
     );
 
-    return () => unsubs.forEach(u => u());
+    return () => {
+      cancelado = true;
+      unsubs.forEach(u => u());
+    };
   }, [modoDemo]);
 
   // Guardar un doc (optimista: actualiza local primero, después Firestore)
