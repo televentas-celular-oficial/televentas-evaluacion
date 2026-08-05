@@ -625,6 +625,7 @@ html {
   border: 1.5px solid #e2e8f0; border-radius: 12px;
   font-size: 15px; font-family: inherit;
   margin-bottom: 12px;
+  box-sizing: border-box;
 }
 .v-login-input:focus { outline: none; border-color: #a855f7; }
 .v-login-btn {

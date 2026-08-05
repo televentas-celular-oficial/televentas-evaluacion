@@ -116,7 +116,7 @@ export default function LoginMagicLink({ onLoggedIn }) {
           <input
             type="email"
             className="v-login-input"
-            placeholder="tu.email@televentas.com"
+            placeholder="Ingresa tu email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && enviar()}
