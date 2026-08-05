@@ -4,23 +4,26 @@ import './index.css'
 import App from './App.jsx'
 import ValquiriasApp from './valquirias/ValquiriasApp.jsx'
 
-// Feature flag: ?v=tlv activa la nueva app "Valquirias TLV"
-// Sin el flag, se ve la app actual (Televentas Evaluación).
-// Cuando esté validada, cambiamos el default.
+// DEFAULT: app nueva Valquirias TLV
+// Escape a la app vieja: ?v=classic (persiste en localStorage)
+// Reactivar la nueva: ?v=tlv o borrar localStorage
 const urlParams = new URLSearchParams(window.location.search);
-const useValquirias = urlParams.get('v') === 'tlv';
+const flagUrl = urlParams.get('v');
 
-// Persistir preferencia en localStorage
-if (useValquirias) {
-  localStorage.setItem('use_valquirias_tlv', '1');
+if (flagUrl === 'classic') {
+  localStorage.setItem('use_valquirias_tlv', 'classic');
+  // Limpiar el ?v=classic del URL para evitar reappear
+  const nuevoURL = window.location.pathname + window.location.hash;
+  window.history.replaceState({}, document.title, nuevoURL);
+} else if (flagUrl === 'tlv') {
+  localStorage.setItem('use_valquirias_tlv', 'tlv');
+  const nuevoURL = window.location.pathname + window.location.hash;
+  window.history.replaceState({}, document.title, nuevoURL);
 }
-const usarNueva = useValquirias || localStorage.getItem('use_valquirias_tlv') === '1';
 
-// Para volver a la vieja: ?v=classic
-if (urlParams.get('v') === 'classic') {
-  localStorage.removeItem('use_valquirias_tlv');
-  window.location.href = window.location.pathname;
-}
+const preferencia = localStorage.getItem('use_valquirias_tlv');
+// Default = tlv (app nueva). Solo se muestra la vieja si Luis explícitamente pidió ?v=classic
+const usarNueva = preferencia !== 'classic';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
