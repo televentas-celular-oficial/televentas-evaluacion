@@ -20,6 +20,7 @@ export default function CerrarMes({ onVolver }) {
   const [confirmarCierre, setConfirmarCierre] = useState(null);
   const [confirmarAbrir, setConfirmarAbrir] = useState(null);
   const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
+  const [forzarCierre, setForzarCierre] = useState(false);
   const [añoSel, setAñoSel] = useState(mesAntAño);
   const [mesSel, setMesSel] = useState(mesAntMes);
 
@@ -77,6 +78,7 @@ export default function CerrarMes({ onVolver }) {
       flash("Este mes ya está cerrado", "err");
       return;
     }
+    setForzarCierre(false);
     setConfirmarCierre({ año: añoC, mes: mesC, faltantes: detectarFaltantes(añoC, mesC) });
   }
 
@@ -244,24 +246,34 @@ export default function CerrarMes({ onVolver }) {
                 style={{ flex: 1, padding: "10px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 800, cursor: "pointer" }}
               >Cancelar</button>
               <button
-                disabled={confirmarCierre.faltantes.length > 0}
+                disabled={confirmarCierre.faltantes.length > 0 && !forzarCierre}
                 onClick={() => ejecutarCierre(confirmarCierre.año, confirmarCierre.mes)}
                 style={{
                   flex: 1, padding: "10px",
-                  background: confirmarCierre.faltantes.length > 0
+                  background: (confirmarCierre.faltantes.length > 0 && !forzarCierre)
                     ? "#e2e8f0"
                     : "linear-gradient(135deg, #dc2626, #b91c1c)",
-                  color: confirmarCierre.faltantes.length > 0 ? "#94a3b8" : "#fff",
+                  color: (confirmarCierre.faltantes.length > 0 && !forzarCierre) ? "#94a3b8" : "#fff",
                   border: "none", borderRadius: 8, fontWeight: 800,
-                  cursor: confirmarCierre.faltantes.length > 0 ? "not-allowed" : "pointer",
+                  cursor: (confirmarCierre.faltantes.length > 0 && !forzarCierre) ? "not-allowed" : "pointer",
                 }}
-                title={confirmarCierre.faltantes.length > 0 ? "Completa los faltantes antes de cerrar" : "Cerrar mes"}
+                title={(confirmarCierre.faltantes.length > 0 && !forzarCierre) ? "Completa los faltantes o activa Forzar cierre" : "Cerrar mes"}
               >🔒 Cerrar</button>
             </div>
             {confirmarCierre.faltantes.length > 0 && (
-              <div style={{ marginTop: 8, fontSize: 10, color: "#991b1b", fontWeight: 700, textAlign: "center" }}>
-                ⚠️ No se puede cerrar mientras haya datos faltantes.
-              </div>
+              <>
+                <div style={{ marginTop: 8, fontSize: 10, color: "#991b1b", fontWeight: 700, textAlign: "center" }}>
+                  ⚠️ No se puede cerrar mientras haya datos faltantes.
+                </div>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, padding: "8px 10px", background: "rgba(124, 58, 237, 0.06)", border: "1px dashed rgba(124, 58, 237, 0.3)", borderRadius: 8, fontSize: 11, color: "#5b21b6", fontWeight: 800, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={forzarCierre}
+                    onChange={e => setForzarCierre(e.target.checked)}
+                  />
+                  🛠️ Forzar cierre de todos modos (avanzado — usar solo si el mes ya se había cerrado antes)
+                </label>
+              </>
             )}
           </div>
         </div>

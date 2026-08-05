@@ -1,6 +1,8 @@
 // Detalle Comportamiento — el 40% de la nota que hoy es invisible
 // HERO morado + 5 indicadores con detalle operativo + tip motivacional
 
+import { useEffect } from "react";
+
 export default function DetalleComportamiento({
   notaComportamiento,   // sobre 5
   aporteNota,           // sobre nota final (5)
@@ -8,6 +10,9 @@ export default function DetalleComportamiento({
   tip,                  // { titulo, mensaje }
   onVolver,
 }) {
+  // Scroll al top al abrir — evita abrir mostrando el final
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   return (
     <>
       <div className="v-header-detalle">

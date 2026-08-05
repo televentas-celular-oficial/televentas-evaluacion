@@ -35,9 +35,9 @@ const ROL_TIENDA_MOCK = {};
 export default function NominaComisiones({ onVolver }) {
   const datos = useDatos();
   const hoy = hoyColombia();
-  const mesAntAño = hoy.mes === 1 ? hoy.año - 1 : hoy.año;
-  const mesAntMes = hoy.mes === 1 ? 12 : hoy.mes - 1;
-  const [selMes, setSelMes] = useState({ año: mesAntAño, mes: mesAntMes });
+  // Default: mes en curso (así al abrir se ve cómo va la comisión hasta hoy).
+  // La lista muestra los últimos 12 meses en el selector.
+  const [selMes, setSelMes] = useState({ año: hoy.año, mes: hoy.mes });
 
   // Cálculo automático con datos reales de Firestore (o mock si no hay)
   const filas = useMemo(() => {
@@ -68,9 +68,10 @@ export default function NominaComisiones({ onVolver }) {
   const totalBog = filasBog.reduce((s, f) => s + f.calc.comision, 0);
   const totalGen = totalMed + totalBog;
 
+  // Selector: mes en curso primero, luego los 11 anteriores
   const meses = [];
   for (let i = 0; i < 12; i++) {
-    let m = hoy.mes - 1 - i;
+    let m = hoy.mes - i;
     let a = hoy.año;
     while (m <= 0) { m += 12; a -= 1; }
     meses.push({ año: a, mes: m });

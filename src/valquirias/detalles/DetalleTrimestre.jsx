@@ -1,6 +1,7 @@
 // Detalle Trimestre — se abre al tocar el chip "💎 Trimestre" en Tab Hoy
 // HERO nota trimestral + simulador + desglose por mes + premios + historial
 
+import { useEffect } from "react";
 import { formatoPesos } from "../lib/helpers.js";
 
 export default function DetalleTrimestre({
@@ -13,6 +14,9 @@ export default function DetalleTrimestre({
   ciudad,
   onVolver,
 }) {
+  // Scroll al top al abrir — evita que el detalle se abra mostrando el final
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   const pct = Math.min(100, ((trimestre?.notaActual || 0) / (trimestre?.meta || 4.5)) * 100);
   const falta = Math.max(0, (trimestre?.meta || 4.5) - (trimestre?.notaActual || 0));
 

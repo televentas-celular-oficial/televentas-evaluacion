@@ -26,6 +26,7 @@ import DetalleComportamiento from "./detalles/DetalleComportamiento.jsx";
 import IngresoDiario from "./oficina/IngresoDiario.jsx";
 import AdminHome from "./admin/AdminHome.jsx";
 import { DatosProvider, useDatos } from "./data/DatosContext.jsx";
+import { derivarDatosVendedora } from "./data/derivar.js";
 import { estaEnVentanaAutoEncendido, hoyColombia, fechaBonita, esLunesEnColombia, rangoSemanaAnterior, diasParaFinMes, nombreMesActual } from "./lib/helpers.js";
 
 import "./valquirias.css";
@@ -134,12 +135,16 @@ function ValquiriasAppInner({ demoParam, esDemo }) {
   const [tab, setTab] = useState("hoy");
   const [detalle, setDetalle] = useState(null); // 'trim' | 'comp' | null
   const [semanaCerradaOculta, setSemanaCerradaOculta] = useState(false);
-  const [datos] = useState(datosMockDurley()); // mock (usado en demo y como fallback visual mientras integramos)
   const [filtroCiudadAdmin, setFiltroCiudadAdmin] = useState("MED");
   const [mesSeleccionado, setMesSeleccionado] = useState(() => {
     const h = hoyColombia();
     return { año: h.año, mes: h.mes };
   });
+
+  // ?simular=<id> — admin viendo la app como una vendedora específica (datos reales)
+  const simularId = typeof window !== "undefined"
+    ? (new URLSearchParams(window.location.search).get("simular") || "")
+    : "";
 
   useEffect(() => {
     if (esDemo) { setLoadingAuth(false); return; }
@@ -150,7 +155,10 @@ function ValquiriasAppInner({ demoParam, esDemo }) {
     return unsub;
   }, [esDemo]);
 
-  // Loading
+  // Scroll al top al cambiar de tab o detalle — fix bug de "botones ocultos arriba"
+  useEffect(() => { window.scrollTo(0, 0); }, [tab, detalle]);
+
+  // Loading auth
   if (loadingAuth) {
     return <div className="v-app"><div className="v-loading">⏳ Cargando...</div></div>;
   }
@@ -160,11 +168,18 @@ function ValquiriasAppInner({ demoParam, esDemo }) {
     return <LoginMagicLink onLoggedIn={setUser} />;
   }
 
-  // Rol de la app (Firebase Auth): admin=Luis, oficina=Carolina, otro=vendedora
-  // En modo demo simulamos según parámetro
+  // Loading de Firestore — evita el "flashazo" de datos falsos antes del real
+  if (!datosFS.cargado) {
+    return <div className="v-app"><div className="v-loading">⏳ Cargando datos...</div></div>;
+  }
+
+  // Rol de la app:
+  // - Modo demo: por parámetro (?demo=admin|carolina|<otro>)
+  // - Modo simular (admin viendo como vendedora): fuerza "otro"
+  // - Normal: por Firebase Auth (admin=Luis, oficina=Carolina, otro=vendedora)
   const rol = esDemo
     ? (demoParam === "admin" ? "admin" : demoParam === "carolina" || demoParam === "oficina" ? "oficina" : "otro")
-    : rolDe(user);
+    : (simularId ? "otro" : rolDe(user));
 
   // App 24/7 — la restricción de ventana martes/viernes ya NO aplica.
   // La PantallaBloqueada queda disponible por si el admin decide reactivarla en el futuro.
@@ -203,18 +218,63 @@ function ValquiriasAppInner({ demoParam, esDemo }) {
       ventasBOG,
     }} />;
   }
-  // Vista vendedora
-  const { vendedora } = datos;
-  const ciudad = vendedora?.ciudad || "MED";
+  // ============================================================
+  // Vista vendedora — datos REALES desde Firestore
+  // Prioridad para encontrar vendedora:
+  //   1. ?simular=<id> (admin viendo como vendedora)
+  //   2. email del user logueado buscado en datosFS.vendedoras
+  //   3. demo → mock Durley (solo para ?demo=... histórico)
+  // ============================================================
+  let vendedora = null;
+  let datos = null;
 
+  if (simularId) {
+    vendedora = (datosFS.vendedoras || []).find(v => String(v.id) === String(simularId)) || null;
+  } else if (user?.email) {
+    const emailBajo = user.email.toLowerCase();
+    vendedora = (datosFS.vendedoras || []).find(v =>
+      (v.email || "").toLowerCase() === emailBajo && v.activa !== false && !v.eventual
+    ) || null;
+  }
+
+  if (vendedora) {
+    datos = derivarDatosVendedora(datosFS, vendedora);
+  } else if (esDemo) {
+    // Fallback SOLO para el modo demo antiguo (?demo=1, etc.)
+    datos = datosMockDurley();
+    vendedora = datos.vendedora;
+  } else {
+    // Usuario logueado que no coincide con ninguna vendedora activa
+    return (
+      <div className="v-app">
+        <div className="v-loading" style={{ padding: 40, textAlign: "center" }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🤔</div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: "#1e1b4b", marginBottom: 8 }}>
+            No encontramos tu perfil
+          </div>
+          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700, marginBottom: 20 }}>
+            Este email no está registrado como vendedora activa. Escríbele al administrador.
+          </div>
+          <button
+            onClick={() => signOut(auth)}
+            style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", background: "transparent", border: "1px solid #e2e8f0", padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const ciudad = vendedora?.ciudad || "MED";
   const rankingsPorCiudad = filtrarRankingCiudad(datos.rankingMes, filtroCiudadAdmin, ciudad);
 
-  // Admin autenticado en modo "Ver como vendedora" → mostrar banner con botón volver
-  const adminViendoComoVend = esDemo && user && rolDe(user) === "admin";
+  // Admin autenticado + ?simular=<id> → banner con volver
+  const adminSimulando = !!simularId && user && rolDe(user) === "admin";
 
   return (
     <div className="v-app">
-      {adminViendoComoVend && (
+      {adminSimulando && (
         <a href="/" style={{
           display: "flex",
           alignItems: "center",
@@ -229,8 +289,8 @@ function ValquiriasAppInner({ demoParam, esDemo }) {
           textDecoration: "none",
           boxShadow: "0 4px 12px rgba(124, 58, 237, 0.25)",
         }}>
-          <span>🛡️ Viendo como vendedora {demoParam === "bog" ? "BOG" : "MED"}</span>
-          <span>← Volver al Admin</span>
+          <span>🛡️ Viendo como {vendedora.nombre} ({ciudad})</span>
+          <span>← Volver</span>
         </a>
       )}
 
