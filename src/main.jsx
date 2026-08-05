@@ -10,15 +10,20 @@ import ValquiriasApp from './valquirias/ValquiriasApp.jsx'
 const urlParams = new URLSearchParams(window.location.search);
 const flagUrl = urlParams.get('v');
 
+function limpiarParam(param) {
+  const p = new URLSearchParams(window.location.search);
+  p.delete(param);
+  const qs = p.toString();
+  const nuevoURL = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+  window.history.replaceState({}, document.title, nuevoURL);
+}
+
 if (flagUrl === 'classic') {
   localStorage.setItem('use_valquirias_tlv', 'classic');
-  // Limpiar el ?v=classic del URL para evitar reappear
-  const nuevoURL = window.location.pathname + window.location.hash;
-  window.history.replaceState({}, document.title, nuevoURL);
+  limpiarParam('v');
 } else if (flagUrl === 'tlv') {
   localStorage.setItem('use_valquirias_tlv', 'tlv');
-  const nuevoURL = window.location.pathname + window.location.hash;
-  window.history.replaceState({}, document.title, nuevoURL);
+  limpiarParam('v');
 }
 
 const preferencia = localStorage.getItem('use_valquirias_tlv');
