@@ -105,9 +105,10 @@ export default function LoginMagicLink({ onLoggedIn }) {
       setMsg("¡Listo! Revisa tu correo y toca el link que te enviamos.");
       setMsgTipo("ok");
     } catch (err) {
-      setMsg("No pudimos enviar el link. Escríbele al administrador.");
+      const code = err?.code || "unknown";
+      setMsg(`Error: ${code}. Escríbele al administrador.`);
       setMsgTipo("err");
-      console.error(err);
+      console.error("sendSignInLinkToEmail error:", err);
     } finally {
       setEnviando(false);
     }
