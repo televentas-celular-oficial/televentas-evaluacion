@@ -22,6 +22,7 @@ import MagicLinks from "./MagicLinks.jsx";
 import CargarMetas from "./CargarMetas.jsx";
 import CerrarMes from "./CerrarMes.jsx";
 import Backup from "./Backup.jsx";
+import ConfigPremios from "./ConfigPremios.jsx";
 import ProximamentePanel from "./ProximamentePanel.jsx";
 
 const TILES = [
@@ -57,6 +58,9 @@ export default function AdminHome({ datosGlobales }) {
   }
   if (seccion === "backup") {
     return <Backup onVolver={() => setSeccion(null)} />;
+  }
+  if (seccion === "premios") {
+    return <ConfigPremios onVolver={() => setSeccion(null)} />;
   }
   if (seccion) {
     return <ProximamentePanel titulo={TILES.find(t => t.id === seccion)?.titulo || "En construcción"} onVolver={() => setSeccion(null)} />;
