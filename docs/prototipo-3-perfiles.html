@@ -1,0 +1,497 @@
+<title>Prototipo Televentas — 3 vistas</title>
+<style>
+:root{
+  --naranja:#ea580c; --naranja-suave:#fff7ed;
+  --med:#10b981; --bog:#f59e0b;
+  --tinta:#0f172a; --apoyo:#475569; --tenue:#94a3b8;
+  --linea:#e2e8f0; --lienzo:#f8fafc; --papel:#ffffff;
+  --n-alta:#059669; --n-bien:#d97706; --n-reg:#ea580c; --n-baja:#dc2626;
+  --bg-alta:#d1fae5; --bg-bien:#fef3c7; --bg-reg:#ffedd5; --bg-baja:#fee2e2;
+  --marco:#e8e6e1; --marco-txt:#3f3f46; --marco-tenue:#71717a; --marco-linea:#d4d2cd;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --marco:#1c1c1f; --marco-txt:#e4e4e7; --marco-tenue:#a1a1aa; --marco-linea:#35353a; }
+}
+:root[data-theme="dark"]{ --marco:#1c1c1f; --marco-txt:#e4e4e7; --marco-tenue:#a1a1aa; --marco-linea:#35353a; }
+:root[data-theme="light"]{ --marco:#e8e6e1; --marco-txt:#3f3f46; --marco-tenue:#71717a; --marco-linea:#d4d2cd; }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--marco);color:var(--marco-txt);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;}
+.envoltura{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+.roles{display:flex;gap:4px;background:rgba(0,0,0,.06);padding:4px;border-radius:11px;margin-bottom:6px}
+:root[data-theme="dark"] .roles,@media(prefers-color-scheme:dark){.roles{background:rgba(255,255,255,.07)}}
+.rol{flex:1;padding:10px 6px;border:none;border-radius:8px;background:transparent;color:var(--marco-tenue);
+  font:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,color .15s}
+.rol:hover{color:var(--marco-txt)}
+.rol[aria-pressed="true"]{background:var(--naranja);color:#fff}
+.rol:focus-visible{outline:2px solid var(--naranja);outline-offset:2px}
+.quien{font-size:12px;color:var(--marco-tenue);text-align:center;margin:0 0 14px;line-height:1.5}
+.tel{background:var(--lienzo);border-radius:16px;overflow:hidden;border:1px solid var(--marco-linea);color:var(--tinta)}
+.hdr{background:#fff;border-bottom:2px solid #f1f5f9;padding:12px 14px;display:flex;align-items:center;
+  justify-content:space-between;gap:8px}
+.logo{font-size:17px;font-weight:800;color:var(--naranja);white-space:nowrap}
+.nav{display:flex;gap:3px;background:#f1f5f9;padding:3px;border-radius:9px}
+.nb{padding:8px 11px;border:none;border-radius:6px;background:transparent;color:#334155;font-size:14px;cursor:pointer;line-height:1}
+.nb[aria-pressed="true"]{background:var(--naranja);color:#fff}
+.nb:focus-visible{outline:2px solid var(--naranja);outline-offset:1px}
+.cuerpo{padding:16px 14px 24px;min-height:420px}
+.tit{font-size:22px;font-weight:800;margin:0 0 12px;color:var(--tinta)}
+.card{background:#fff;border:1px solid var(--linea);border-radius:13px;padding:16px;margin-bottom:10px}
+.lbl{font-size:12px;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;display:block}
+.inp{background:var(--lienzo);border:1px solid var(--linea);border-radius:8px;padding:10px 12px;color:var(--tinta);font-size:16px;width:100%;font:inherit;font-size:16px}
+.paso{font-size:13px;font-weight:800;color:var(--naranja);margin-bottom:9px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:5px 11px;border-radius:20px;border:2px solid;background:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.chip.desc{background:var(--bg-baja);color:var(--n-baja);border-color:#fca5a5;text-decoration:line-through}
+.pie{font-size:11px;color:var(--apoyo);margin-top:7px}
+.fila{background:#fff;border:1px solid var(--linea);border-left:3px solid;border-radius:0;padding:16px;margin-bottom:8px}
+.cab{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.nom{font-weight:800;font-size:13px}
+.bciudad{font-size:11px;font-weight:800;padding:3px 9px;border-radius:10px;border:1px solid}
+.bnota{display:inline-flex;align-items:center;justify-content:center;min-width:46px;padding:3px 10px;border-radius:8px;font-weight:800;font-size:14px}
+.par{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.step{display:flex;align-items:center;gap:4px}
+.sb{width:36px;height:36px;border-radius:8px;border:1px solid var(--linea);background:#f1f5f9;font-size:18px;font-weight:800;color:var(--apoyo);cursor:pointer;flex-shrink:0;line-height:1}
+.sb:disabled{opacity:.4;cursor:default}
+.sv{flex:1;text-align:center;font-weight:800;font-size:16px;padding:6px 0;background:var(--lienzo);border-radius:8px;border:1px solid var(--linea)}
+.tres{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.tg{padding:8px 4px;border-radius:8px;border:2px solid;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
+.ok{border-color:#86efac;background:#f0fdf4;color:var(--n-alta)}
+.mal{border-color:#fca5a5;background:var(--bg-baja);color:var(--n-baja)}
+.off{border-color:var(--linea);background:#fff;color:var(--tenue)}
+.reg{border-color:#fcd34d;background:#fffbeb;color:var(--n-bien)}
+.btnP{padding:14px 0;width:100%;border-radius:10px;border:none;cursor:pointer;font:inherit;font-weight:800;font-size:15px;background:var(--naranja);color:#fff;margin-top:6px}
+.rk{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--linea);border-radius:11px;padding:11px 13px;margin-bottom:5px}
+.rk.yo{background:#fffbeb;border-color:#fcd34d}
+.pos{font-size:15px;font-weight:800;width:26px;text-align:center;flex-shrink:0}
+.rk .txt{flex:1;min-width:0}
+.rk .sub{font-size:11px;color:var(--apoyo);margin-top:2px}
+.cifra{font-weight:800;font-size:14px;white-space:nowrap}
+.aviso{padding:11px 13px;border-radius:10px;font-size:12px;font-weight:700;line-height:1.55;margin-bottom:10px}
+.a-amb{background:#fffbeb;color:#92400e;border-left:3px solid var(--bog)}
+.a-azul{background:#eff6ff;color:#1e40af;border-left:3px solid #3b82f6}
+.hero{background:#fff;border:1px solid var(--linea);border-radius:13px;padding:18px 16px;margin-bottom:10px}
+.hero .k{font-size:12px;font-weight:800;color:var(--apoyo);text-transform:uppercase;letter-spacing:.7px}
+.hero .v{font-size:30px;font-weight:800;letter-spacing:-.5px;margin-top:4px;color:var(--tinta)}
+.hero .d{font-size:13px;color:var(--apoyo);margin-top:5px;line-height:1.5}
+.barra{height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;margin-top:10px}
+.barra i{display:block;height:100%;border-radius:4px}
+.ind{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--linea)}
+.ind:last-child{border-bottom:none}
+.ind .e{font-size:19px;width:26px;text-align:center;flex-shrink:0}
+.ind .n{flex:1;min-width:0;font-size:13px;font-weight:700}
+.ind .det{font-size:11px;color:var(--apoyo);font-weight:400;margin-top:2px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:#fff;border:1px solid var(--linea);border-radius:13px;padding:16px 12px;text-align:center;cursor:pointer;font:inherit}
+.tile .ic{font-size:26px;line-height:1}
+.tile .tt{font-size:13px;font-weight:800;margin-top:6px;color:var(--tinta)}
+.tile .ds{font-size:11px;color:var(--apoyo);margin-top:3px;line-height:1.35}
+.nota-taller{margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(234,88,12,.09);
+  border-left:3px solid var(--naranja);font-size:12px;line-height:1.6;color:var(--marco-txt)}
+
+.saludo{font-size:26px;font-weight:800;letter-spacing:-.6px;color:var(--tinta);margin:4px 0 2px}
+.team{font-size:13px;font-weight:700;margin-bottom:20px}
+.gran{display:block;width:100%;text-align:left;border:1px solid;border-radius:18px;
+  padding:18px 20px;margin-bottom:11px;cursor:pointer;font:inherit;
+  transition:transform .12s ease,box-shadow .12s ease}
+.gran:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(15,23,42,.07)}
+.gran:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.gran .top{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.gran .globo{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:19px;flex-shrink:0}
+.gran .rot{font-size:14px;font-weight:800;letter-spacing:-.2px}
+.gran .flecha{margin-left:auto;font-size:20px;font-weight:800;opacity:.45}
+.gran .num{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;color:var(--tinta)}
+.gran .pie2{font-size:12.5px;font-weight:600;margin-top:6px;line-height:1.5}
+.volver{background:none;border:none;font:inherit;font-size:14px;font-weight:700;
+  color:var(--apoyo);cursor:pointer;padding:0 0 12px;display:flex;align-items:center;gap:5px}
+.volver:focus-visible{outline:2px solid var(--naranja);outline-offset:2px}
+.motiv{border-radius:16px;padding:16px 18px;margin-top:12px;line-height:1.6}
+.motiv .mt{font-size:13px;font-weight:800;margin-bottom:5px}
+.motiv .mm{font-size:13.5px;font-weight:600}
+.estados{display:flex;gap:4px;background:rgba(0,0,0,.06);padding:4px;border-radius:10px;margin-top:16px}
+:root[data-theme="dark"] .estados{background:rgba(255,255,255,.07)}
+@media(prefers-color-scheme:dark){.estados{background:rgba(255,255,255,.07)}}
+.est-b{flex:1;padding:8px 6px;border:none;border-radius:7px;background:transparent;
+  color:var(--marco-tenue);font:inherit;font-size:11.5px;font-weight:500;cursor:pointer}
+.est-b[aria-pressed="true"]{background:var(--papel);color:var(--tinta)}
+.est-b:focus-visible{outline:2px solid var(--naranja);outline-offset:1px}
+
+.tarjeta-lunes{border-radius:18px;padding:17px 18px 15px;margin-bottom:16px;position:relative;overflow:hidden}
+.tl-cerrar{position:absolute;top:11px;right:12px;background:rgba(0,0,0,.07);border:none;
+  width:25px;height:25px;border-radius:50%;font:inherit;font-size:14px;line-height:1;
+  cursor:pointer;color:inherit;opacity:.65}
+.tl-cerrar:hover{opacity:1}
+.tl-cerrar:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.tl-eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.1px;opacity:.8}
+.tl-tit{font-size:18px;font-weight:800;letter-spacing:-.3px;margin:5px 0 12px;padding-right:26px}
+.tl-fila{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:11px;
+  margin-bottom:5px;background:rgba(255,255,255,.62)}
+.tl-fila.yo{background:#fff;box-shadow:inset 0 0 0 1.5px currentColor}
+.tl-fila .med{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.tl-fila .nm{flex:1;min-width:0;font-size:13px;font-weight:800}
+.tl-fila .pr{font-size:12.5px;font-weight:800;white-space:nowrap}
+.tl-nota{font-size:12.5px;font-weight:600;line-height:1.55;margin-top:11px;
+  padding-top:11px;border-top:1px solid rgba(0,0,0,.09)}
+.conf{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.conf i{position:absolute;top:-14px;width:7px;height:11px;border-radius:1px;
+  animation:caer 2.6s linear infinite}
+@keyframes caer{to{transform:translateY(260px) rotate(540deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){.conf{display:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<h1 class="sr">Prototipo de las tres vistas de la app de evaluación</h1>
+
+<div class="envoltura">
+
+  <div class="roles" role="group" aria-label="Cambiar de vista">
+    <button class="rol" data-rol="carolina" aria-pressed="true">Carolina</button>
+    <button class="rol" data-rol="vendedora" aria-pressed="false">Vendedora</button>
+    <button class="rol" data-rol="admin" aria-pressed="false">Admin</button>
+  </div>
+  <p class="quien" id="quien">Oficina · ingresa los datos del día</p>
+
+  <div class="tel">
+    <div class="hdr">
+      <div class="logo">⚡ Televentas</div>
+      <div class="nav" id="nav" role="group" aria-label="Secciones"></div>
+    </div>
+    <div class="cuerpo" id="cuerpo"></div>
+  </div>
+
+  <div id="estados" hidden>
+    <div class="estados" role="group" aria-label="Cómo va la semana">
+      <button class="est-b" data-sem="inicio" aria-pressed="true">Nadie llegó</button>
+      <button class="est-b" data-sem="dos" aria-pressed="false">Van 2 · no eres #1</button>
+      <button class="est-b" data-sem="lider" aria-pressed="false">Vas de primera</button>
+    </div>
+    <div class="estados" role="group" aria-label="Qué día es" style="margin-top:6px">
+      <button class="est-b" data-dia="semana" aria-pressed="true">Entre semana</button>
+      <button class="est-b" data-dia="lunes" aria-pressed="false">Lunes · semana nueva</button>
+    </div>
+  </div>
+
+  <div class="nota-taller" id="taller"></div>
+
+</div>
+
+<script>
+const VEND=[
+ {id:4,n:"Durley Castaño",c:"MED",rol:"admin",v:4110000},
+ {id:2,n:"Angie Lorena Castrillón",c:"MED",rol:"admin",v:1599000},
+ {id:5,n:"Jennifer Ospina",c:"MED",rol:"asesora",v:2950000},
+ {id:6,n:"Luisa Ramírez",c:"MED",rol:"asesora",v:2240000},
+ {id:7,n:"Dayana Gómez",c:"MED",rol:"asesora",v:1580000},
+ {id:8,n:"Manuela Arenas Flórez",c:"MED",rol:"asesora",v:779000},
+ {id:11,n:"Beatriz Xiomara Neuta",c:"BOG",rol:"admin",v:3240000},
+ {id:12,n:"Leydy Sánchez",c:"BOG",rol:"asesora",v:2110000},
+];
+const YO=2;
+const COL={MED:"#10b981",BOG:"#f59e0b"};
+const peso=n=>"$"+n.toLocaleString("es-CO");
+const cn=n=>n>=4.5?"var(--n-alta)":n>=3.5?"var(--n-bien)":n>=2.5?"var(--n-reg)":"var(--n-baja)";
+const bn=n=>n>=4.5?"var(--bg-alta)":n>=3.5?"var(--bg-bien)":n>=2.5?"var(--bg-reg)":"var(--bg-baja)";
+const NOTAS={4:4.20,2:4.65,5:3.80,6:4.90,7:3.10,8:2.40,11:4.55,12:4.05};
+
+let rol="carolina", pant="ingreso";
+const est={};
+VEND.forEach(v=>est[v.id]={descanso:v.id===5,min:v.id===4?2:0,res:v.id===4?3:0,
+  orden:"bien",unif:v.id===4?"mal":"bien",dep:"bien",plan:"bien",act:v.id===4?"regular":"bien"});
+
+const NAVS={
+ carolina:[["ingreso","✏️"]],
+ vendedora:[["home","🏠"]],
+ admin:[["ranking","📊"],["ingreso","✏️"],["ventas","💰"],["trim","📈"],["panel","⚙️"]],
+};
+const QUIEN={carolina:"Oficina · abre directo en el ingreso diario, no ve nada más",
+ vendedora:"Angie Lorena Castrillón · administradora Medellín",
+ admin:"Control total"};
+const TALLER={
+ carolina:"Una sola pantalla, sin nav. Abre y ya está aquí. La pantalla queda igual que hoy — toca los chips de descanso, los steppers y los botones y verás la nota del día recalcularse.",
+ vendedora:"Fila de arriba: cómo va la semana. Fila de abajo: pásalo a lunes y verás la tarjeta de la ganadora con la semana nueva ya en ceros — con confeti si Lorena estuvo entre las que ganaron. Ciérrala con la × para ver cómo queda la pantalla después.",
+ admin:"Los tiles son los que quedaron en la app. Dime cuáles usas de verdad y cuáles sobran."};
+
+function ir(p){pant=p;pinta()}
+function setRol(r){rol=r;pant=NAVS[r][0][0];pinta()}
+
+function pinta(){
+ document.querySelectorAll(".rol").forEach(b=>b.setAttribute("aria-pressed",b.dataset.rol===rol));
+ document.getElementById("quien").textContent=QUIEN[rol];
+ document.getElementById("taller").textContent=TALLER[rol];
+ const secciones=NAVS[rol];
+ const nav=document.getElementById("nav");
+ nav.hidden=secciones.length<2;
+ nav.innerHTML=secciones.length<2?"":secciones.map(([p,i])=>
+  `<button class="nb" data-p="${p}" aria-pressed="${p===pant}" aria-label="${p}">${i}</button>`).join("");
+ document.getElementById("cuerpo").innerHTML=
+  pant==="ingreso"?vIngreso():pant==="ranking"?vRanking():pant==="ventas"?vVentas():
+  pant==="home"?vHome():pant==="cash"?vCash():
+  pant==="mes"?vPend("Tu mes","📅"):
+  pant==="trim"?(rol==="vendedora"?vPend("Tu trimestre","💎"):vTrim()):vPanel();
+
+ const cj=document.getElementById("estados");
+ cj.hidden=!(rol==="vendedora"&&(pant==="home"||pant==="cash"));
+ if(!cj.hidden) cj.querySelectorAll(".est-b").forEach(b=>
+   b.setAttribute("aria-pressed", b.dataset.sem
+     ? b.dataset.sem===semEstado
+     : (b.dataset.dia==="lunes")===esLunes));
+}
+
+function vIngreso(){
+ const act=VEND.filter(v=>!est[v.id].descanso);
+ return `<div class="tit">✏️ Ingreso diario</div>
+ <div class="card"><label class="lbl">Fecha</label>
+ <div class="inp">2026-08-05</div>
+ <div style="margin-top:9px;display:flex;justify-content:space-between;align-items:center">
+ <span style="font-size:12px;color:var(--n-alta);font-weight:700">✅ Día guardado</span>
+ <span style="font-size:10px;color:var(--tenue);font-style:italic">${rol==="admin"?"":"Solo admin puede editar"}</span></div></div>
+ <div class="card"><div class="paso">1️⃣ ¿Quién descansó?</div><div class="chips">
+ ${VEND.map(v=>{const d=est[v.id].descanso;
+  return `<button class="chip${d?" desc":""}" data-desc="${v.id}" ${d?"":`style="border-color:${COL[v.c]}40;color:${COL[v.c]}"`}>${v.n.split(" ")[0]}</button>`}).join("")}
+ </div><div class="pie">✅ ${act.length} trabajan · 😴 ${VEND.length-act.length} descansan</div></div>
+ <div class="paso">2️⃣ Novedades <span style="font-size:11px;color:var(--apoyo);font-weight:400">(solo lo que NO fue perfecto)</span></div>
+ ${act.map(v=>fila(v)).join("")}
+ <button class="btnP">💾 Guardar día</button>`;
+}
+
+function fila(v){
+ const f=est[v.id];
+ const hay=f.min>0||f.res>0||f.orden==="mal"||f.unif==="mal"||f.dep==="mal"||f.plan==="mal"||f.act!=="bien";
+ const nd=Math.max(1,5-(f.min>=10?4:f.min*.4)-(f.orden==="mal"?.3:0)-(f.unif==="mal"?.3:0)-(f.dep==="mal"?.3:0)-(f.plan==="mal"?.5:0)-(f.act==="mal"?.8:f.act==="regular"?.4:0));
+ return `<div class="fila" style="border-left-color:${hay?"var(--naranja)":COL[v.c]}">
+ <div class="cab"><div style="display:flex;align-items:center;gap:6px;min-width:0">
+ <span class="nom">${v.n}</span>
+ <span class="bciudad" style="background:${COL[v.c]}20;color:${COL[v.c]};border-color:${COL[v.c]}40">${v.c}</span></div>
+ <span class="bnota" style="background:${bn(nd)};color:${cn(nd)}">${nd.toFixed(2)}</span></div>
+ <div class="par">
+ ${stp(v.id,"min","⏰ Min tarde",150)}
+ ${stp(v.id,"res","⭐ Reseñas",50)}</div>
+ <label class="lbl">🏪 Tienda</label><div class="tres">
+ ${tg(v.id,"orden","Orden")}${tg(v.id,"unif","Uniforme")}${tg(v.id,"dep","Depósito")}</div>
+ <label class="lbl">📋 Planilla</label><div class="tres" style="grid-template-columns:1fr 1fr">
+ ${tg(v.id,"plan","Bien","bien")}${tg(v.id,"plan","Mal","mal")}</div>
+ <label class="lbl">💪 Actitud</label><div class="tres" style="margin-bottom:0">
+ ${ac(v.id,"bien","✅ Bien")}${ac(v.id,"regular","⚠️ Regular")}${ac(v.id,"mal","❌ Mal")}</div>
+ ${f.act!=="bien"?`<input class="inp" style="margin-top:6px;font-size:12px" placeholder="¿Qué pasó? (obligatorio)">`:""}
+ </div>`;
+}
+function stp(id,k,et,max){const val=est[id][k];
+ return `<div><label class="lbl">${et}</label><div class="step">
+ <button class="sb" data-st="${id}|${k}|-1" ${val<=0?"disabled":""}>−</button>
+ <div class="sv">${val}</div>
+ <button class="sb" data-st="${id}|${k}|1" ${val>=max?"disabled":""}>+</button></div></div>`}
+function tg(id,k,et,forz){const v=est[id][k];
+ if(forz){const sel=v===forz;return `<button class="tg ${sel?(forz==="bien"?"ok":"mal"):"off"}" data-set="${id}|${k}|${forz}">${forz==="bien"?"✅":"❌"} ${et}</button>`}
+ const ok=v==="bien";return `<button class="tg ${ok?"ok":"mal"}" data-set="${id}|${k}|${ok?"mal":"bien"}">${ok?"✅":"❌"} ${et}</button>`}
+function ac(id,val,et){const sel=est[id].act===val;
+ return `<button class="tg ${sel?(val==="bien"?"ok":val==="regular"?"reg":"mal"):"off"}" data-set="${id}|act|${val}">${et}</button>`}
+
+function vRanking(){
+ const l=[...VEND].sort((a,b)=>NOTAS[b.id]-NOTAS[a.id]);
+ return `<div class="tit">📊 Ranking del mes</div>
+ <div class="aviso a-azul">Agosto 2026 · por nota final · las dos ciudades</div>
+ ${l.map((v,i)=>`<div class="rk${v.id===YO&&rol==="vendedora"?" yo":""}">
+ <span class="pos" style="color:${cn(NOTAS[v.id])}">${i<3?["🥇","🥈","🥉"][i]:i+1}</span>
+ <div class="txt"><div style="font-size:13px;font-weight:800">${v.id===YO&&rol==="vendedora"?"TÚ · "+v.n.split(" ")[0]:v.n}</div>
+ <div class="sub">${v.rol==="admin"?"Administradora":"Asesora"} · ${v.c} · ${peso(v.v)}</div></div>
+ <span class="bnota" style="background:${bn(NOTAS[v.id])};color:${cn(NOTAS[v.id])}">${NOTAS[v.id].toFixed(2)}</span>
+ </div>`).join("")}`;
+}
+
+function vVentas(){
+ const m=VEND.filter(v=>v.c==="MED"),b=VEND.filter(v=>v.c==="BOG");
+ const sm=m.reduce((s,v)=>s+v.v,0),sb=b.reduce((s,v)=>s+v.v,0);
+ const bloque=(t,lista,suma,meta,col)=>{const p=Math.round(suma/meta*100);
+  return `<div class="card"><div style="font-size:14px;font-weight:800;color:${col};margin-bottom:2px">${t}</div>
+  <div style="font-size:24px;font-weight:800;margin:6px 0 2px">${peso(suma)}</div>
+  <div style="font-size:12px;color:var(--apoyo)">Meta ${peso(meta)} · falta ${peso(meta-suma)}</div>
+  <div class="barra"><i style="width:${Math.min(100,p)}%;background:${col}"></i></div>
+  <div style="font-size:12px;font-weight:800;color:${col};margin-top:6px">${p}% de la meta</div>
+  <div style="margin-top:10px;border-top:1px dashed var(--linea);padding-top:8px">
+  ${lista.sort((a,b)=>b.v-a.v).map(v=>`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px">
+  <span>${v.n.split(" ").slice(0,2).join(" ")}</span><span style="font-weight:800">${peso(v.v)}</span></div>`).join("")}</div></div>`};
+ return `<div class="tit">💰 Ventas del mes</div>
+ <div class="aviso a-amb">Solo lectura · las ventas se sincronizan desde systemlap cada 5 minutos</div>
+ ${bloque("🟢 Medellín",m,sm,60000000,"var(--med)")}
+ ${bloque("🟡 Bogotá",b,sb,40000000,"var(--bog)")}`;
+}
+
+function vTrim(){
+ return `<div class="tit">📈 Trimestre Q3 · 2026</div>
+ <div class="aviso a-amb">Julio cerrado · agosto en curso · septiembre pendiente</div>
+ <div class="card"><div class="lbl">Notas del trimestre</div>
+ ${[["Julio","4.15","cerrado","20%"],["Agosto","—","en curso","30%"],["Septiembre","—","pendiente","50%"]].map(([m,n,e,p])=>
+ `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--linea)">
+ <div><div style="font-size:13px;font-weight:800">${m}</div><div style="font-size:11px;color:var(--apoyo)">Peso ${p} · ${e}</div></div>
+ <span class="bnota" style="background:${n==="—"?"#f1f5f9":"var(--bg-bien)"};color:${n==="—"?"var(--tenue)":"var(--n-bien)"}">${n}</span></div>`).join("")}
+ </div>
+ <div class="card"><div class="lbl">🏆 Premios en juego</div>
+ <div style="font-size:13px;line-height:1.7;color:var(--apoyo)">
+ 📺 TV 42" — a la #1 de cada ciudad<br>💰 $1.000.000 — si la nota del trimestre llega a 4.50</div></div>`;
+}
+
+const META_CASH=2500000, PREMIO=50000;
+const CASH={
+ inicio:{4:612000,2:349800,5:498000,6:271000,7:180500,8:96000},
+ dos:{4:2980000,2:2610000,5:2240000,6:1890000,7:1120000,8:640000},
+ lider:{4:2410000,2:3180000,5:2870000,6:1960000,7:1340000,8:710000},
+};
+let semEstado="inicio", esLunes=false, lunesCerrada=false;
+
+function resumen(c){
+ const l=VEND.filter(v=>v.c==="MED").map(v=>({...v,cash:c[v.id]||0}))
+   .sort((a,b)=>b.cash-a.cash);
+ const yo=l.find(v=>v.id===YO);
+ const club=l.filter(v=>v.cash>=META_CASH);
+ const lider=club[0];
+ return {l,yo,club,gane:yo.cash>=META_CASH,lider,esLider:club.length>0&&lider.id===YO};
+}
+const CEROS={};
+function semanaEnCurso(){return esLunes?CEROS:CASH[semEstado]}
+function cashResumen(){return resumen(CASH[semEstado])}
+function cursoResumen(){return resumen(semanaEnCurso())}
+
+function tarjetaLunes(){
+ if(!esLunes||lunesCerrada) return "";
+ const {yo,club,gane,esLider}=cashResumen();
+ const conf=gane?`<div class="conf">${Array.from({length:14},(_,i)=>
+   `<i style="left:${6+i*6.7}%;background:${["#fbbf24","#34d399","#f472b6","#60a5fa"][i%4]};animation-delay:${(i%7)*.22}s"></i>`).join("")}</div>`:"";
+
+ if(!club.length) return `<div class="tarjeta-lunes" style="background:#f4f4f5;border:1px solid #d9d9dd;color:#3f3f46">
+  <button class="tl-cerrar" data-cerrar-lunes aria-label="Cerrar">×</button>
+  <div class="tl-eyebrow">Semana pasada</div>
+  <div class="tl-tit">Esta vez nadie llegó a los ${peso(META_CASH)}</div>
+  <div class="tl-nota" style="border-top-color:rgba(0,0,0,.08)">Los ${peso(PREMIO)} quedaron sin dueña. Hoy arranca semana nueva — todas en ceros y el premio otra vez sobre la mesa.</div></div>`;
+
+ const fondo=gane?"#fffaf0":"#f7f7f8", borde=gane?"#f0d49a":"#dededf", tinta2=gane?"#8a5a08":"#3f3f46";
+ return `<div class="tarjeta-lunes" style="background:${fondo};border:1px solid ${borde};color:${tinta2}">
+  ${conf}
+  <button class="tl-cerrar" data-cerrar-lunes aria-label="Cerrar">×</button>
+  <div class="tl-eyebrow">Semana pasada · 28 de julio al 3 de agosto</div>
+  <div class="tl-tit">${gane?(esLider?"Te llevaste los dos premios 🎉":"Ganaste tus "+peso(PREMIO)+" 🎉"):"Ganaron el premio de la semana"}</div>
+  ${club.map((v,i)=>{const yoo=v.id===YO;
+   return `<div class="tl-fila${yoo?" yo":""}">
+   <span class="med">${i===0?"👑":"💵"}</span>
+   <span class="nm">${yoo?"TÚ · Lorena":v.n.split(" ").slice(0,2).join(" ")}</span>
+   <span class="pr">${i===0?peso(PREMIO*2):peso(PREMIO)}</span></div>`}).join("")}
+  <div class="tl-nota" style="border-top-color:rgba(0,0,0,.09)">
+  ${club[0].id===YO?`Fuiste la que más efectivo vendió, así que sumaste el EXTRA. `:`👑 ${club[0].n.split(" ")[0]} sumó el EXTRA por ser la que más efectivo vendió. `}
+  Hoy arranca semana nueva — todas en ceros.</div></div>`;
+}
+
+function vHome(){
+ const {yo,gane,esLider}=cursoResumen();
+ const m=VEND.find(v=>v.id===YO), n=NOTAS[YO];
+ const cashPie=esLunes
+   ? `Semana nueva · ${peso(PREMIO)} otra vez en juego`
+   : gane
+   ? (esLider?`Ganaste los ${peso(PREMIO)} y vas de primera por el EXTRA`:`Ya tienes tus ${peso(PREMIO)} · pelea por el EXTRA`)
+   : `Te faltan ${peso(META_CASH-yo.cash)} para tus ${peso(PREMIO)}`;
+ return `<div class="saludo">Hola, Lorena</div>
+ <div class="team" style="color:var(--med)">🟢 Team Valquirias Medellín</div>
+ ${tarjetaLunes()}
+
+ <button class="gran" data-ir="cash" style="background:#f0fdf9;border-color:#b6e6d5">
+  <div class="top"><span class="globo" style="background:#c7f0e0">💵</span>
+  <span class="rot" style="color:#046c4e">Tu cash semanal</span>
+  <span class="flecha" style="color:#046c4e">›</span></div>
+  <div class="num">${peso(yo.cash)}</div>
+  <div class="pie2" style="color:#046c4e">${cashPie}</div>
+ </button>
+
+ <button class="gran" data-ir="mes" style="background:#fff8f1;border-color:#f6d9be">
+  <div class="top"><span class="globo" style="background:#fbe3cd">📅</span>
+  <span class="rot" style="color:#9a4a12">Tu mes</span>
+  <span class="flecha" style="color:#9a4a12">›</span></div>
+  <div class="num">${peso(m.v)}</div>
+  <div class="pie2" style="color:#9a4a12">Nota ${n.toFixed(2)} · te faltan ${peso(15000000-m.v)} para el piso</div>
+ </button>
+
+ <button class="gran" data-ir="trim" style="background:#f7f4ff;border-color:#ddd3f5">
+  <div class="top"><span class="globo" style="background:#e6dcfb">💎</span>
+  <span class="rot" style="color:#5b2ec4">Tu trimestre</span>
+  <span class="flecha" style="color:#5b2ec4">›</span></div>
+  <div class="num">Q3 · julio a septiembre</div>
+  <div class="pie2" style="color:#5b2ec4">Julio cerrado en 4.15 · agosto en curso</div>
+ </button>`;
+}
+
+function vCash(){
+ const {l,yo,club,gane,lider,esLider}=cursoResumen();
+ let mt,mm,fondo,borde,tinta2;
+ if(esLunes){
+  fondo="#f7f4ff";borde="#ddd3f5";tinta2="#5b2ec4";
+  mt="Arranca la semana";
+  mm=`Todas en ceros otra vez. La primera en llegar a ${peso(META_CASH)} en efectivo se lleva ${peso(PREMIO)}, y la que más venda entre ellas suma ${peso(PREMIO)} más.`;
+ } else if(esLider){
+  fondo="#f0fdf9";borde="#8fdcc0";tinta2="#046c4e";
+  const seg=club[1];
+  mt="Vas por los dos premios";
+  mm=seg?`Tienes tus ${peso(PREMIO)} asegurados y vas de primera por el EXTRA. ${seg.n.split(" ")[0]} está a ${peso(yo.cash-seg.cash)} de quitártelo — no sueltes.`
+        :`Tienes tus ${peso(PREMIO)} y por ahora el EXTRA es tuyo. Falta semana.`;
+ } else if(gane){
+  fondo="#fffaf0";borde="#f3d59b";tinta2="#8a5a08";
+  mt=`Ya son tuyos ${peso(PREMIO)}`;
+  mm=`Van ${club.length} en el club esta semana, así que el EXTRA de ${peso(PREMIO)} se pelea entre ustedes. ${lider.n.split(" ")[0]} va de primera — te faltan ${peso(lider.cash-yo.cash)} para pasarla.`;
+ } else {
+  fondo="#f7f4ff";borde="#ddd3f5";tinta2="#5b2ec4";
+  const falta=META_CASH-yo.cash;
+  mt=`Te faltan ${peso(falta)}`;
+  mm=club.length
+   ? `Con eso entras al club de los ${peso(PREMIO)}. Ya van ${club.length} adentro peleando el EXTRA — todavía alcanzas.`
+   : `Con eso te ganas ${peso(PREMIO)}. Nadie ha llegado todavía esta semana: la primera que cruce arranca peleando el EXTRA.`;
+ }
+ return `<button class="volver" data-ir="home">‹ Volver</button>
+ <div class="tit" style="font-size:19px">💵 Tu cash semanal</div>
+ <div style="font-size:12px;color:var(--apoyo);margin:-6px 0 14px">${esLunes?"Lunes 4 a domingo 10 de agosto · arrancando":"Lunes 3 a domingo 9 de agosto"} · Medellín</div>
+ ${l.map((v,i)=>{const yoo=v.id===YO,ok=v.cash>=META_CASH;
+  return `<div class="rk${yoo?" yo":""}">
+  <span class="pos" style="color:${ok?"var(--n-alta)":"var(--tenue)"}">${i<3?["🥇","🥈","🥉"][i]:i+1}</span>
+  <div class="txt"><div style="font-size:13px;font-weight:800">${yoo?"TÚ · Lorena":v.n.split(" ").slice(0,2).join(" ")}</div>
+  <div class="sub">${ok?`✅ ganó ${peso(PREMIO)}`:`faltan ${peso(META_CASH-v.cash)}`}</div></div>
+  <span class="cifra" style="color:${ok?"var(--n-alta)":"var(--tinta)"}">${peso(v.cash)}</span></div>`}).join("")}
+ <div class="motiv" style="background:${fondo};border:1px solid ${borde}">
+  <div class="mt" style="color:${tinta2}">${mt}</div>
+  <div class="mm" style="color:${tinta2}">${mm}</div></div>`;
+}
+
+function vPend(t,e){
+ return `<button class="volver" data-ir="home">‹ Volver</button>
+ <div style="text-align:center;padding:60px 20px">
+ <div style="font-size:44px">${e}</div>
+ <div style="font-size:17px;font-weight:800;margin-top:12px;color:var(--tinta)">${t}</div>
+ <div style="font-size:13px;color:var(--apoyo);margin-top:8px;line-height:1.6">
+ La diseñamos en el siguiente paso.</div></div>`;
+}
+
+function vPanel(){
+ return `<div class="tit">⚙️ Panel</div>
+ <div class="tiles">
+ ${[["📊","Todas las vendedoras","Indicadores y retardos"],
+    ["💰","Nómina","Comisiones del mes"],
+    ["🎯","Metas","Cargar MED y BOG"],
+    ["🔒","Cerrar mes","Fijar notas"],
+    ["📈","Trimestre","Premios a entregar"],
+    ["💾","Backup","Descargar JSON"]].map(([i,t,d])=>
+ `<button class="tile"><div class="ic">${i}</div><div class="tt">${t}</div><div class="ds">${d}</div></button>`).join("")}
+ </div>`;
+}
+
+document.addEventListener("click",e=>{
+ const r=e.target.closest(".rol"); if(r){setRol(r.dataset.rol);return}
+ const n=e.target.closest(".nb"); if(n){ir(n.dataset.p);return}
+ const g=e.target.closest("[data-ir]"); if(g){ir(g.dataset.ir);return}
+ const sm=e.target.closest("[data-sem]"); if(sm){semEstado=sm.dataset.sem;pinta();return}
+ const dd=e.target.closest("[data-dia]"); if(dd){esLunes=dd.dataset.dia==="lunes";lunesCerrada=false;pinta();return}
+ if(e.target.closest("[data-cerrar-lunes]")){lunesCerrada=true;pinta();return}
+ const d=e.target.closest("[data-desc]"); if(d){const i=+d.dataset.desc;est[i].descanso=!est[i].descanso;pinta();return}
+ const s=e.target.closest("[data-st]"); if(s){const[i,k,v]=s.dataset.st.split("|");
+  est[i][k]=Math.max(0,est[i][k]+ +v);pinta();return}
+ const t=e.target.closest("[data-set]"); if(t){const[i,k,v]=t.dataset.set.split("|");est[i][k]=v;pinta();return}
+});
+pinta();
+</script>
