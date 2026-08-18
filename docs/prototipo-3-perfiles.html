@@ -1,4 +1,4 @@
-<title>Prototipo Televentas — 3 vistas</title>
+<title>Prototipo Valkyrias — 3 vistas</title>
 <style>
 :root{
   --naranja:#ea580c; --naranja-suave:#fff7ed;
@@ -138,6 +138,23 @@ body{margin:0;background:var(--marco);color:var(--marco-txt);
 .conf{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .conf i{position:absolute;top:-14px;width:7px;height:11px;border-radius:1px;
   animation:caer 2.6s linear infinite}
+.indb{display:flex;align-items:center;gap:10px;width:100%;padding:9px 2px;
+  background:none;border:none;border-bottom:1px dashed var(--linea);
+  font:inherit;cursor:pointer;text-align:left}
+.indb:last-of-type{border-bottom:none}
+.indb:hover{background:var(--lienzo)}
+.indb:focus-visible{outline:2px solid var(--naranja);outline-offset:-2px}
+.indb .e{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.indb .n{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--tinta)}
+.indb .ch{color:#a855f7;font-weight:800;font-size:17px}
+.mini{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;
+  margin-bottom:3px;font-size:12.5px}
+.mini.yo{background:#fffbeb;box-shadow:inset 0 0 0 1.5px #fcd34d}
+.mini .p{width:20px;text-align:center;font-weight:800;flex-shrink:0}
+.mini .nn{flex:1;min-width:0;font-weight:700;color:var(--tinta)}
+.mini .vv{font-weight:800;white-space:nowrap;color:var(--tinta)}
+.dia{display:flex;justify-content:space-between;align-items:center;
+  padding:9px 11px;border-radius:9px;margin-bottom:4px;font-size:12.5px;font-weight:700}
 @keyframes caer{to{transform:translateY(260px) rotate(540deg);opacity:0}}
 @media (prefers-reduced-motion:reduce){.conf{display:none}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -157,7 +174,7 @@ body{margin:0;background:var(--marco);color:var(--marco-txt);
 
   <div class="tel">
     <div class="hdr">
-      <div class="logo">⚡ Televentas</div>
+      <div class="logo">⚡ Valkyrias</div>
       <div class="nav" id="nav" role="group" aria-label="Secciones"></div>
     </div>
     <div class="cuerpo" id="cuerpo"></div>
@@ -172,6 +189,20 @@ body{margin:0;background:var(--marco);color:var(--marco-txt);
     <div class="estados" role="group" aria-label="Qué día es" style="margin-top:6px">
       <button class="est-b" data-dia="semana" aria-pressed="true">Entre semana</button>
       <button class="est-b" data-dia="lunes" aria-pressed="false">Lunes · semana nueva</button>
+    </div>
+  </div>
+
+  <div id="estados-mes" hidden>
+    <div class="estados" role="group" aria-label="Ciudad y rol">
+      <button class="est-b" data-perf="MED-admin" aria-pressed="true">MED admin</button>
+      <button class="est-b" data-perf="MED-asesora" aria-pressed="false">MED asesora</button>
+      <button class="est-b" data-perf="BOG-admin" aria-pressed="false">BOG admin</button>
+      <button class="est-b" data-perf="BOG-asesora" aria-pressed="false">BOG asesora</button>
+    </div>
+    <div class="estados" role="group" aria-label="Cuánto lleva vendido" style="margin-top:6px">
+      <button class="est-b" data-vta="bajo" aria-pressed="true">$1.6M</button>
+      <button class="est-b" data-vta="piso" aria-pressed="false">$16.8M</button>
+      <button class="est-b" data-vta="tramo2" aria-pressed="false">$24.5M</button>
     </div>
   </div>
 
@@ -190,7 +221,7 @@ const VEND=[
  {id:11,n:"Beatriz Xiomara Neuta",c:"BOG",rol:"admin",v:3240000},
  {id:12,n:"Leydy Sánchez",c:"BOG",rol:"asesora",v:2110000},
 ];
-const YO=2;
+let YO=2;
 const COL={MED:"#10b981",BOG:"#f59e0b"};
 const peso=n=>"$"+n.toLocaleString("es-CO");
 const cn=n=>n>=4.5?"var(--n-alta)":n>=3.5?"var(--n-bien)":n>=2.5?"var(--n-reg)":"var(--n-baja)";
@@ -205,7 +236,7 @@ VEND.forEach(v=>est[v.id]={descanso:v.id===5,min:v.id===4?2:0,res:v.id===4?3:0,
 const NAVS={
  carolina:[["ingreso","✏️"]],
  vendedora:[["home","🏠"]],
- admin:[["ranking","📊"],["ingreso","✏️"],["ventas","💰"],["trim","📈"],["panel","⚙️"]],
+ admin:[["panel","⚙️"]],
 };
 const QUIEN={carolina:"Oficina · abre directo en el ingreso diario, no ve nada más",
  vendedora:"Angie Lorena Castrillón · administradora Medellín",
@@ -213,32 +244,40 @@ const QUIEN={carolina:"Oficina · abre directo en el ingreso diario, no ve nada 
 const TALLER={
  carolina:"Una sola pantalla, sin nav. Abre y ya está aquí. La pantalla queda igual que hoy — toca los chips de descanso, los steppers y los botones y verás la nota del día recalcularse.",
  vendedora:"Fila de arriba: cómo va la semana. Fila de abajo: pásalo a lunes y verás la tarjeta de la ganadora con la semana nueva ya en ceros — con confeti si Lorena estuvo entre las que ganaron. Ciérrala con la × para ver cómo queda la pantalla después.",
- admin:"Los tiles son los que quedaron en la app. Dime cuáles usas de verdad y cuáles sobran."};
+ admin:"Sin barra de iconos arriba: el panel es la navegación, igual que Carolina y la vendedora. 6 tiles, el interruptor de acceso y «Ver la app como vendedora» — toca a cualquiera y entras a su vista con un banner para volver."};
 
 function ir(p){pant=p;pinta()}
-function setRol(r){rol=r;pant=NAVS[r][0][0];pinta()}
+function setRol(r){rol=r;simulando=null;pant=NAVS[r][0][0];pinta()}
 
 function pinta(){
  document.querySelectorAll(".rol").forEach(b=>b.setAttribute("aria-pressed",b.dataset.rol===rol));
  document.getElementById("quien").textContent=QUIEN[rol];
  document.getElementById("taller").textContent=TALLER[rol];
- const secciones=NAVS[rol];
+ const secciones=simulando?NAVS.vendedora:NAVS[rol];
  const nav=document.getElementById("nav");
  nav.hidden=secciones.length<2;
  nav.innerHTML=secciones.length<2?"":secciones.map(([p,i])=>
   `<button class="nb" data-p="${p}" aria-pressed="${p===pant}" aria-label="${p}">${i}</button>`).join("");
  document.getElementById("cuerpo").innerHTML=
   pant==="ingreso"?vIngreso():pant==="ranking"?vRanking():pant==="ventas"?vVentas():
+  pant==="vercomo"?vVerComo():
   pant==="home"?vHome():pant==="cash"?vCash():
-  pant==="mes"?vPend("Tu mes","📅"):
-  pant==="trim"?(rol==="vendedora"?vPend("Tu trimestre","💎"):vTrim()):vPanel();
+  pant==="mes"?vMes():pant==="ind"?vIndicador():
+  pant==="trim"?((rol==="vendedora"||simulando)?vTrimVend():vTrim()):vPanel();
 
  const cj=document.getElementById("estados");
- cj.hidden=!(rol==="vendedora"&&(pant==="home"||pant==="cash"));
+ cj.hidden=!((rol==="vendedora"||simulando)&&(pant==="home"||pant==="cash"));
  if(!cj.hidden) cj.querySelectorAll(".est-b").forEach(b=>
    b.setAttribute("aria-pressed", b.dataset.sem
      ? b.dataset.sem===semEstado
      : (b.dataset.dia==="lunes")===esLunes));
+
+ const cm=document.getElementById("estados-mes");
+ cm.hidden=!(rol==="vendedora"&&!simulando&&(pant==="mes"||pant==="trim"));
+ if(!cm.hidden) cm.querySelectorAll(".est-b").forEach(b=>
+   b.setAttribute("aria-pressed", b.dataset.perf
+     ? b.dataset.perf===perfil
+     : b.dataset.vta===ventasEstado));
 }
 
 function vIngreso(){
@@ -340,10 +379,11 @@ const CASH={
  dos:{4:2980000,2:2610000,5:2240000,6:1890000,7:1120000,8:640000},
  lider:{4:2410000,2:3180000,5:2870000,6:1960000,7:1340000,8:710000},
 };
-let semEstado="inicio", esLunes=false, lunesCerrada=false;
+let semEstado="inicio", esLunes=false, lunesCerrada=false, simulando=null;
 
 function resumen(c){
- const l=VEND.filter(v=>v.c==="MED").map(v=>({...v,cash:c[v.id]||0}))
+ const miCiudad=(VEND.find(v=>v.id===YO)||VEND[0]).c;
+ const l=VEND.filter(v=>v.c===miCiudad).map(v=>({...v,cash:c[v.id]||0}))
    .sort((a,b)=>b.cash-a.cash);
  const yo=l.find(v=>v.id===YO);
  const club=l.filter(v=>v.cash>=META_CASH);
@@ -383,6 +423,15 @@ function tarjetaLunes(){
   Hoy arranca semana nueva — todas en ceros.</div></div>`;
 }
 
+function bannerSimular(){
+ if(!simulando) return "";
+ const v=VEND.find(x=>x.id===simulando);
+ return `<button data-salir-simular style="display:flex;align-items:center;justify-content:space-between;
+  width:100%;gap:10px;padding:11px 14px;margin-bottom:12px;border:none;border-radius:12px;cursor:pointer;
+  background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font:inherit;font-size:12.5px;font-weight:800">
+  <span>🛡️ Viendo como ${v.n.split(" ")[0]} · ${v.c}</span><span>← Volver al panel</span></button>`;
+}
+
 function vHome(){
  const {yo,gane,esLider}=cursoResumen();
  const m=VEND.find(v=>v.id===YO), n=NOTAS[YO];
@@ -391,13 +440,16 @@ function vHome(){
    : gane
    ? (esLider?`Ganaste los ${peso(PREMIO)} y vas de primera por el EXTRA`:`Ya tienes tus ${peso(PREMIO)} · pelea por el EXTRA`)
    : `Te faltan ${peso(META_CASH-yo.cash)} para tus ${peso(PREMIO)}`;
- return `<div class="saludo">Hola, Lorena</div>
- <div class="team" style="color:var(--med)">🟢 Team Valquirias Medellín</div>
+ const quien=simulando?VEND.find(x=>x.id===simulando):VEND.find(x=>x.id===YO);
+ const colT=quien.c==="MED"?"var(--med)":"var(--bog)";
+ return `${bannerSimular()}
+ <div class="saludo">Hola, ${quien.n.split(" ")[0]}</div>
+ <div class="team" style="color:${colT}">${quien.c==="MED"?"🟢":"🟡"} Team Valkyrias ${quien.c==="MED"?"Medellín":"Bogotá"}</div>
  ${tarjetaLunes()}
 
  <button class="gran" data-ir="cash" style="background:#f0fdf9;border-color:#b6e6d5">
   <div class="top"><span class="globo" style="background:#c7f0e0">💵</span>
-  <span class="rot" style="color:#046c4e">Tu cash semanal</span>
+  <span class="rot" style="color:#046c4e">Mi cash semanal</span>
   <span class="flecha" style="color:#046c4e">›</span></div>
   <div class="num">${peso(yo.cash)}</div>
   <div class="pie2" style="color:#046c4e">${cashPie}</div>
@@ -405,7 +457,7 @@ function vHome(){
 
  <button class="gran" data-ir="mes" style="background:#fff8f1;border-color:#f6d9be">
   <div class="top"><span class="globo" style="background:#fbe3cd">📅</span>
-  <span class="rot" style="color:#9a4a12">Tu mes</span>
+  <span class="rot" style="color:#9a4a12">Mi mes</span>
   <span class="flecha" style="color:#9a4a12">›</span></div>
   <div class="num">${peso(m.v)}</div>
   <div class="pie2" style="color:#9a4a12">Nota ${n.toFixed(2)} · te faltan ${peso(15000000-m.v)} para el piso</div>
@@ -413,10 +465,10 @@ function vHome(){
 
  <button class="gran" data-ir="trim" style="background:#f7f4ff;border-color:#ddd3f5">
   <div class="top"><span class="globo" style="background:#e6dcfb">💎</span>
-  <span class="rot" style="color:#5b2ec4">Tu trimestre</span>
+  <span class="rot" style="color:#5b2ec4">Mi trimestre</span>
   <span class="flecha" style="color:#5b2ec4">›</span></div>
-  <div class="num">Q3 · julio a septiembre</div>
-  <div class="pie2" style="color:#5b2ec4">Julio cerrado en 4.15 · agosto en curso</div>
+  <div class="num">${notaTrimVivo(YO).toFixed(2)}</div>
+  <div class="pie2" style="color:#5b2ec4">Q3 en vivo · sube todos los días hasta septiembre</div>
  </button>`;
 }
 
@@ -445,8 +497,8 @@ function vCash(){
    ? `Con eso entras al club de los ${peso(PREMIO)}. Ya van ${club.length} adentro peleando el EXTRA — todavía alcanzas.`
    : `Con eso te ganas ${peso(PREMIO)}. Nadie ha llegado todavía esta semana: la primera que cruce arranca peleando el EXTRA.`;
  }
- return `<button class="volver" data-ir="home">‹ Volver</button>
- <div class="tit" style="font-size:19px">💵 Tu cash semanal</div>
+ return `${bannerSimular()}<button class="volver" data-ir="home">‹ Volver</button>
+ <div class="tit" style="font-size:19px">💵 Mi cash semanal</div>
  <div style="font-size:12px;color:var(--apoyo);margin:-6px 0 14px">${esLunes?"Lunes 4 a domingo 10 de agosto · arrancando":"Lunes 3 a domingo 9 de agosto"} · Medellín</div>
  ${l.map((v,i)=>{const yoo=v.id===YO,ok=v.cash>=META_CASH;
   return `<div class="rk${yoo?" yo":""}">
@@ -459,8 +511,265 @@ function vCash(){
   <div class="mm" style="color:${tinta2}">${mm}</div></div>`;
 }
 
+const TRAMOS=[
+ {min:0,max:19278642,asesora:.01,admin:.02,n:"Tramo 1"},
+ {min:19278643,max:39309157,asesora:.02,admin:.04,n:"Tramo 2"},
+ {min:39309158,max:Infinity,asesora:.03,admin:.06,n:"Tramo 3"}];
+const PISO_MED=15000000;
+const METAS={MED:60000000,BOG:40000000};
+const VENTAS_ESTADO={bajo:1599000,piso:16800000,tramo2:24500000};
+let perfil="MED-admin", ventasEstado="bajo";
+
+function tramoDe(v){return TRAMOS.find(t=>v>=t.min&&v<=t.max)||TRAMOS[0]}
+function comisionDe(ciudad,rol,ventas){
+ if(ciudad==="MED"&&ventas<PISO_MED) return {com:0,tramo:null,pct:0,piso:true};
+ const t=tramoDe(ventas), pct=rol==="admin"?t.admin:t.asesora;
+ return {com:Math.round(ventas*pct),tramo:t,pct,piso:false};
+}
+
+const INDICADORES=[
+ {id:"punt",e:"⏰",n:"Puntualidad",nota:4.60,res:"1 día tarde · 2 minutos",
+  dias:[["Lunes 4","2 min tarde","mal"],["Martes 5","A tiempo","ok"],["Miércoles 6","A tiempo","ok"]],
+  tip:"Cada día que llegas a tiempo suma. Un retardo de 10 minutos o más pesa mucho más que uno de 2."},
+ {id:"tienda",e:"🏪",n:"Tienda",nota:5.00,res:"Sin observaciones",
+  dias:[["Lunes 4","Orden ✓ Uniforme ✓ Depósito ✓","ok"],["Martes 5","Orden ✓ Uniforme ✓ Depósito ✓","ok"],["Miércoles 6","Orden ✓ Uniforme ✓ Depósito ✓","ok"]],
+  tip:"Se revisan tres cosas cada día: orden, uniforme y depósito."},
+ {id:"plan",e:"📋",n:"Planilla",nota:3.20,res:"2 días sin llenar",
+  dias:[["Lunes 4","Sin llenar","mal"],["Martes 5","Sin llenar","mal"],["Miércoles 6","Al día","ok"]],
+  tip:"La planilla se llena el mismo día. Los días que pasaron ya no se pueden recuperar, pero los que vienen sí."},
+ {id:"act",e:"💪",n:"Actitud",nota:5.00,res:"Sin observaciones",
+  dias:[["Lunes 4","Bien","ok"],["Martes 5","Bien","ok"],["Miércoles 6","Bien","ok"]],
+  tip:"Solo se marca cuando hay algo puntual que anotar, y siempre con la explicación de qué pasó."},
+ {id:"res",e:"⭐",n:"Reseñas",nota:4.70,res:"3 reseñas este mes",
+  dias:[["Lunes 4","1 reseña","ok"],["Martes 5","2 reseñas","ok"],["Miércoles 6","Sin reseñas","ok"]],
+  tip:"Cada reseña que dejan tus clientas suma. Pedirlas al cerrar la venta es lo que mejor funciona."},
+];
+let indAbierto=null;
+
+function datosMes(){
+ const [ciudad,rol]=perfil.split("-");
+ const ventas=VENTAS_ESTADO[ventasEstado];
+ return {ciudad,rol,ventas,...comisionDe(ciudad,rol,ventas)};
+}
+
+// Ranking del mes de su ciudad, con sus ventas metidas en el puesto que le toque
+function rankingMes(ciudad,misVentas){
+ const base=VEND.filter(v=>v.c===ciudad&&v.id!==YO).map(v=>({n:v.n,val:v.v,yo:false}));
+ base.push({n:"Lorena",val:misVentas,yo:true});
+ return base.sort((a,b)=>b.val-a.val);
+}
+
+function vMes(){
+ const {ciudad,rol,ventas,com,tramo,pct,piso}=datosMes();
+ const rolTxt=rol==="admin"?"administradora":"asesora";
+ const colC=ciudad==="MED"?"var(--med)":"var(--bog)";
+ const sig=TRAMOS.find(t=>t.min>ventas);
+ const pctSig=sig?(rol==="admin"?sig.admin:sig.asesora):null;
+
+ const rk=rankingMes(ciudad,ventas);
+ const miPos=rk.findIndex(v=>v.yo)+1;
+ const arriba=miPos>1?rk[miPos-2]:null;
+
+ const dinero=piso
+ ? `<div class="card" style="border-left:4px solid ${colC};border-radius:0 13px 13px 0">
+    <div class="lbl">Vendido en agosto</div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.8px;color:var(--tinta)">${peso(ventas)}</div>
+    <div class="barra"><i style="width:${Math.round(ventas/PISO_MED*100)}%;background:${colC}"></i></div>
+    <div style="font-size:12.5px;color:var(--apoyo);font-weight:600;margin-top:8px;line-height:1.55">
+    Medellín tiene piso de <strong>${peso(PISO_MED)}</strong>. Te faltan
+    <strong style="color:var(--tinta)">${peso(PISO_MED-ventas)}</strong> para empezar a ganar comisión —
+    ahí ganas el <strong>${((rol==="admin"?TRAMOS[0].admin:TRAMOS[0].asesora)*100).toFixed(0)}%</strong> de todo, por ser ${rolTxt}.</div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--linea);display:flex;justify-content:space-between;align-items:baseline">
+    <span style="font-size:12.5px;font-weight:700;color:var(--apoyo)">Mi comisión hasta hoy</span>
+    <span style="font-size:19px;font-weight:800;color:var(--apoyo)">$0</span></div></div>`
+ : `<div class="card" style="border-left:4px solid ${colC};border-radius:0 13px 13px 0">
+    <div class="lbl">Vendido en agosto</div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.8px;color:var(--tinta)">${peso(ventas)}</div>
+    <div style="font-size:12px;color:var(--apoyo);font-weight:600;margin-top:4px">
+    ${ciudad==="MED"?`Piso de ${peso(PISO_MED)} superado ✓`:"En Bogotá ganas desde el primer peso ✓"}</div>
+    <div style="margin-top:11px;padding-top:11px;border-top:1px dashed var(--linea);display:flex;justify-content:space-between;align-items:baseline">
+    <span style="font-size:12.5px;font-weight:700;color:#046c4e">Mi comisión hasta hoy</span>
+    <span style="font-size:24px;font-weight:800;color:#046c4e">${peso(com)}</span></div>
+    <div style="font-size:12px;color:#046c4e;font-weight:600;margin-top:3px">${tramo.n} · ${(pct*100).toFixed(0)}% sobre todo lo vendido, por ser ${rolTxt}</div>
+    ${sig?`<div style="margin-top:10px;padding:10px 12px;background:#f0fdf9;border-radius:9px;font-size:12.5px;color:#046c4e;font-weight:600;line-height:1.55">
+    🚀 Con <strong>${peso(sig.min-ventas)}</strong> más subes al <strong>${(pctSig*100).toFixed(0)}%</strong> — sobre <em>todo</em> lo vendido, no solo lo nuevo. Tu comisión pasaría a <strong>${peso(Math.round(sig.min*pctSig))}</strong>.</div>`:""}
+    </div>`;
+
+ const notaComp=4.32;
+ const notaFinal=4.18;
+
+ return `${bannerSimular()}<button class="volver" data-ir="home">‹ Volver</button>
+ <div class="tit" style="font-size:19px">📅 Mi mes</div>
+ <div style="font-size:12px;color:var(--apoyo);margin:-6px 0 12px">Agosto 2026 · día 5 de 31 · ${ciudad==="MED"?"Medellín":"Bogotá"}</div>
+
+ ${dinero}
+ <div style="font-size:11.5px;color:var(--tenue);margin:-4px 0 14px;padding-left:2px">Es lo que llevas hasta hoy · la cifra final se define al cerrar el mes</div>
+
+ <div class="card">
+  <div class="lbl">Mi puesto en ventas · ${ciudad==="MED"?"Medellín":"Bogotá"}</div>
+  ${rk.map((v,i)=>`<div class="mini${v.yo?" yo":""}">
+   <span class="p" style="color:${i<3?"var(--n-alta)":"var(--tenue)"}">${i<3?["🥇","🥈","🥉"][i]:i+1}</span>
+   <span class="nn">${v.yo?"TÚ · Lorena":v.n.split(" ")[0]}</span>
+   <span class="vv">${peso(v.val)}</span></div>`).join("")}
+  ${arriba?`<div style="font-size:12px;color:var(--apoyo);font-weight:600;margin-top:8px;padding-top:8px;border-top:1px dashed var(--linea)">
+  Con <strong style="color:var(--tinta)">${peso(arriba.val-ventas+1)}</strong> más pasas a ${arriba.n.split(" ")[0]} y subes al puesto ${miPos-1}.</div>`:
+  `<div style="font-size:12px;color:var(--n-alta);font-weight:700;margin-top:8px;padding-top:8px;border-top:1px dashed var(--linea)">🏆 Vas de primera en tu ciudad.</div>`}
+ </div>
+
+ <div class="card">
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:4px">
+   <div style="flex:1"><div class="lbl" style="margin-bottom:2px">Mi nota de agosto</div>
+   <div style="font-size:11.5px;color:var(--apoyo);line-height:1.45">No cambia tu comisión — suma para el premio del trimestre</div></div>
+   <span class="bnota" style="background:${bn(notaFinal)};color:${cn(notaFinal)};font-size:23px;min-width:72px;padding:8px 13px">${notaFinal.toFixed(2)}</span></div>
+  <div style="border-top:1px dashed var(--linea);margin-top:8px;padding-top:2px">
+  ${INDICADORES.map(i=>`<button class="indb" data-ind="${i.id}">
+   <span class="e">${i.e}</span><span class="n">${i.n}</span>
+   <span class="bnota" style="background:${bn(i.nota)};color:${cn(i.nota)};font-size:13px;min-width:42px">${i.nota.toFixed(2)}</span>
+   <span class="ch">›</span></button>`).join("")}</div>
+ </div>
+
+ <div class="motiv" style="background:#f7f4ff;border:1px solid #ddd3f5">
+  <div class="mt" style="color:#5b2ec4">Puntos extra que puedes ganarte</div>
+  <div class="mm" style="color:#5b2ec4">Si cierras el mes con tu comportamiento en <strong>4.50 o más</strong> y pasas tu meta, sumas hasta <strong>0.8 puntos</strong>. Vas en ${notaComp.toFixed(2)} — te faltan ${(4.5-notaComp).toFixed(2)}.</div></div>`;
+}
+
+function vIndicador(){
+ const i=INDICADORES.find(x=>x.id===indAbierto)||INDICADORES[0];
+ const esTrim=indModo==="trim";
+ const t=IND_TRIM[i.id];
+ const prom=Math.round((t.jul*.2+t.ago*.3)/.5*100)/100;
+ const nota=esTrim?prom:i.nota;
+ const sube=t.ago>t.jul, igual=t.ago===t.jul;
+
+ const cuerpo=esTrim
+ ? `<div class="card"><div class="lbl">Mes a mes · Q3</div>
+    ${[["Julio",t.jul.toFixed(2),"20%","cerrado"],
+       ["Agosto",t.ago.toFixed(2),"30%",`en curso · día ${DIA_MES} de ${DIAS_MES}`],
+       ["Septiembre","—","50%","aún no empieza"]]
+    .map(([m,n,p,e])=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--linea)">
+     <div style="flex:1"><div style="font-size:13px;font-weight:800;color:${e==="cerrado"?"var(--tinta)":"var(--apoyo)"}">${m}</div>
+     <div style="font-size:11.5px;color:var(--apoyo);margin-top:2px">Pesa ${p} · ${e}</div></div>
+     <span class="bnota" style="background:${n==="—"?"#f1f5f9":bn(+n)};color:${n==="—"?"var(--tenue)":cn(+n)};font-size:14px;min-width:46px">${n}</span></div>`).join("")}
+    <div style="font-size:12.5px;color:${igual?"var(--apoyo)":sube?"var(--n-alta)":"var(--n-reg)"};font-weight:700;margin-top:10px;line-height:1.55">
+    ${igual?"Vas igual que en julio.":sube?`▲ Vienes subiendo — ${(t.ago-t.jul).toFixed(2)} más que en julio. Sigue así.`
+     :`▼ Vienes bajando — ${(t.jul-t.ago).toFixed(2)} menos que en julio. Septiembre pesa la mitad: ahí lo enderezas.`}</div></div>`
+ : `<div class="card"><div class="lbl">Día por día · agosto</div>
+    ${i.dias.map(([d,tx,e])=>`<div class="dia" style="background:${e==="ok"?"#f0fdf4":"#fef2f2"};color:${e==="ok"?"#059669":"#dc2626"}">
+     <span>${d}</span><span>${tx}</span></div>`).join("")}
+    <div style="font-size:11.5px;color:var(--tenue);margin-top:8px">Se van sumando a medida que pasa el mes.</div></div>`;
+
+ return `<button class="volver" data-ir="${esTrim?"trim":"mes"}">‹ Volver a mi ${esTrim?"trimestre":"mes"}</button>
+ <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+  <span style="font-size:34px">${i.e}</span>
+  <div style="flex:1"><div style="font-size:19px;font-weight:800;color:var(--tinta)">${i.n}</div>
+  <div style="font-size:12.5px;color:var(--apoyo);font-weight:600;margin-top:2px">${esTrim?"En el trimestre":i.res}</div></div>
+  <span class="bnota" style="background:${bn(nota)};color:${cn(nota)};font-size:23px;min-width:72px;padding:8px 13px">${nota.toFixed(2)}</span></div>
+
+ ${cuerpo}
+
+ <div class="motiv" style="background:#f7f4ff;border:1px solid #ddd3f5">
+  <div class="mm" style="color:#5b2ec4">${i.tip}</div></div>`;
+}
+
+// Nota en vivo del trimestre: julio cerrado (20%) + agosto en curso (30%),
+// normalizado por los pesos que ya tienen dato. Septiembre (50%) todavía no juega.
+const DIA_MES=5, DIAS_MES=31;
+const TRIM_MESES={jul:{peso:.20,estado:"cerrado"},ago:{peso:.30,estado:"curso"},sep:{peso:.50,estado:"pendiente"}};
+const NOTAS_JUL={4:4.71,2:4.15,5:4.42,6:4.80,7:3.60,8:3.10,11:4.62,12:4.08};
+const NOTAS_AGO={4:4.55,2:2.83,5:4.30,6:4.62,7:3.48,8:2.65,11:4.44,12:3.95};
+const META_TRIM=4.5, PREMIO_TRIM=1000000;
+
+function notaTrimVivo(id){
+ const j=NOTAS_JUL[id], a=NOTAS_AGO[id];
+ const pesos=TRIM_MESES.jul.peso+TRIM_MESES.ago.peso;
+ return Math.round((j*TRIM_MESES.jul.peso+a*TRIM_MESES.ago.peso)/pesos*100)/100;
+}
+
+// Indicadores vistos por trimestre: mismo indicador, pero mes a mes
+const IND_TRIM={
+ punt:{jul:4.80,ago:4.60},tienda:{jul:4.95,ago:5.00},
+ plan:{jul:4.20,ago:3.20},act:{jul:5.00,ago:5.00},res:{jul:4.50,ago:4.70}};
+let indModo="mes";
+
+function vTrimVend(){
+ const [ciudad]=perfil.split("-");
+ const mia=notaTrimVivo(YO);
+ const falta=Math.max(0,META_TRIM-mia);
+ const rk=VEND.filter(v=>v.c===ciudad).map(v=>({...v,nt:notaTrimVivo(v.id)}))
+   .sort((a,b)=>b.nt-a.nt);
+ const club=rk.filter(v=>v.nt>=META_TRIM);
+ const miPos=rk.findIndex(v=>v.id===YO)+1;
+ const pctMes=Math.round(DIA_MES/DIAS_MES*100);
+
+ return `${bannerSimular()}<button class="volver" data-ir="home">‹ Volver</button>
+ <div class="tit" style="font-size:19px">💎 Mi trimestre</div>
+ <div style="font-size:12px;color:var(--apoyo);margin:-6px 0 12px">Q3 · julio, agosto y septiembre · ${ciudad==="MED"?"Medellín":"Bogotá"}</div>
+
+ <div class="card" style="background:#f7f4ff;border-color:#ddd3f5">
+  <div style="display:flex;gap:12px;align-items:center">
+   <div style="flex:1">
+    <div class="lbl" style="color:#5b2ec4;margin-bottom:2px">Mi nota del trimestre · en vivo</div>
+    <div style="font-size:11.5px;color:#5b2ec4;font-weight:600;line-height:1.45">Se actualiza todos los días</div></div>
+   <span class="bnota" style="background:#fff;color:#5b2ec4;font-size:26px;min-width:80px;padding:9px 15px">${mia.toFixed(2)}</span></div>
+  <div class="barra" style="background:#e6dcfb;margin-top:12px"><i style="width:${Math.min(100,mia/META_TRIM*100)}%;background:#7c3aed"></i></div>
+  <div style="font-size:12.5px;color:#5b2ec4;font-weight:600;margin-top:8px;line-height:1.55">
+  ${falta>0?`El premio es para quien cierre en <strong>${META_TRIM.toFixed(2)}</strong>. Hoy te faltan <strong>${falta.toFixed(2)}</strong>.`
+   :`Hoy vas por encima del <strong>${META_TRIM.toFixed(2)}</strong> ✓`}</div>
+ </div>
+
+ <div class="aviso" style="background:#eff6ff;color:#1e40af;border-left:3px solid #3b82f6;line-height:1.6">
+  📈 <strong>Es normal que al empezar el mes esta nota se vea baja.</strong> Agosto va en el día ${DIA_MES} de ${DIAS_MES} — apenas lleva el ${pctMes}% del mes.
+  Sube todos los días con tus ventas y tu comportamiento. La nota que cuenta es la del último día de septiembre.
+ </div>
+
+ <div class="card"><div class="lbl">Cómo se arma la nota</div>
+  ${[["Julio",NOTAS_JUL[YO].toFixed(2),"20%","cerrado"],
+     ["Agosto",NOTAS_AGO[YO].toFixed(2),"30%",`en curso · día ${DIA_MES} de ${DIAS_MES}`],
+     ["Septiembre","—","50%","aún no empieza"]]
+  .map(([m,n,p,e])=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--linea)">
+   <div style="flex:1"><div style="font-size:13px;font-weight:800;color:${e==="cerrado"?"var(--tinta)":"var(--apoyo)"}">${m}</div>
+   <div style="font-size:11.5px;color:var(--apoyo);margin-top:2px">Pesa ${p} · ${e}</div></div>
+   <span class="bnota" style="background:${n==="—"?"#f1f5f9":bn(+n)};color:${n==="—"?"var(--tenue)":cn(+n)};font-size:14px;min-width:46px">${n}</span></div>`).join("")}
+  <div style="font-size:12px;color:var(--apoyo);font-weight:600;margin-top:9px;line-height:1.55">
+  Septiembre pesa la mitad y todavía no ha empezado. Ahí es donde más se mueve todo.</div>
+ </div>
+
+ <div class="card"><div class="lbl">Mis indicadores en el trimestre</div>
+  <div style="font-size:11.5px;color:var(--apoyo);font-weight:600;margin:-4px 0 6px;line-height:1.5">Toca cualquiera para ver cómo vienes mes a mes</div>
+  ${INDICADORES.map(i=>{const t=IND_TRIM[i.id], prom=Math.round((t.jul*.2+t.ago*.3)/.5*100)/100;
+   const sube=t.ago>t.jul, igual=t.ago===t.jul;
+   return `<button class="indb" data-ind="${i.id}" data-modo="trim">
+   <span class="e">${i.e}</span>
+   <span class="n">${i.n}<div style="font-size:11px;color:var(--apoyo);font-weight:400;margin-top:2px">
+   ${igual?"Igual que julio":sube?`▲ subiendo · julio ${t.jul.toFixed(2)}`:`▼ bajando · julio ${t.jul.toFixed(2)}`}</div></span>
+   <span class="bnota" style="background:${bn(prom)};color:${cn(prom)};font-size:13px;min-width:42px">${prom.toFixed(2)}</span>
+   <span class="ch">›</span></button>`}).join("")}
+ </div>
+
+ <div class="card" style="background:#fffaf0;border-color:#f0d49a">
+  <div class="lbl" style="color:#8a5a08">🏆 Premios de este trimestre</div>
+  <div style="font-size:13px;color:#8a5a08;font-weight:600;line-height:1.7">
+  💰 <strong>${peso(PREMIO_TRIM)}</strong> para cada una que cierre el trimestre en ${META_TRIM.toFixed(2)} o más.<br>
+  👑 <strong>${peso(PREMIO_TRIM)} extra</strong> a la #1 de ${ciudad==="MED"?"Medellín":"Bogotá"}, si al menos dos llegan al ${META_TRIM.toFixed(2)}.</div>
+  <div style="font-size:11.5px;color:#8a5a08;margin-top:9px;padding-top:9px;border-top:1px dashed #f0d49a">
+  📺 La TV entra en juego el próximo trimestre.</div>
+ </div>
+
+ <div class="card"><div class="lbl">Ranking del trimestre · ${ciudad==="MED"?"Medellín":"Bogotá"}</div>
+  ${rk.map((v,i)=>{const yoo=v.id===YO, gana=v.nt>=META_TRIM;
+   return `<div class="mini${yoo?" yo":""}">
+   <span class="p" style="color:${i<3?"var(--n-alta)":"var(--tenue)"}">${i<3?["🥇","🥈","🥉"][i]:i+1}</span>
+   <span class="nn">${yoo?"TÚ · Lorena":v.n.split(" ")[0]}${gana?" 💰":""}</span>
+   <span class="vv" style="color:${cn(v.nt)}">${v.nt.toFixed(2)}</span></div>`}).join("")}
+  <div style="font-size:12px;color:var(--apoyo);font-weight:600;margin-top:9px;padding-top:9px;border-top:1px dashed var(--linea);line-height:1.55">
+  ${club.length?`💰 = hoy va en ${META_TRIM.toFixed(2)} o más. Van ${club.length} en tu ciudad.`:`Hoy todavía nadie llega al ${META_TRIM.toFixed(2)} en tu ciudad.`}
+  ${miPos>1?` Con <strong style="color:var(--tinta)">${(rk[miPos-2].nt-mia).toFixed(2)}</strong> más pasas a ${rk[miPos-2].n.split(" ")[0]}.`:" Vas de primera 🏆"}
+  <br>Este ranking también se mueve todos los días — nada está definido hasta que cierre septiembre.</div>
+ </div>`;
+}
+
 function vPend(t,e){
- return `<button class="volver" data-ir="home">‹ Volver</button>
+ return `${bannerSimular()}<button class="volver" data-ir="home">‹ Volver</button>
  <div style="text-align:center;padding:60px 20px">
  <div style="font-size:44px">${e}</div>
  <div style="font-size:17px;font-weight:800;margin-top:12px;color:var(--tinta)">${t}</div>
@@ -468,17 +777,65 @@ function vPend(t,e){
  La diseñamos en el siguiente paso.</div></div>`;
 }
 
+const GRUPOS=[
+ {t:"El día a día",tiles:[
+  ["📝","Ingreso diario","Corregir días pasados"],
+  ["🏅","Rankings","Mes · trimestre · indicador"]]},
+ {t:"El mes",tiles:[
+  ["🎯","Metas del mes","Cargar MED y BOG"],
+  ["🔒","Cerrar mes","Fijar notas para siempre"]]},
+ {t:"El trimestre",tiles:[
+  ["💎","Premios","Quién ganó y cuánto entregar"],
+  ["💾","Backup","Descargar todo en JSON"]]},
+];
+let accesoOn=true;
+
 function vPanel(){
  return `<div class="tit">⚙️ Panel</div>
- <div class="tiles">
- ${[["📊","Todas las vendedoras","Indicadores y retardos"],
-    ["💰","Nómina","Comisiones del mes"],
-    ["🎯","Metas","Cargar MED y BOG"],
-    ["🔒","Cerrar mes","Fijar notas"],
-    ["📈","Trimestre","Premios a entregar"],
-    ["💾","Backup","Descargar JSON"]].map(([i,t,d])=>
- `<button class="tile"><div class="ic">${i}</div><div class="tt">${t}</div><div class="ds">${d}</div></button>`).join("")}
- </div>`;
+
+ <div class="card" style="background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;margin-bottom:10px">
+  <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.3px;opacity:.92">Ventas del mes · agosto</div>
+  <div style="font-size:29px;font-weight:800;letter-spacing:-.8px;margin-top:3px">${peso(VEND.reduce((s,v)=>s+v.v,0))}</div>
+  <div style="font-size:12.5px;font-weight:600;opacity:.95;margin-top:4px">
+  🟢 MED ${peso(VEND.filter(v=>v.c==="MED").reduce((s,v)=>s+v.v,0))} · 🟡 BOG ${peso(VEND.filter(v=>v.c==="BOG").reduce((s,v)=>s+v.v,0))}</div></div>
+
+ <div class="card" style="background:${accesoOn?"#f0fdf9":"#f4f4f5"};border-color:${accesoOn?"#b6e6d5":"#d9d9dd"};display:flex;align-items:center;gap:12px;margin-bottom:10px">
+  <div style="flex:1">
+   <div style="font-size:13.5px;font-weight:800;color:${accesoOn?"#046c4e":"#52525b"}">${accesoOn?"App abierta para las vendedoras":"App cerrada"}</div>
+   <div style="font-size:11.5px;font-weight:600;color:${accesoOn?"#046c4e":"#52525b"};margin-top:2px">
+   ${accesoOn?"Las 13 pueden entrar con su correo":"Nadie puede entrar aunque tenga el link"}</div></div>
+  <button data-acceso style="width:54px;height:30px;border-radius:15px;border:none;cursor:pointer;flex-shrink:0;
+   background:${accesoOn?"#059669":"#a1a1aa"};position:relative;padding:0">
+   <span style="position:absolute;top:3px;left:${accesoOn?"27px":"3px"};width:24px;height:24px;border-radius:50%;background:#fff;transition:left .18s"></span></button></div>
+
+ <button class="gran" data-ir="vercomo" style="background:#f7f4ff;border-color:#ddd3f5;margin-bottom:6px">
+  <div class="top" style="margin-bottom:0"><span class="globo" style="background:#e6dcfb">👁️</span>
+  <div style="flex:1"><div class="rot" style="color:#5b2ec4">Ver la app como vendedora</div>
+  <div style="font-size:12px;color:#5b2ec4;font-weight:600;margin-top:2px">Elige a cuál de las 13</div></div>
+  <span class="flecha" style="color:#5b2ec4">›</span></div></button>
+
+ ${GRUPOS.map(g=>`<div class="lbl" style="margin:16px 0 7px">${g.t}</div>
+  <div class="tiles">${g.tiles.map(([i,t,d])=>
+  `<button class="tile"><div class="ic">${i}</div><div class="tt">${t}</div><div class="ds">${d}</div></button>`).join("")}</div>`).join("")}
+
+ <div class="aviso a-azul" style="margin-top:18px;line-height:1.65">
+ 💡 <strong>Aquí no se crea ni se edita nada de vendedoras.</strong> Entran, salen, cambian de ciudad o de rol en systemlap, y esta app lo recibe sola.
+ Los únicos datos que se escriben acá son los que llena Carolina cada día.</div>`;
+}
+
+function vVerComo(){
+ const med=VEND.filter(v=>v.c==="MED"), bog=VEND.filter(v=>v.c==="BOG");
+ const fila=v=>`<button class="mini" data-simular="${v.id}" style="width:100%;border:none;cursor:pointer;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:4px;padding:11px 12px;text-align:left">
+  <span style="width:30px;height:30px;border-radius:50%;background:${COL[v.c]};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">${v.n[0]}</span>
+  <span class="nn">${v.n}<div style="font-size:11px;color:var(--apoyo);font-weight:400;margin-top:1px">${v.rol==="admin"?"Administradora":"Asesora"}</div></span>
+  <span class="ch" style="color:#a855f7;font-weight:800;font-size:17px">›</span></button>`;
+ return `<button class="volver" data-ir="panel">‹ Volver al panel</button>
+ <div class="tit" style="font-size:19px">👁️ Ver como vendedora</div>
+ <div style="font-size:12px;color:var(--apoyo);margin:-6px 0 14px">Abre su vista con sus datos reales. Vuelves con el botón de arriba.</div>
+ <div class="lbl" style="color:var(--med)">🟢 Medellín</div>
+ ${med.map(fila).join("")}
+ <div class="lbl" style="color:var(--bog);margin-top:14px">🟡 Bogotá</div>
+ ${bog.map(fila).join("")}`;
 }
 
 document.addEventListener("click",e=>{
@@ -487,6 +844,16 @@ document.addEventListener("click",e=>{
  const g=e.target.closest("[data-ir]"); if(g){ir(g.dataset.ir);return}
  const sm=e.target.closest("[data-sem]"); if(sm){semEstado=sm.dataset.sem;pinta();return}
  const dd=e.target.closest("[data-dia]"); if(dd){esLunes=dd.dataset.dia==="lunes";lunesCerrada=false;pinta();return}
+ const pf=e.target.closest("[data-perf]"); if(pf){perfil=pf.dataset.perf;pinta();return}
+ const vt=e.target.closest("[data-vta]"); if(vt){ventasEstado=vt.dataset.vta;pinta();return}
+ const ib=e.target.closest("[data-ind]"); if(ib){indAbierto=ib.dataset.ind;indModo=ib.dataset.modo||"mes";ir("ind");return}
+ const sim=e.target.closest("[data-simular]"); if(sim){
+  simulando=+sim.dataset.simular; YO=simulando;
+  const v=VEND.find(x=>x.id===simulando);
+  perfil=`${v.c}-${v.rol}`;
+  ir("home");return}
+ if(e.target.closest("[data-salir-simular]")){simulando=null;YO=2;perfil="MED-admin";ir("panel");return}
+ if(e.target.closest("[data-acceso]")){accesoOn=!accesoOn;pinta();return}
  if(e.target.closest("[data-cerrar-lunes]")){lunesCerrada=true;pinta();return}
  const d=e.target.closest("[data-desc]"); if(d){const i=+d.dataset.desc;est[i].descanso=!est[i].descanso;pinta();return}
  const s=e.target.closest("[data-st]"); if(s){const[i,k,v]=s.dataset.st.split("|");
