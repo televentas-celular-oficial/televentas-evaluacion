@@ -38,10 +38,20 @@ export default function ConfigPremios({ onVolver }) {
   const clave = `${añoSel}_Q${qSel}`;
   const configExistente = { ...DEFAULTS, ...(datos.config?.premiosTrim?.[clave] || {}) };
 
+  // Los CUATRO campos se leen por ref en el momento de guardar.
+  //
+  // `reconocimiento` y `descripcion` eran useState inicializados UNA vez y
+  // actualizados sólo en onBlur. Los inputs sí se refrescaban al cambiar de
+  // trimestre (el `key` los remonta con el defaultValue nuevo), pero el estado
+  // seguía guardando el texto del trimestre ANTERIOR. Entonces: abrir Q3, pasar
+  // a Q4, cambiar sólo los montos y guardar escribía en Q4 el reconocimiento de
+  // Q3 — un premio que a ese trimestre nadie le prometió, y que las vendedoras
+  // leen en "Cómo funciona" y en Detalle Trimestre. Leyendo por ref se guarda
+  // exactamente lo que está en pantalla.
   const refBase = useRef(null);
   const refExtra = useRef(null);
-  const [reconocimiento, setReconocimiento] = useState(configExistente.reconocimiento);
-  const [descripcion, setDescripcion] = useState(configExistente.descripcion);
+  const refReconocimiento = useRef(null);
+  const refDescripcion = useRef(null);
 
   // Cambia clave → resetea inputs a valores de la nueva clave
   const claveKey = clave;
@@ -54,19 +64,29 @@ export default function ConfigPremios({ onVolver }) {
   async function guardar() {
     const base = leerPesos(refBase);
     const extra = leerPesos(refExtra);
-    const nuevaCfg = {
-      ...(datos.config || {}),
-      premiosTrim: {
-        ...(datos.config?.premiosTrim || {}),
-        [clave]: {
-          montoBase: base,
-          montoExtra: extra,
-          reconocimiento: reconocimiento.trim(),
-          descripcion: descripcion.trim(),
-        },
+    const reconocimiento = (refReconocimiento.current?.value || "").trim();
+    const descripcion = (refDescripcion.current?.value || "").trim();
+    // Se manda SÓLO la clave `premiosTrim` de config: cambiar los premios ya no
+    // puede pisar `whitelistActiva` ni ningún otro ajuste.
+    // Límite conocido (documentado en DatosContext): dentro de `premiosTrim` el
+    // mapa se rearma desde memoria, así que dos admins editando trimestres
+    // distintos a la vez podrían pisarse. Hoy sólo hay un admin.
+    const nuevoPremios = {
+      ...(datos.config?.premiosTrim || {}),
+      [clave]: {
+        montoBase: base,
+        montoExtra: extra,
+        reconocimiento,
+        descripcion,
       },
     };
-    await datos.saveConfig(nuevaCfg);
+    try {
+      await datos.guardarClaves("config", { premiosTrim: nuevoPremios });
+    } catch (e) {
+      console.error(e);
+      flash(`❌ NO se guardó: ${e?.message || "error guardando"}`, "err");
+      return;
+    }
     flash(`✅ ${TRIMESTRES[qSel - 1].nombre} ${añoSel} guardado`);
   }
 
@@ -157,8 +177,8 @@ export default function ConfigPremios({ onVolver }) {
           <input
             type="text"
             key={`recon-${claveKey}`}
+            ref={refReconocimiento}
             defaultValue={configExistente.reconocimiento}
-            onBlur={e => setReconocimiento(e.target.value)}
             placeholder={"Ej: TV 42\" · Viaje con acompañante"}
             style={inputStyle}
           />
@@ -167,8 +187,8 @@ export default function ConfigPremios({ onVolver }) {
           <label style={labelStyle}>📝 Descripción larga (opcional)</label>
           <textarea
             key={`desc-${claveKey}`}
+            ref={refDescripcion}
             defaultValue={configExistente.descripcion}
-            onBlur={e => setDescripcion(e.target.value)}
             placeholder="Ej: TV Smart 42 pulgadas · a la #1 de cada ciudad"
             style={{ ...inputStyle, minHeight: 60, fontFamily: "inherit", resize: "vertical" }}
           />

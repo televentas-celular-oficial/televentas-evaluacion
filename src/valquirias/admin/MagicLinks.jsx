@@ -83,14 +83,25 @@ export default function MagicLinks({ onVolver }) {
       setConfirmarActivar(true);
       return;
     }
-    const nuevo = { ...config, whitelistActiva: false };
-    await datos.saveConfig(nuevo);
+    // Sólo la clave que cambia; el resto de `config` queda intacto.
+    try {
+      await datos.guardarClaves("config", { whitelistActiva: false });
+    } catch (e) {
+      console.error(e);
+      flash(`❌ NO se pudo desactivar: ${e?.message || "error guardando"}`, "err");
+      return;
+    }
     flash("🔒 Acceso general DESACTIVADO");
   }
 
   async function confirmarActivarSi() {
-    const nuevo = { ...config, whitelistActiva: true };
-    await datos.saveConfig(nuevo);
+    try {
+      await datos.guardarClaves("config", { whitelistActiva: true });
+    } catch (e) {
+      console.error(e);
+      flash(`❌ NO se pudo activar: ${e?.message || "error guardando"}`, "err");
+      return;
+    }
     setConfirmarActivar(false);
     flash("🚀 Acceso general ACTIVADO — las vendedoras ya pueden entrar");
   }

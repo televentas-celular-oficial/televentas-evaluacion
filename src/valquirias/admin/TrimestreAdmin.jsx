@@ -10,31 +10,60 @@
 //      premio y el "Total a entregar: $X"   ← lo más importante de la pantalla
 //   4. Ranking trimestral con la nota de cada mes y su peso ×20/30/50%
 //   5. Lista "Sin datos aún"
-//   6. Marca "Solo ranking mensual" para quien ingresó a mitad de trimestre
-//      (respeta `fechaIngreso`: no compite por el premio trimestral)
 //
-// NO reimplementa cálculos: la nota trimestral y los meses con su peso salen
-// de `derivarTrimestreDeVendedora` (data/derivar.js → lib/calculos.js) y los
-// premios de `calcPremios` (lib/calculos.js). Los montos ($1M base / $1M extra)
-// y el reconocimiento sorpresa se leen de Admin > Config Premios.
+// NO reimplementa cálculos: la nota trimestral sale de `calcTrimestre`
+// (lib/calculos.js) y los premios de `calcPremios` (lib/calculos.js). Los montos
+// ($1M base / $1M extra) y el reconocimiento sorpresa se leen de Admin > Config
+// Premios.
 //
 // MED y BOG son dos empresas independientes: `calcPremios` ya las separa, y
 // como el ranking se filtra por ciudad antes de entrar, nada se mezcla.
+//
+// ----------------------------------------------------------------------------
+// QUIÉN APARECE — REGLA DEL DUEÑO (18-ago-2026)
+// ----------------------------------------------------------------------------
+// El ranking trimestral SOLO incluye a quien:
+//   · está ACTIVA en systemlap (R1),
+//   · ingresó antes o el mismo día en que arrancó el trimestre (R4), y
+//   · tiene datos de los meses del trimestre que YA cerraron (R3).
+// Quien no cumple NO APARECE: ni en la lista, ni en una sección aparte, ni en
+// gris. Por eso ya no existe el bloque "Solo ranking mensual" que había aquí —
+// listaba justamente a quien el dueño dijo que "ni debe aparecer".
+//
+// ----------------------------------------------------------------------------
+// UN SOLO FILTRO (esta pantalla y la de la vendedora nombran la MISMA ganadora)
+// ----------------------------------------------------------------------------
+// El roster sale de `derivarRankingTrimestreCiudad` → `participantes()`
+// (lib/calculos.js). Es literalmente la misma función que alimenta la pantalla
+// de la vendedora: no hay un segundo filtro escrito aquí, así que las dos
+// pantallas no pueden diferir.
+//
+// Y hay DOS rosters distintos, confundirlos cuesta plata:
+//   · roster de CÁLCULO  → `datos.vendedoras` completo (con eventuales e
+//     inactivas). Es el que se le pasa a `calcTrimestre` para que a cada una se
+//     le pueda reconstruir la ciudad y por tanto la meta de los meses que
+//     trabajó. Sin él, una inactiva quedaría sin ciudad → meta null.
+//   · roster de RANKING  → sólo las que PARTICIPAN (arriba). Es también el
+//     universo de premios: `calcPremios` no tiene que descartar a nadie.
+//
+// ⚠️ TRIMESTRE CERRADO: `participantes()` usa el roster CONGELADO de los
+// snapshots y `calcPremios` recibe `congelado: true`. Desactivar hoy a alguien
+// NO puede mover la ganadora ni los puestos de un trimestre que ya cerró.
 // ============================================================================
 
 import { useState, useMemo } from "react";
 import { useDatos } from "../data/DatosContext.jsx";
-import { derivarTrimestreDeVendedora } from "../data/derivar.js";
+import { derivarRankingTrimestreCiudad, esTrimestreCerrado } from "../data/derivar.js";
 import {
   calcPremios,
-  claveMes,
+  calcTrimestre,
   mesesTrimestre,
   trimestreActual,
   fmtN,
   colorN,
   bgN,
 } from "../../lib/calculos.js";
-import { MES_NAMES } from "../../lib/constantes.js";
+import { MES_NAMES, PESOS_TRIMESTRE } from "../../lib/constantes.js";
 import { formatoPesos, hoyColombia } from "../lib/helpers.js";
 
 const CIUDAD_COLOR = { MED: "#10b981", BOG: "#f59e0b" };
@@ -90,7 +119,6 @@ export default function TrimestreAdmin({ onVolver }) {
 
   const esAñoActual = año === hoy.año;
   const meses = mesesTrimestre(q);
-  const inicioTrim = `${año}-${String((q - 1) * 3 + 1).padStart(2, "0")}-01`;
 
   // Config de premios del trimestre (Admin > Config Premios)
   const cfg = datos.config?.premiosTrim?.[`${año}_Q${q}`] || {};
@@ -98,53 +126,90 @@ export default function TrimestreAdmin({ onVolver }) {
   const montoExtra = Number(cfg.montoExtra ?? 1_000_000);
   const reconocimiento = (cfg.reconocimiento || "").trim();
 
-  // Roster: activas, sin eventuales (las eventuales viven sólo en systemlap)
-  const activas = useMemo(
-    () => (datos.vendedoras || []).filter(v => !v.eventual && v.activa !== false),
-    [datos.vendedoras]
-  );
+  // ¿El trimestre ya cerró (los 3 meses con snapshot)? Se lo pasamos a
+  // `calcPremios` para que NO le quite el premio de un trimestre pasado a quien
+  // salió de la operación después del cierre.
+  const congelado = useMemo(() => esTrimestreCerrado(datos, año, q), [datos, año, q]);
 
-  const activasFiltradas = filtroCiudad === "TODAS"
-    ? activas
-    : activas.filter(v => v.ciudad === filtroCiudad);
+  // ---------------------------------------------------------------------
+  // ROSTER DEL TRIMESTRE — exactamente el que ve la vendedora
+  // ---------------------------------------------------------------------
+  // `derivarRankingTrimestreCiudad` → `participantes()`: ya aplicó R1+R3+R4 y
+  // resolvió roster congelado (trimestre cerrado) vs vivo (en curso). Aquí sólo
+  // se usa para saber QUIÉNES son; las notas se calculan abajo con el motor.
+  const rosterTrim = useMemo(() => {
+    const ciudades = filtroCiudad === "TODAS" ? ["MED", "BOG"] : [filtroCiudad];
+    const fichas = new Map((datos.vendedoras || []).map(v => [String(v.id), v]));
+    const vistos = new Set();
+    const out = [];
+    for (const c of ciudades) {
+      // `{ id: null, ciudad }` = sonda: no es nadie, sólo fija la ciudad.
+      const r = derivarRankingTrimestreCiudad(datos, { id: null, ciudad: c }, año, q);
+      for (const f of [...(r.filas || []), ...(r.sinNota || [])]) {
+        const k = String(f.id);
+        if (vistos.has(k)) continue;
+        vistos.add(k);
+        // La ficha manda (trae eventual / fechaIngreso). Si no está en el
+        // roster de hoy, se usa lo que quedó en el snapshot — nunca se inventa.
+        out.push(fichas.get(k) || { id: f.id, nombre: f.nombre, ciudad: f.ciudad });
+      }
+    }
+    return out;
+  }, [datos, año, q, filtroCiudad]);
 
-  // fechaIngreso: quien entró después de que arrancó el trimestre NO compite
-  // por el premio trimestral — sólo va en ranking mensual.
-  const elegibles = activasFiltradas.filter(v => !v.fechaIngreso || v.fechaIngreso <= inicioTrim);
-  const soloMensuales = activasFiltradas.filter(v => v.fechaIngreso && v.fechaIngreso > inicioTrim);
-
-  // Nota trimestral + meses con peso — todo del motor
+  // Nota trimestral + meses con peso — todo del motor (lib/calculos.js).
+  // El roster que se le pasa a `calcTrimestre` es el de CÁLCULO: `datos.vendedoras`
+  // completo, eventuales e inactivas incluidas, para que la ciudad (y con ella la
+  // meta del mes) se pueda resolver siempre.
   const filas = useMemo(() => {
+    const registros = datos.registros || {};
     const metas = datos.metas || {};
-    return elegibles.map(v => {
-      const t = derivarTrimestreDeVendedora(datos, v, año, q);
-      const realTrim = meses.reduce(
-        (s, m) => s + (metas[claveMes(año, m)]?.vendidas?.[v.id] || 0), 0
-      );
+    const snapshots = datos.snapshots || {};
+    const rosterCalculo = datos.vendedoras || [];
+    const mesesQ = mesesTrimestre(q);
+    return rosterTrim.map(v => {
+      const t = calcTrimestre(registros, metas, v.id, año, q, snapshots, rosterCalculo);
+      // Ventas del trimestre: se suman de los meses ya calculados (el mes cerrado
+      // aporta el valor del snapshot, no el vivo). Es el mismo número con el que
+      // desempata la pantalla de la vendedora.
+      const realTrim = (t.datosMes || []).reduce((s, d) => s + (d?.real || 0), 0);
       return {
         id: v.id,
         nombre: v.nombre,
         ciudad: v.ciudad,
+        activa: v.activa !== false,
+        eventual: v.eventual === true,
+        fechaIngreso: v.fechaIngreso || null,
         notaTrim: t.notaTrim,
-        mesesTrim: t.mesesTrim,
+        mesesTrim: mesesQ.map((m, i) => ({
+          mes: m, nota: t.notasMes[i], peso: Math.round(PESOS_TRIMESTRE[i] * 100),
+        })),
         mesesConDatos: t.mesesConDatos,
         completo: t.completo,
+        completoALaFecha: t.completoALaFecha,
         realTrim,
       };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [datos, año, q, filtroCiudad, elegibles.length]);
+  }, [datos, año, q, rosterTrim]);
 
+  // ---------------------------------------------------------------------
+  // RANKING — todas las que llegan aquí YA participan
+  // ---------------------------------------------------------------------
+  // El filtro lo hizo `participantes()` arriba. Aquí no hay ningún segundo
+  // criterio: si estuviera duplicado, esta pantalla y la de la vendedora
+  // podrían nombrar ganadoras distintas — que fue exactamente lo que pasó.
   const rankingTrim = filas
     .filter(v => v.notaTrim !== null)
     .sort((a, b) => (b.notaTrim - a.notaTrim) || ((b.realTrim ?? 0) - (a.realTrim ?? 0)))
     .map((v, i) => ({ ...v, rt: i + 1 }));
 
+  // Participa, pero todavía no tiene nota (ningún mes del trimestre cerró).
   const sinDatos = filas.filter(v => v.notaTrim === null);
 
   // Premios — calcPremios separa MED de BOG; como el ranking ya viene filtrado
-  // por ciudad, la ciudad excluida simplemente sale vacía.
-  const premiosBrutos = calcPremios(rankingTrim);
+  // por ciudad, la ciudad excluida simplemente sale vacía. `{ año, q }` le
+  // permite resolver `entroTarde`; `congelado` protege un trimestre ya cerrado.
+  const premiosBrutos = calcPremios(rankingTrim, { año, q, congelado });
   const conBonoTodos = ["med", "bog"].flatMap(k => premiosBrutos[k].conBono);
   const extrasTodos = ["med", "bog"].map(k => premiosBrutos[k].extraCiudad).filter(Boolean);
   const idsConBono = new Set(conBonoTodos.map(v => v.id));
@@ -163,6 +228,8 @@ export default function TrimestreAdmin({ onVolver }) {
   ganadoras.sort((a, b) => (b.total - a.total) || (b.notaTrim - a.notaTrim));
   const totalGeneral = ganadoras.reduce((s, g) => s + g.total, 0);
 
+  // "(final)" vs "(tiempo real)": todas las de la lista participan, así que el
+  // premio está definido cuando todas tienen los 3 meses.
   const trimestreFinal = rankingTrim.length > 0 && rankingTrim.every(v => v.completo);
 
   const años = [hoy.año, hoy.año - 1];
@@ -389,7 +456,7 @@ export default function TrimestreAdmin({ onVolver }) {
         </>
       )}
 
-      {rankingTrim.length === 0 && sinDatos.length === 0 && soloMensuales.length === 0 && (
+      {rankingTrim.length === 0 && sinDatos.length === 0 && (
         <div style={{ padding: "18px 16px", background: "rgba(148, 163, 184, 0.10)", borderRadius: 12, fontSize: 12, color: "#64748b", fontWeight: 700, textAlign: "center" }}>
           Sin vendedoras para este trimestre con el filtro seleccionado.
         </div>
@@ -414,30 +481,18 @@ export default function TrimestreAdmin({ onVolver }) {
         </div>
       )}
 
-      {/* ================= SOLO RANKING MENSUAL ================= */}
-      {soloMensuales.length > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 6 }}>
-            Solo ranking mensual
-          </div>
-          {soloMensuales.map(v => (
-            <div key={v.id} style={{
-              padding: "10px 13px", background: "#fff", borderRadius: 12, marginBottom: 4,
-              borderLeft: "3px solid #e2e8f0", boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ fontWeight: 900, fontSize: 13, color: "#475569" }}>{v.nombre}</div>
-                <BadgeCiudad ciudad={v.ciudad} />
-              </div>
-              <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginTop: 2 }}>
-                Ingresó {v.fechaIngreso} · No participa en el premio trimestral
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Regla de quién entra — sin nombrar a nadie que no participe.
+          El bloque "Solo ranking mensual" que había aquí (heredado de
+          App.jsx:1608-1621) listaba justamente a quien el dueño dijo que "ni
+          debe aparecer". Se eliminó: en su lugar queda esta nota de una línea
+          que explica el criterio, no las personas. */}
+      <div style={{ marginTop: 14, padding: "10px 13px", background: "rgba(148, 163, 184, 0.10)", borderRadius: 10, fontSize: 10.5, color: "#64748b", fontWeight: 700, lineHeight: 1.55 }}>
+        {congelado
+          ? "Trimestre cerrado: este ranking es el congelado de sus 3 meses. No cambia aunque hoy se desactive a alguien."
+          : "En el trimestre solo compite quien está activa, entró antes o el mismo día en que arrancó el trimestre, y tiene los meses del trimestre que ya cerraron. Quien entró después compite desde el trimestre siguiente."}
+      </div>
 
-      <div style={{ marginTop: 16, textAlign: "center", fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>
+      <div style={{ marginTop: 12, textAlign: "center", fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>
         📸 Toma pantallazo para el anuncio · calculado el {hoy.iso}
       </div>
     </div>

@@ -1,417 +1,558 @@
-// Panel Admin (Luis) — home con tiles agrupados por sección
-// Vendedoras se gestionan en systemlap (fuente de verdad).
-// Aquí queda TODO lo operativo de evaluación, incluido el ingreso diario
-// (antes solo lo alcanzaba el rol "oficina"; en la app clásica el admin
-// también podía entrar — App.jsx:2116 `puedeIngresoVentas`).
+// Panel del admin (Luis) — Valkyrias
+// ============================================================================
+// Especificación: docs/prototipo-3-perfiles.html → vPanel() y vVerComo().
+//
+// Sin barra de iconos arriba: el panel ES la navegación, igual que Carolina y
+// la vendedora. De arriba a abajo:
+//
+//   1. Ventas del mes (total + MED + BOG)
+//   2. El interruptor de acceso (config.whitelistActiva)
+//   3. "Ver la app como vendedora" → selector agrupado por ciudad
+//   4. SIETE tiles en tres grupos: El día a día · El mes · El trimestre
+//   5. El recordatorio de que aquí no se administra a nadie
+//
+// LO QUE YA NO ESTÁ, POR DECISIÓN DEL DUEÑO: los tiles de "Vendedoras" y de
+// "Magic Links / Acceso y correos". Las vendedoras se crean, se editan y se
+// desactivan en systemlap, y el correo llega sincronizado desde allá. Lo único
+// de acceso que vive aquí es el interruptor de arriba.
+//
+// El admin SÍ entra a Ingreso diario, y a diferencia de Carolina puede corregir
+// días pasados.
+//
+// Nada de fórmulas propias: las pantallas hijas leen de data/derivar.js →
+// src/lib/calculos.js. Aquí solo se suman las ventas ya sincronizadas, y cuando
+// ese dato no existe se dice "no disponible" en vez de pintar un $0 falso.
+// ============================================================================
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase.js";
 import { formatoPesos, hoyColombia } from "../lib/helpers.js";
+import { claveMes } from "../../lib/calculos.js";
 import { useDatos } from "../data/DatosContext.jsx";
-import NominaComisiones from "./NominaComisiones.jsx";
+
 import CargarMetas from "./CargarMetas.jsx";
 import CerrarMes from "./CerrarMes.jsx";
 import Backup from "./Backup.jsx";
-import VerComoVendedora from "./VerComoVendedora.jsx";
 import VistaTodas from "./VistaTodas.jsx";
-import MagicLinks from "./MagicLinks.jsx";
-import ConfigPremios from "./ConfigPremios.jsx";
-import GestionVendedoras from "./GestionVendedoras.jsx";
 import TrimestreAdmin from "./TrimestreAdmin.jsx";
-import VentasCiudad from "./VentasCiudad.jsx";
+import ConfigPremios from "./ConfigPremios.jsx";
 import IngresoDiario from "../oficina/IngresoDiario.jsx";
 import TabRankingIndicadores from "../tabs/TabRankingIndicadores.jsx";
 
-// Orden = importancia real de uso. Se agrupan en secciones para que el grid 2×N
-// no se vuelva un muro de 12 tiles en celular.
+// ── Paleta del prototipo ────────────────────────────────────────────────────
+const TINTA = "#0f172a";
+const APOYO = "#475569";
+const LINEA = "#e2e8f0";
+const VERDE_BG = "#f0fdf9";
+const VERDE_BORDE = "#b6e6d5";
+const VERDE_TXT = "#046c4e";
+const GRIS_BG = "#f4f4f5";
+const GRIS_BORDE = "#d9d9dd";
+const GRIS_TXT = "#52525b";
+const LILA_BG = "#f7f4ff";
+const LILA_BORDE = "#ddd3f5";
+const LILA_TXT = "#5b2ec4";
+
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+const COLOR_CIUDAD = { MED: "#10b981", BOG: "#f59e0b" };
+
+// Los SEIS tiles, en los tres grupos que pidió el dueño.
 const GRUPOS = [
   {
-    titulo: "Día a día",
-    emoji: "☀️",
+    titulo: "El día a día",
     tiles: [
-      { id: "todas",   emoji: "📊", titulo: "Todas las vendedoras", desc: "Indicadores y retardos de todas", destacado: true },
-      { id: "ingreso", emoji: "📝", titulo: "Ingreso diario",       desc: "Llenar o corregir un día",        destacado: true },
-      { id: "rankind", emoji: "🏅", titulo: "Ranking por indicador", desc: "Quién va mejor en cada uno" },
+      { id: "ingreso",  icono: "📝", titulo: "Ingreso diario", desc: "Corregir días pasados" },
+      { id: "rankings", icono: "🏅", titulo: "Rankings",       desc: "Mes · trimestre · indicador" },
     ],
   },
   {
-    titulo: "Dinero",
-    emoji: "💵",
+    titulo: "El mes",
     tiles: [
-      { id: "nomina",  emoji: "💰", titulo: "Nómina mensual",   desc: "Comisiones del mes anterior", destacado: true },
-      { id: "ciudad",  emoji: "🏙️", titulo: "Ventas por ciudad", desc: "MED vs BOG del mes" },
-      { id: "trim",    emoji: "📈", titulo: "Trimestre",         desc: "Avance y premios del Q" },
-      { id: "metas",   emoji: "🎯", titulo: "Metas del mes",     desc: "Cargar MED y BOG" },
+      { id: "metas",  icono: "🎯", titulo: "Metas del mes", desc: "Cargar MED y BOG" },
+      { id: "cerrar", icono: "🔒", titulo: "Cerrar mes",    desc: "Fijar notas para siempre" },
     ],
   },
   {
-    titulo: "Cierre de mes",
-    emoji: "🔒",
+    titulo: "El trimestre",
     tiles: [
-      { id: "cerrar",  emoji: "🔒", titulo: "Cerrar mes", desc: "Fijar notas del mes" },
-      { id: "backup",  emoji: "💾", titulo: "Backup",     desc: "Descargar JSON" },
-    ],
-  },
-  {
-    titulo: "Configuración",
-    emoji: "⚙️",
-    tiles: [
-      { id: "magic",   emoji: "🔗", titulo: "Magic Links",         desc: "Enviar acceso a las 13" },
-      { id: "premios", emoji: "🏆", titulo: "Premios trimestrales", desc: "Montos por puesto del Q" },
-      { id: "vend",    emoji: "👥", titulo: "Vendedoras",           desc: "Plan B · systemlap manda", secundario: true },
+      // Dos pantallas distintas y fáciles de confundir por el nombre:
+      //   · "premios" (TrimestreAdmin) LEE los montos y dice quién los ganó.
+      //   · "montos"  (ConfigPremios)  es donde se ESCRIBEN esos montos.
+      // TrimestreAdmin.jsx:16 ya mandaba aquí al lector ("se leen de Admin >
+      // Config Premios"), pero el tile no existía: el dueño no tenía forma de
+      // cambiar el valor de un premio desde la app.
+      { id: "premios", icono: "💎", titulo: "Premios",          desc: "Quién ganó y cuánto entregar" },
+      { id: "montos",  icono: "💰", titulo: "Montos del premio", desc: "Cuánto vale cada trimestre" },
+      { id: "backup",  icono: "💾", titulo: "Backup",            desc: "Descargar todo en JSON" },
     ],
   },
 ];
 
-// Rótulo que va ENCIMA de cada interruptor. Existe para que nunca se confundan:
-// uno abre la puerta de la app, el otro publica el ranking.
-const rotuloToggle = {
-  fontSize: 11.5,
-  fontWeight: 900,
-  color: "#7c3aed",
-  margin: "0 2px 5px",
-  lineHeight: 1.35,
+// Los tres rankings que agrupa el tile "Rankings".
+const RANKINGS = [
+  { id: "rank-mes",  icono: "📊", titulo: "Del mes",       desc: "Notas e indicadores de todas" },
+  { id: "rank-trim", icono: "📈", titulo: "Del trimestre", desc: "Avance del Q y premios" },
+  { id: "rank-ind",  icono: "🏅", titulo: "Por indicador",  desc: "Quién va mejor en cada uno" },
+];
+
+const S = {
+  titulo: { fontSize: 22, fontWeight: 800, margin: "0 0 12px", color: TINTA },
+  rotulo: {
+    fontSize: 12, fontWeight: 800, color: "#334155", textTransform: "uppercase",
+    letterSpacing: ".7px", margin: "16px 0 7px",
+  },
+  tiles: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
+  tile: {
+    background: "#fff", border: `1px solid ${LINEA}`, borderRadius: 13,
+    padding: "16px 12px", textAlign: "center", cursor: "pointer", font: "inherit",
+  },
+  volver: {
+    background: "none", border: "none", font: "inherit", fontSize: 14, fontWeight: 700,
+    color: APOYO, cursor: "pointer", padding: "0 0 12px",
+    display: "flex", alignItems: "center", gap: 5,
+  },
 };
 
-export default function AdminHome({ datosGlobales }) {
+// ---------------------------------------------------------------------------
+// Ventas del mes por ciudad — con honestidad sobre lo que NO existe.
+//
+// `metas[claveMes].vendidas` lo escribe la sincronización de systemlap. Si una
+// ciudad todavía no tiene ni un valor numérico, su total es null (→ "no
+// disponible"), no un 0. Un 0 aquí se leería como "no vendieron nada".
+// ---------------------------------------------------------------------------
+function ventasDelMesPorCiudad(datos, año, mes) {
+  const vendidas = datos?.metas?.[claveMes(año, mes)]?.vendidas;
+  const total = { MED: null, BOG: null };
+  if (!vendidas) return total;
+
+  (datos?.vendedoras || []).forEach(v => {
+    if (v.ciudad !== "MED" && v.ciudad !== "BOG") return;
+    const bruto = vendidas[v.id];
+    if (bruto === undefined || bruto === null || bruto === "") return;
+    const n = Number(bruto);
+    if (!Number.isFinite(n)) return;
+    total[v.ciudad] = (total[v.ciudad] || 0) + n;
+  });
+  return total;
+}
+
+const textoPesos = (n) => (n == null ? "no disponible" : formatoPesos(n));
+
+// ---------------------------------------------------------------------------
+// Barra de volver que se le monta a IngresoDiario. Ese componente nació como
+// pantalla única de Carolina y su header propio solo trae "Salir": sin esto,
+// Luis quedaría atrapado adentro o tendría que cerrar sesión para salir.
+// ---------------------------------------------------------------------------
+function ConVolver({ onVolver, children }) {
+  return (
+    <div>
+      <div style={{
+        position: "sticky", top: 0, zIndex: 30, padding: "10px 12px",
+        background: "#fff", borderBottom: `1px solid ${LINEA}`,
+      }}>
+        <button
+          onClick={onVolver}
+          style={{
+            background: "#fff", border: `1px solid ${LINEA}`, color: APOYO,
+            fontWeight: 800, fontSize: 13, borderRadius: 10, padding: "8px 14px",
+            cursor: "pointer", fontFamily: "inherit",
+          }}
+        >‹ Volver al panel</button>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Selector "Ver la app como vendedora" (prototipo: vVerComo).
+// Solo las ACTIVAS, agrupadas por ciudad. Al tocar una, el padre la abre dentro
+// de esta misma app — no en pestaña nueva.
+// ---------------------------------------------------------------------------
+function SelectorVerComo({ activas, onVolver, onElegir }) {
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  const med = activas.filter(v => v.ciudad === "MED");
+  const bog = activas.filter(v => v.ciudad === "BOG");
+  const otras = activas.filter(v => v.ciudad !== "MED" && v.ciudad !== "BOG");
+
+  const fila = (v) => (
+    <button
+      key={v.id}
+      onClick={() => onElegir?.(v)}
+      style={{
+        display: "flex", alignItems: "center", gap: 9, width: "100%",
+        background: "#fff", border: "none", borderRadius: 9,
+        boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 4,
+        padding: "11px 12px", textAlign: "left", cursor: "pointer", font: "inherit",
+      }}
+    >
+      <span style={{
+        width: 30, height: 30, borderRadius: "50%",
+        background: COLOR_CIUDAD[v.ciudad] || "#94a3b8", color: "#fff",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontWeight: 800, fontSize: 14, flexShrink: 0,
+      }}>{(v.nombre || "?")[0]}</span>
+      <span style={{ flex: 1, minWidth: 0, fontWeight: 700, color: TINTA, fontSize: 12.5 }}>
+        {v.nombre}
+        <div style={{ fontSize: 11, color: APOYO, fontWeight: 400, marginTop: 1 }}>
+          {v.rolTienda === "admin" ? "Administradora" : "Asesora"}
+        </div>
+      </span>
+      <span style={{ color: "#a855f7", fontWeight: 800, fontSize: 17 }}>›</span>
+    </button>
+  );
+
+  return (
+    <div className="v-app">
+      <button style={S.volver} onClick={onVolver}>‹ Volver al panel</button>
+      <div style={{ ...S.titulo, fontSize: 19 }}>👁️ Ver como vendedora</div>
+      <div style={{ fontSize: 12, color: APOYO, margin: "-6px 0 14px" }}>
+        Abre su vista con sus datos reales. Vuelves con el botón de arriba.
+      </div>
+
+      {med.length > 0 && (
+        <>
+          <div style={{ ...S.rotulo, color: COLOR_CIUDAD.MED, marginTop: 0 }}>🟢 Medellín</div>
+          {med.map(fila)}
+        </>
+      )}
+      {bog.length > 0 && (
+        <>
+          <div style={{ ...S.rotulo, color: COLOR_CIUDAD.BOG }}>🟡 Bogotá</div>
+          {bog.map(fila)}
+        </>
+      )}
+      {otras.length > 0 && (
+        <>
+          <div style={{ ...S.rotulo, color: APOYO }}>Sin ciudad asignada</div>
+          {otras.map(fila)}
+        </>
+      )}
+      {activas.length === 0 && (
+        <div style={{ fontSize: 13, fontWeight: 700, color: APOYO, padding: "20px 2px", lineHeight: 1.6 }}>
+          No hay vendedoras activas en el roster. Entran y salen desde systemlap.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Los tres rankings que agrupa el tile "Rankings"
+// ---------------------------------------------------------------------------
+function MenuRankings({ onVolver, onIr }) {
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+  return (
+    <div className="v-app">
+      <button style={S.volver} onClick={onVolver}>‹ Volver al panel</button>
+      <div style={{ ...S.titulo, fontSize: 19 }}>🏅 Rankings</div>
+      <div style={{ fontSize: 12, color: APOYO, margin: "-6px 0 14px" }}>
+        El mismo mes, el mismo trimestre y los mismos indicadores que ven ellas.
+      </div>
+      {RANKINGS.map(r => (
+        <button
+          key={r.id}
+          onClick={() => onIr(r.id)}
+          style={{
+            display: "flex", alignItems: "center", gap: 11, width: "100%",
+            background: "#fff", border: `1px solid ${LINEA}`, borderRadius: 13,
+            padding: "15px 16px", marginBottom: 8, cursor: "pointer",
+            font: "inherit", textAlign: "left",
+          }}
+        >
+          <span style={{ fontSize: 22, flexShrink: 0 }}>{r.icono}</span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: TINTA }}>{r.titulo}</div>
+            <div style={{ fontSize: 11.5, color: APOYO, marginTop: 2 }}>{r.desc}</div>
+          </span>
+          <span style={{ fontSize: 19, fontWeight: 800, color: APOYO, opacity: 0.45 }}>›</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ===========================================================================
+// `user` no se usa aquí para decidir nada: entra solo para bajárselo a
+// IngresoDiario, que es quien necesita saber si puede corregir un día guardado.
+export default function AdminHome({ user = null, onVerComo }) {
   const datos = useDatos();
   const [seccion, setSeccion] = useState(null);
+  // El interruptor de acceso: si el guardado falla, el switch vuelve solo a su
+  // posición real y sin esto nadie explicaba por qué. Un control que "rebota"
+  // sin decir nada se lee como un bug del dedo, no como un guardado fallido.
+  const [errorAcceso, setErrorAcceso] = useState(null);
+  const [cambiandoAcceso, setCambiandoAcceso] = useState(false);
   const hoy = hoyColombia();
 
-  // Scroll al top al cambiar de sección — fix bug de "botones ocultos arriba"
   useEffect(() => { window.scrollTo(0, 0); }, [seccion]);
 
-  // Sub-pantallas
-  if (seccion === "todas") return <VistaTodas onVolver={() => setSeccion(null)} />;
-  if (seccion === "rankind") return (
-    <TabRankingIndicadores
-      datos={datos}
-      ciudad={null}
-      miId={null}
-      esAdmin={true}
-      onVolver={() => setSeccion(null)}
-    />
+  const activas = useMemo(
+    () => (datos.vendedoras || []).filter(v => v.activa !== false && !v.eventual),
+    [datos.vendedoras]
   );
-  if (seccion === "nomina") return <NominaComisiones onVolver={() => setSeccion(null)} />;
-  if (seccion === "ciudad") return <VentasCiudad onVolver={() => setSeccion(null)} />;
-  if (seccion === "trim") return <TrimestreAdmin onVolver={() => setSeccion(null)} />;
-  if (seccion === "metas") return <CargarMetas onVolver={() => setSeccion(null)} />;
-  if (seccion === "cerrar") return <CerrarMes onVolver={() => setSeccion(null)} />;
-  if (seccion === "backup") return <Backup onVolver={() => setSeccion(null)} />;
-  if (seccion === "magic") return <MagicLinks onVolver={() => setSeccion(null)} />;
-  if (seccion === "premios") return <ConfigPremios onVolver={() => setSeccion(null)} />;
-  if (seccion === "vend") return (
-    <GestionVendedoras vendedoras={datos.vendedoras || []} onVolver={() => setSeccion(null)} />
-  );
-  if (seccion === "vercomo") return <VerComoVendedora onVolver={() => setSeccion(null)} />;
 
-  // Ingreso diario para el admin. IngresoDiario nació para el rol "oficina" y su
-  // header propio solo trae "Salir" (signOut), así que le montamos encima una
-  // barra de volver para que Luis no quede atrapado ni tenga que cerrar sesión.
-  // Le pasamos onVolver + vendedoras + onGuardar: si el componente ya es
-  // autosuficiente ignora lo que le sobra, y si aún pide props las recibe.
+  const ventas = useMemo(
+    () => ventasDelMesPorCiudad(datos, hoy.año, hoy.mes),
+    [datos, hoy.año, hoy.mes]
+  );
+
+  // ── Sub-pantallas ────────────────────────────────────────────────────────
   if (seccion === "ingreso") {
     return (
-      <div>
-        <div style={{
-          position: "sticky", top: 0, zIndex: 30, padding: "10px 12px",
-          background: "linear-gradient(135deg, #ecfeff, #f0f9ff)",
-          borderBottom: "1px solid rgba(6, 182, 212, 0.25)",
-        }}>
-          <button
-            onClick={() => setSeccion(null)}
-            style={{
-              background: "#fff", border: "1px solid rgba(6, 182, 212, 0.35)",
-              color: "#0e7490", fontWeight: 900, fontSize: 13, borderRadius: 10,
-              padding: "8px 14px", cursor: "pointer", fontFamily: "inherit",
-            }}
-          >‹ Volver al panel</button>
-        </div>
+      <ConVolver onVolver={() => setSeccion(null)}>
+        {/* El admin es el único que puede corregir un día YA guardado. Eso lo
+            decide IngresoDiario a partir de `user` con rolDe(): antes se le
+            mandaba una prop `puedeCorregirDiasPasados` que ese componente nunca
+            leyó — el permiso quedaba escrito, pero no aplicado. */}
         <IngresoDiario
-          onVolver={() => setSeccion(null)}
           vendedoras={datos.vendedoras || []}
-          onGuardar={({ fecha, filas }) => {
-            const nuevos = { ...(datos.registros || {}) };
-            Object.entries(filas).forEach(([vid, f]) => {
-              nuevos[`${vid}_${fecha}`] = f;
-            });
-            datos.saveRegistros(nuevos);
-          }}
+          user={user}
+          // Mismo camino transaccional que usa Carolina: sólo se manda el parche
+          // de esta fecha. Antes se mandaba `{...datos.registros}` desde memoria y
+          // el admin podía borrar en silencio los días que ella acababa de meter.
+          // Se devuelve la promesa para que IngresoDiario muestre el error si falla.
+          onGuardar={({ fecha, filas, vids }) => datos.guardarDiaRegistros(fecha, filas, vids)}
         />
-      </div>
+      </ConVolver>
     );
   }
 
-  // Home
-  const mesTexto = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][hoy.mes - 1];
+  if (seccion === "rankings") {
+    return <MenuRankings onVolver={() => setSeccion(null)} onIr={setSeccion} />;
+  }
+  if (seccion === "rank-mes")  return <VistaTodas onVolver={() => setSeccion("rankings")} />;
+  if (seccion === "rank-trim") return <TrimestreAdmin onVolver={() => setSeccion("rankings")} />;
+  if (seccion === "rank-ind") {
+    return (
+      <TabRankingIndicadores
+        datos={datos}
+        ciudad={null}
+        miId={null}
+        esAdmin
+        onVolver={() => setSeccion("rankings")}
+      />
+    );
+  }
 
+  if (seccion === "metas")   return <CargarMetas onVolver={() => setSeccion(null)} />;
+  if (seccion === "cerrar")  return <CerrarMes onVolver={() => setSeccion(null)} />;
+  if (seccion === "premios") return <TrimestreAdmin onVolver={() => setSeccion(null)} />;
+  if (seccion === "montos")  return <ConfigPremios onVolver={() => setSeccion(null)} />;
+  if (seccion === "backup")  return <Backup onVolver={() => setSeccion(null)} />;
+
+  if (seccion === "vercomo") {
+    return (
+      <SelectorVerComo
+        activas={activas}
+        onVolver={() => setSeccion(null)}
+        onElegir={(v) => onVerComo?.(v)}
+      />
+    );
+  }
+
+  // ── Panel ────────────────────────────────────────────────────────────────
   const config = datos.config || {};
-  const accesoActivo = !!config.whitelistActiva;
+  const accesoOn = !!config.whitelistActiva;
 
+  // Sólo la clave que cambia: así no puede pisar `premiosTrim` ni ningún otro
+  // ajuste que otro haya guardado mientras este panel estaba abierto.
   async function toggleAcceso() {
-    const nuevo = { ...config, whitelistActiva: !accesoActivo };
-    await datos.saveConfig(nuevo);
+    if (cambiandoAcceso) return;
+    const querido = !accesoOn;
+    setCambiandoAcceso(true);
+    setErrorAcceso(null);
+    try {
+      await datos.guardarClaves("config", { whitelistActiva: querido });
+    } catch (e) {
+      // Si falla, el optimista se revierte en DatosContext y el switch vuelve
+      // solo a su posición real. Eso SE VE; lo que faltaba era decir por qué, y
+      // sobre todo que el acceso quedó como estaba — no como se acaba de tocar.
+      console.error("No se pudo cambiar el acceso general", e);
+      setErrorAcceso({
+        querido,
+        detalle: e?.message || "No hubo respuesta del servidor.",
+      });
+    } finally {
+      setCambiandoAcceso(false);
+    }
   }
 
-  // PUBLICAR RANKING — es una cosa DISTINTA del acceso general.
-  //   whitelistActiva  = si las vendedoras pueden ENTRAR a la app (puerta).
-  //   rankingVisible   = si, ya adentro, el ranking se VE o no.
-  // Al prenderlo se sella un `publicacionId` (timestamp) para que cada vendedora
-  // vea el confetti UNA sola vez por publicación — igual que la app clásica
-  // (App.jsx:1678-1687 escribe el id, App.jsx:490-503 dispara el confetti).
-  //
-  // OJO con el default: si `rankingVisible` todavía no existe en Firestore se
-  // considera PUBLICADO (`!== false`), igual que DEFAULTS en DatosContext.jsx:31.
-  // Quien LEA la bandera (TabRanking / ValquiriasApp) debe usar exactamente esta
-  // misma expresión, si no el ranking se apagaría solo sin que Luis lo pidiera.
-  const rankingPublicado = config.rankingVisible !== false;
-
-  async function togglePublicarRanking() {
-    const nuevoEstado = !rankingPublicado;
-    const nuevo = { ...config, rankingVisible: nuevoEstado };
-    if (nuevoEstado) nuevo.publicacionId = Date.now();
-    await datos.saveConfig(nuevo);
-  }
-
-  const publicadoTexto = config.publicacionId
-    ? new Date(config.publicacionId).toLocaleString("es-CO", {
-        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-      })
-    : null;
-
-  const activas = (datos.vendedoras || []).filter(v => v.activa !== false && !v.eventual);
+  const totalMes = ventas.MED == null && ventas.BOG == null
+    ? null
+    : (ventas.MED || 0) + (ventas.BOG || 0);
 
   return (
     <div className="v-app">
       <div className="v-header">
-        <div className="v-brand">Indicadores TLV</div>
+        <div className="v-brand">⚡ Valkyrias</div>
         <button
           onClick={() => signOut(auth)}
-          style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", background: "transparent", border: "1px solid #e2e8f0", padding: "6px 10px", borderRadius: 8, cursor: "pointer" }}
+          style={{
+            fontSize: 12, fontWeight: 700, color: "#94a3b8", background: "transparent",
+            border: `1px solid ${LINEA}`, padding: "6px 10px", borderRadius: 8,
+            cursor: "pointer", fontFamily: "inherit",
+          }}
         >Salir</button>
       </div>
 
-      <div className="v-greeting">
-        Hola <strong>Luis</strong> <span className="v-role-mini admin">Admin</span>
-        <div style={{ marginTop: 4, fontSize: 13, color: "#7c3aed", fontWeight: 900 }}>🛡️ Panel de control · Valquirias TLV</div>
-      </div>
+      <div style={S.titulo}>⚙️ Panel</div>
 
-      {/* HERO ventas del mes */}
+      {/* Ventas del mes */}
       <div style={{
-        background: "linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #7c3aed 100%)",
-        color: "#fff",
-        padding: "20px 22px",
-        borderRadius: 18,
-        marginBottom: 12,
-        boxShadow: "0 12px 28px rgba(236, 72, 153, 0.35)",
-        position: "relative",
-        overflow: "hidden",
+        background: "linear-gradient(135deg,#10b981,#059669)", color: "#fff",
+        border: "none", borderRadius: 13, padding: 16, marginBottom: 10,
       }}>
-        <div style={{ position: "absolute", top: "-50%", right: "-30%", width: 260, height: 260, background: "radial-gradient(circle, rgba(255,255,255,0.25), transparent 60%)", borderRadius: "50%", pointerEvents: "none" }} />
-        <div style={{ fontSize: 12, fontWeight: 900, textTransform: "uppercase", letterSpacing: 2, opacity: 0.95, marginBottom: 4, position: "relative" }}>
-          💫 Ventas del mes · {mesTexto}
+        <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.3px", opacity: 0.92 }}>
+          Ventas del mes · {MESES[hoy.mes - 1]}
         </div>
-        <div style={{ fontSize: 34, fontWeight: 900, letterSpacing: -1, lineHeight: 1, position: "relative" }}>
-          {formatoPesos(datosGlobales?.ventasMesTotal || 0)}
+        <div style={{ fontSize: 29, fontWeight: 800, letterSpacing: "-.8px", marginTop: 3 }}>
+          {textoPesos(totalMes)}
         </div>
-        <div style={{ fontSize: 13, marginTop: 6, opacity: 0.95, fontWeight: 700, position: "relative" }}>
-          🟢 MED {formatoPesos(datosGlobales?.ventasMED || 0)} · 🟡 BOG {formatoPesos(datosGlobales?.ventasBOG || 0)} · día {hoy.dia}
+        <div style={{ fontSize: 12.5, fontWeight: 600, opacity: 0.95, marginTop: 4 }}>
+          🟢 MED {textoPesos(ventas.MED)} · 🟡 BOG {textoPesos(ventas.BOG)}
         </div>
+        {totalMes == null && (
+          <div style={{ fontSize: 11.5, fontWeight: 600, opacity: 0.9, marginTop: 6, lineHeight: 1.5 }}>
+            Las ventas del mes todavía no llegan de systemlap.
+          </div>
+        )}
       </div>
 
-      {/* ─── Los DOS interruptores del dueño. Son cosas distintas y la UI lo grita. ─── */}
+      {/* Interruptor de acceso */}
       <div style={{
-        fontSize: 11, fontWeight: 900, color: "#7c3aed", textTransform: "uppercase",
-        letterSpacing: 1.4, margin: "2px 2px 7px", display: "flex", alignItems: "center", gap: 6,
+        background: accesoOn ? VERDE_BG : GRIS_BG,
+        border: `1px solid ${accesoOn ? VERDE_BORDE : GRIS_BORDE}`,
+        borderRadius: 13, padding: 16, marginBottom: 10,
+        display: "flex", alignItems: "center", gap: 12,
       }}>
-        <span>🎛️ Interruptores del dueño</span>
-        <span style={{ flex: 1, height: 1, background: "rgba(124, 58, 237, 0.18)" }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: accesoOn ? VERDE_TXT : GRIS_TXT }}>
+            {accesoOn ? "App abierta para las vendedoras" : "App cerrada"}
+          </div>
+          <div style={{ fontSize: 11.5, fontWeight: 600, color: accesoOn ? VERDE_TXT : GRIS_TXT, marginTop: 2 }}>
+            {accesoOn
+              ? `Las ${activas.length} pueden entrar con su correo`
+              : "Nadie puede entrar aunque tenga el link"}
+          </div>
+        </div>
+        <button
+          onClick={toggleAcceso}
+          disabled={cambiandoAcceso}
+          aria-label={accesoOn ? "Cerrar el acceso a la app" : "Abrir el acceso a la app"}
+          aria-pressed={accesoOn}
+          aria-busy={cambiandoAcceso}
+          style={{
+            width: 54, height: 30, borderRadius: 15, border: "none",
+            cursor: cambiandoAcceso ? "progress" : "pointer",
+            opacity: cambiandoAcceso ? 0.6 : 1,
+            flexShrink: 0, background: accesoOn ? "#059669" : "#a1a1aa",
+            position: "relative", padding: 0,
+          }}
+        >
+          <span style={{
+            position: "absolute", top: 3, left: accesoOn ? 27 : 3,
+            width: 24, height: 24, borderRadius: "50%", background: "#fff",
+            transition: "left .18s",
+          }} />
+        </button>
       </div>
 
-      <div style={rotuloToggle}>
-        1️⃣ Acceso general — <span style={{ fontWeight: 800, color: "#334155" }}>¿pueden ENTRAR a la app?</span>
-      </div>
-
-      {/* TOGGLE ACCESO GENERAL — el más importante, siempre visible */}
-      <div style={{
-        background: accesoActivo
-          ? "linear-gradient(135deg, #10b981, #059669)"
-          : "linear-gradient(135deg, #64748b, #475569)",
-        color: "#fff",
-        padding: "16px 18px",
-        borderRadius: 16,
-        marginBottom: 12,
-        boxShadow: accesoActivo
-          ? "0 6px 18px rgba(16, 185, 129, 0.35)"
-          : "0 4px 12px rgba(100, 116, 139, 0.25)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 1.5, opacity: 0.9, marginBottom: 3 }}>
-              {accesoActivo ? "🚀 App visible para las vendedoras" : "🔒 App oculta a las vendedoras"}
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 900 }}>
-              {accesoActivo ? "ACTIVADA" : "DESACTIVADA"}
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.9, fontWeight: 700, marginTop: 3 }}>
-              {accesoActivo
-                ? `${activas.length} vendedoras pueden entrar con su email`
-                : "Nadie puede entrar aunque tenga el link"}
-            </div>
+      {/* El cambio de acceso falló: decirlo, y decir en qué estado quedó */}
+      {errorAcceso && (
+        <div style={{
+          background: "#fee2e2", border: "2px solid #dc2626", borderRadius: 12,
+          padding: "11px 13px", marginBottom: 10, color: "#991b1b",
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 3 }}>
+            ❌ No se pudo {errorAcceso.querido ? "ABRIR" : "CERRAR"} el acceso
+          </div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, lineHeight: 1.5 }}>
+            {errorAcceso.detalle}
+          </div>
+          <div style={{ fontSize: 11.5, fontWeight: 800, marginTop: 5, lineHeight: 1.5 }}>
+            El interruptor volvió a como estaba: la app sigue{" "}
+            <strong>{accesoOn ? "abierta para las vendedoras" : "cerrada"}</strong>. Revisa la conexión
+            e inténtalo otra vez.
           </div>
           <button
-            onClick={toggleAcceso}
+            onClick={() => setErrorAcceso(null)}
             style={{
-              width: 60, height: 32, borderRadius: 16, border: "none", cursor: "pointer",
-              background: accesoActivo ? "#fff" : "rgba(255,255,255,0.3)",
-              position: "relative", padding: 0, flexShrink: 0,
+              marginTop: 8, background: "#fff", border: "1px solid #fca5a5", color: "#991b1b",
+              borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 800,
+              cursor: "pointer", fontFamily: "inherit",
             }}
-          >
-            <div style={{
-              position: "absolute", top: 3, left: accesoActivo ? 31 : 3,
-              width: 26, height: 26, borderRadius: "50%",
-              background: accesoActivo ? "#10b981" : "#fff",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.2)", transition: "left 0.2s",
-            }} />
-          </button>
+          >Entendido</button>
         </div>
-      </div>
+      )}
 
-      <div style={rotuloToggle}>
-        2️⃣ Publicar ranking — <span style={{ fontWeight: 800, color: "#334155" }}>¿se VE el ranking dentro de la app?</span>
-      </div>
-
-      {/* TOGGLE PUBLICAR RANKING — escribe config.rankingVisible (+ publicacionId al prender) */}
-      <div style={{
-        background: rankingPublicado
-          ? "linear-gradient(135deg, #f59e0b, #ec4899)"
-          : "linear-gradient(135deg, #475569, #334155)",
-        color: "#fff",
-        padding: "16px 18px",
-        borderRadius: 16,
-        marginBottom: 10,
-        boxShadow: rankingPublicado
-          ? "0 6px 18px rgba(236, 72, 153, 0.35)"
-          : "0 4px 12px rgba(51, 65, 85, 0.25)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 1.5, opacity: 0.9, marginBottom: 3 }}>
-              {rankingPublicado ? "🏆 Ranking visible en la app" : "🙈 Ranking oculto en la app"}
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 900 }}>
-              {rankingPublicado ? "PUBLICADO" : "SIN PUBLICAR"}
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.9, fontWeight: 700, marginTop: 3 }}>
-              {rankingPublicado
-                ? (publicadoTexto
-                    ? `Publicado el ${publicadoTexto} · cada vendedora vio el confetti una sola vez`
-                    : "Las vendedoras ven la pestaña Ranking")
-                : "Entran a la app, pero la pestaña Ranking no muestra puestos. Al publicarlo, cada vendedora ve confetti una sola vez"}
-            </div>
-          </div>
-          <button
-            onClick={togglePublicarRanking}
-            style={{
-              width: 60, height: 32, borderRadius: 16, border: "none", cursor: "pointer",
-              background: rankingPublicado ? "#fff" : "rgba(255,255,255,0.3)",
-              position: "relative", padding: 0, flexShrink: 0,
-            }}
-          >
-            <div style={{
-              position: "absolute", top: 3, left: rankingPublicado ? 31 : 3,
-              width: 26, height: 26, borderRadius: "50%",
-              background: rankingPublicado ? "#ec4899" : "#fff",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.2)", transition: "left 0.2s",
-            }} />
-          </button>
-        </div>
-      </div>
-
-      {/* Aclaración: por qué son dos interruptores y no uno */}
-      <div style={{
-        padding: "10px 12px", background: "rgba(124, 58, 237, 0.06)",
-        borderLeft: "3px solid #7c3aed", borderRadius: 10, fontSize: 11,
-        color: "#5b21b6", fontWeight: 700, marginBottom: 12, lineHeight: 1.55,
-      }}>
-        ℹ️ <strong>No son lo mismo.</strong> <strong>1️⃣ Acceso general</strong> es la puerta: apagado, <em>nadie</em> entra aunque tenga su link.
-        {" "}<strong>2️⃣ Publicar ranking</strong> es solo el ranking: la app sigue abierta (Hoy, Mi año, Cómo funciona) pero los puestos quedan ocultos hasta que tú los publiques.
-      </div>
-
-      {/* Ver como vendedora (con selector) */}
+      {/* Ver la app como vendedora */}
       <button
         onClick={() => setSeccion("vercomo")}
         style={{
-          width: "100%", background: "linear-gradient(135deg, #f3e8ff, #fdf4ff)",
-          borderLeft: "4px solid #a855f7", padding: "12px 14px", borderRadius: 12,
-          marginBottom: 10, border: "1px solid rgba(168, 85, 247, 0.2)",
-          cursor: "pointer", fontFamily: "inherit", textAlign: "left",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
+          display: "block", width: "100%", textAlign: "left",
+          background: LILA_BG, border: `1px solid ${LILA_BORDE}`, borderRadius: 18,
+          padding: "18px 20px", marginBottom: 6, cursor: "pointer", font: "inherit",
         }}
       >
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 900, color: "#7c3aed", textTransform: "uppercase", letterSpacing: 1.2 }}>
-            👁️ Ver la app como vendedora
+        <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+          <span style={{
+            width: 38, height: 38, borderRadius: "50%", background: "#e6dcfb",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 19, flexShrink: 0,
+          }}>👁️</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: "-.2px", color: LILA_TXT }}>
+              Ver la app como vendedora
+            </div>
+            <div style={{ fontSize: 12, color: LILA_TXT, fontWeight: 600, marginTop: 2 }}>
+              {activas.length > 0
+                ? `Elige a cuál de las ${activas.length}`
+                : "Todavía no hay vendedoras activas"}
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: "#5b21b6", fontWeight: 700, marginTop: 3 }}>
-            Elige a cuál para simular su vista
-          </div>
+          <span style={{ fontSize: 20, fontWeight: 800, opacity: 0.45, color: LILA_TXT }}>›</span>
         </div>
-        <div style={{ color: "#a855f7", fontSize: 20, fontWeight: 900 }}>›</div>
       </button>
 
-      {/* Tiles operativos, agrupados por sección */}
+      {/* Los seis tiles */}
       {GRUPOS.map(g => (
-        <div key={g.titulo} style={{ marginBottom: 14 }}>
-          <div style={{
-            fontSize: 11, fontWeight: 900, color: "#7c3aed", textTransform: "uppercase",
-            letterSpacing: 1.4, margin: "0 2px 7px", display: "flex", alignItems: "center", gap: 6,
-          }}>
-            <span>{g.emoji} {g.titulo}</span>
-            <span style={{ flex: 1, height: 1, background: "rgba(124, 58, 237, 0.18)" }} />
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {g.tiles.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setSeccion(t.id)}
-                style={{
-                  background: t.destacado
-                    ? "linear-gradient(135deg, #10b981, #059669)"
-                    : t.secundario ? "#f8fafc" : "#fff",
-                  borderRadius: 14, padding: "18px 12px", textAlign: "center",
-                  boxShadow: t.destacado
-                    ? "0 4px 14px rgba(16, 185, 129, 0.35)"
-                    : t.secundario ? "none" : "0 2px 8px rgba(236, 72, 153, 0.1)",
-                  border: t.destacado
-                    ? "1px solid rgba(16, 185, 129, 0.4)"
-                    : t.secundario
-                      ? "1px dashed rgba(100, 116, 139, 0.35)"
-                      : "1px solid rgba(236, 72, 153, 0.12)",
-                  cursor: "pointer", fontFamily: "inherit",
-                  color: t.destacado ? "#fff" : "inherit",
-                  opacity: t.secundario ? 0.85 : 1,
-                }}
-              >
-                <div style={{ fontSize: 34, marginBottom: 4, lineHeight: 1 }}>{t.emoji}</div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: t.destacado ? "#fff" : t.secundario ? "#475569" : "#1e1b4b" }}>{t.titulo}</div>
-                <div style={{ fontSize: 11, color: t.destacado ? "rgba(255,255,255,0.9)" : "#64748b", fontWeight: 700, marginTop: 3, lineHeight: 1.3 }}>{t.desc}</div>
-              </button>
-            ))}
+        <div key={g.titulo}>
+          <div style={S.rotulo}>{g.titulo}</div>
+          <div style={S.tiles}>
+            {g.tiles.map((t, i) => {
+              // Grupo con cantidad impar: la última ficha ocupa las dos columnas
+              // en vez de dejar un hueco. Misma ficha, mismo estilo — sólo el ancho.
+              const solaEnSuFila = g.tiles.length % 2 === 1 && i === g.tiles.length - 1;
+              return (
+                <button
+                  key={t.id}
+                  style={solaEnSuFila ? { ...S.tile, gridColumn: "1 / -1" } : S.tile}
+                  onClick={() => setSeccion(t.id)}
+                >
+                  <div style={{ fontSize: 26, lineHeight: 1 }}>{t.icono}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, marginTop: 6, color: TINTA }}>{t.titulo}</div>
+                  <div style={{ fontSize: 11, color: APOYO, marginTop: 3, lineHeight: 1.35 }}>{t.desc}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
       ))}
 
-      {/* Info sobre gestión vendedoras */}
-      <div style={{ padding: "10px 12px", background: "rgba(59, 130, 246, 0.06)", borderLeft: "3px solid #3b82f6", borderRadius: 10, fontSize: 11, color: "#1e40af", fontWeight: 700, marginBottom: 8, lineHeight: 1.55 }}>
-        💡 <strong>systemlap es la fuente de verdad de las vendedoras</strong> (crear, desactivar, cambiar email/rol/ciudad). La sincronización trae los cambios acá cada 5 minutos. El tile <strong>Vendedoras</strong> de arriba es solo el plan B por si el sync trae algo mal: lo que edites ahí lo puede pisar la próxima sincronización.
-      </div>
-
-      {/* Status footer */}
-      <div style={{ padding: "10px 14px", background: "rgba(16, 185, 129, 0.08)", borderLeft: "3px solid #10b981", borderRadius: 10, fontSize: 12, color: "#047857", fontWeight: 700 }}>
-        ✅ {activas.length} vendedoras activas · Sync systemlap cada 5 min
+      {/* Dónde se administra a las vendedoras (y dónde NO) */}
+      <div style={{
+        marginTop: 18, padding: "11px 13px", borderRadius: 10,
+        background: "#eff6ff", color: "#1e40af", borderLeft: "3px solid #3b82f6",
+        fontSize: 12, fontWeight: 700, lineHeight: 1.65,
+      }}>
+        💡 <strong>Aquí no se crea ni se edita nada de vendedoras.</strong> Entran, salen, cambian
+        de ciudad o de rol en systemlap, y esta app lo recibe sola. Los únicos datos que se
+        escriben acá son los que llena Carolina cada día.
       </div>
     </div>
   );

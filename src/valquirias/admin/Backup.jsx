@@ -49,20 +49,28 @@ export default function Backup({ onVolver }) {
     );
   }
 
+  // Restaurar es la ÚNICA operación que debe pisar: "reemplaza todo por esto".
+  // Por eso va por `restaurarTodo` y no por el guardado normal (que fusiona por
+  // clave y jamás borra lo que no gobierna). Los 5 docs van en un solo batch:
+  // o entra el respaldo completo, o no entra nada.
   async function ejecutarImport() {
+    let data;
     try {
-      const data = JSON.parse(textoImport);
-      if (data.vendedoras) await datos.saveVendedoras(data.vendedoras);
-      if (data.registros)  await datos.saveRegistros(data.registros);
-      if (data.metas)      await datos.saveMetas(data.metas);
-      if (data.snapshots)  await datos.saveSnapshots(data.snapshots);
-      if (data.config)     await datos.saveConfig(data.config);
-      setTextoImport("");
-      setModo(null);
-      flash("✅ Backup restaurado");
+      data = JSON.parse(textoImport);
     } catch (e) {
       console.error(e);
       flash("❌ JSON inválido", "err");
+      return;
+    }
+    try {
+      const restaurados = await datos.restaurarTodo(data);
+      setTextoImport("");
+      setModo(null);
+      flash(`✅ Backup restaurado (${restaurados.join(", ")})`);
+    } catch (e) {
+      console.error(e);
+      // Que no se vaya creyendo que restauró.
+      flash(`❌ NO se restauró: ${e?.message || "error escribiendo en Firestore"}`, "err");
     }
   }
 

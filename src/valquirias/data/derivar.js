@@ -28,9 +28,14 @@ import {
   calcRanking,
   calcTrimestre,
   calcPremios,
+  elegibilidadTrimestral,
+  participantes,
+  rosterCongeladoTrimestre,
   claveMes as claveMesLib,
   mesesTrimestre,
+  metaParaCiudad,
   notaIndicador,
+  indicadoresDelMes,
 } from "../../lib/calculos.js";
 import { getIndicadores, esFormulaV2, PESOS_TRIMESTRE } from "../../lib/constantes.js";
 import {
@@ -39,8 +44,16 @@ import {
   formatoK,
   formatoPesos,
   fechaBonita,
+  primerNombre,
   tramoActual,
   siguienteTramo,
+  tramoParaVentas,
+  TRAMOS_2026,
+  PISO_MED,
+  // Rol histórico: vive en helpers.js (fuente única), no duplicado aquí.
+  rolDeMes,
+  ROL_LARGO,
+  pctTexto,
 } from "../lib/helpers.js";
 
 const MES_NOMBRES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -60,17 +73,70 @@ const claveMesLocal = (año, mes) => `${año}_${dosDig(mes)}`;
 const claveRegistro = (vid, fechaISO) => `${vid}_${fechaISO}`;
 const nombreMes = (mes) => MES_NOMBRES[mes - 1] || "";
 
-// Roster utilizable: nunca las eventuales (viven sólo en systemlap) y,
-// por defecto, sólo las activas.
-function rosterUtil(datos, { incluirInactivas = false } = {}) {
+// ----------------------------------------------------------------------------
+// ROSTERS — hay TRES y confundirlos cuesta plata
+// ----------------------------------------------------------------------------
+//
+//  1. Roster COMPLETO (`rosterCompleto`) — el crudo de Firestore, con inactivas
+//     y eventuales. Es el roster de CÁLCULO: sin la ficha de alguien no hay
+//     ciudad (→ meta null en calculos.js) ni rol (→ comisión inventada), así que
+//     todos los meses que ya trabajó dejarían de poder reconstruirse. El worker
+//     de systemlap marca `eventual = true` a quien sale de la operación
+//     justamente "para NO perder su historial"
+//     (televentas-reportes/src/sync.js:166). Es también el mismo conjunto que
+//     CerrarMes.jsx congela en el snapshot.
+//
+//  2. Roster VIVO — quién participa HOY en un ranking abierto. Sale SIEMPRE de
+//     `participantes()` (lib/calculos.js), nunca de un filtro escrito aquí.
+//
+//  3. Roster CONGELADO — quién participaba en un periodo YA CERRADO. Son las que
+//     quedaron escritas en los snapshots. `participantes()` lo detecta solo y NO
+//     les aplica `activa`/`eventual`: desactivar a alguien hoy no puede mover el
+//     ranking de julio ni el premio de un trimestre cerrado.
+//
+// `rosterUtil` se mantiene sólo para (1). Para (2) y (3) → `rosterParticipa`.
+function rosterUtil(datos, { incluirInactivas = false, incluirEventuales = incluirInactivas } = {}) {
   return (datos?.vendedoras || []).filter(v =>
-    !v.eventual && (incluirInactivas || v.activa !== false)
+    (incluirEventuales || !v.eventual) && (incluirInactivas || v.activa !== false)
   );
 }
 
-function rosterCiudad(datos, ciudad, opts) {
-  const r = rosterUtil(datos, opts);
-  return ciudad ? r.filter(v => v.ciudad === ciudad) : r;
+// El roster CRUDO completo — el que hay que pasarle siempre al motor.
+const rosterCompleto = (datos) => rosterUtil(datos, { incluirInactivas: true });
+
+// ÚNICA puerta de participación de este archivo. Delega en `participantes()`
+// (lib/calculos.js), que es la misma función que usa la pantalla del dueño.
+//   alcance: "semanal" | "mensual" | "trimestral"
+//   extra:   { ciudad, año, mes, q }
+function rosterParticipa(datos, alcance, extra = {}) {
+  const completo = rosterCompleto(datos);
+  return participantes(completo, alcance, {
+    registros: datos?.registros || {},
+    metas: datos?.metas || {},
+    snapshots: datos?.snapshots || {},
+    rosterCalculo: completo,
+    ...extra,
+  });
+}
+
+// ----------------------------------------------------------------------------
+// ROL HISTÓRICO — vive en src/valquirias/lib/helpers.js (`rolDeMes`)
+// ----------------------------------------------------------------------------
+// Estaba duplicado literalmente aquí y en admin/NominaComisiones.jsx. Ahora hay
+// UNA sola copia, junto a `calcComisionMensual`, que es quien la consume: la
+// cifra que ve la vendedora y la que paga el dueño salen del mismo código.
+
+// ----------------------------------------------------------------------------
+// VERSIÓN DE FÓRMULA DE UN MES — del snapshot si está cerrado
+// ----------------------------------------------------------------------------
+// El cierre escribe `version` en el snapshot (CerrarMes.jsx). Leer
+// `esFormulaV2(año, mes)` vivo para un mes cerrado significa que mover
+// FECHA_CORTE_V2 reetiqueta meses ya publicados (un mes que la vendedora vio
+// como 70/30 pasaría a pintarse 40/60).
+function versionDeMes(datos, año, mes) {
+  const v = datos?.snapshots?.[claveMesLocal(año, mes)]?.version;
+  if (v === "v1" || v === "v2") return v;
+  return esFormulaV2(año, mes) ? "v2" : "v1";
 }
 
 // Lee un campo numérico tolerando varios nombres posibles.
@@ -131,6 +197,28 @@ function mesCerrado(datos, vid, año, mes) {
   return !!(snap && snap.vendedoras && snap.vendedoras[vid]);
 }
 
+// ----------------------------------------------------------------------------
+// ¿ESTE TRIMESTRE YA ESTÁ CERRADO?
+// ----------------------------------------------------------------------------
+// Cerrado = sus 3 meses tienen snapshot. Es la señal de "esto ya es historia":
+// el roster y la ganadora quedan congelados y no se recalculan con el estado de
+// hoy. `participantes()` lo detecta solo; esto es para poder pasárselo a
+// `calcPremios`, que necesita saberlo para NO quitarle el premio de un trimestre
+// pasado a quien salió de la operación después.
+export function esTrimestreCerrado(datos, año, q) {
+  return rosterCongeladoTrimestre(rosterCompleto(datos), año, q, datos?.snapshots || {}) !== null;
+}
+const trimestreCerrado = esTrimestreCerrado;
+
+// Roster de la ciudad para un trimestre. Una sola llamada resuelve todo:
+//  · trimestre EN CURSO → sólo activas, que entraron antes o el mismo día del
+//    inicio del trimestre, y con los meses ya cerrados hechos (R1+R3+R4).
+//  · trimestre CERRADO  → el roster congelado de sus snapshots, sin aplicar
+//    `activa` (eso reescribiría la historia).
+function rosterCiudadTrimestre(datos, ciudad, año, q) {
+  return rosterParticipa(datos, "trimestral", { ciudad: ciudad || null, año, q });
+}
+
 function estadoDeNota(nota) {
   if (nota === null || nota === undefined) return "good";
   if (nota >= 4.9) return "star";
@@ -139,6 +227,18 @@ function estadoDeNota(nota) {
 }
 
 const plural = (n, sing, plu) => `${n} ${n === 1 ? sing : plu}`;
+
+// "Lunes 4" — la etiqueta de día que usa el prototipo en el desglose día a día.
+const DIAS_LARGOS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+function diaLargo(fechaISO) {
+  const d = new Date(`${fechaISO}T12:00:00`);
+  return `${DIAS_LARGOS[d.getDay()]} ${d.getDate()}`;
+}
+
+const dosDec = (n) => (n === null || n === undefined ? null : Math.round(n * 100) / 100);
+
+// Nota que hay que alcanzar en el trimestre para el premio (regla del dueño).
+export const META_NOTA_TRIMESTRE = 4.5;
 
 // Acepta tanto el objeto vendedora como el id pelado.
 const idDe = (v) => (v && typeof v === "object" ? v.id : v);
@@ -207,6 +307,79 @@ export function textoDetalleIndicador(indId, detalle, extra = {}) {
   return nov ? `${plural(nov, "día", "días")} con novedad` : "Sin novedades ✅";
 }
 
+// ----------------------------------------------------------------------------
+// DETALLE CORTO POR INDICADOR — el textito del prototipo bajo el nombre
+// ("1 día tarde · 2 minutos", "2 días sin llenar", "Sin observaciones").
+// Es más seco que `textoDetalleIndicador` (que es el de la app clásica) porque
+// el prototipo aprobado lo pinta en una línea de 11px al lado de la nota.
+// ----------------------------------------------------------------------------
+export function detalleCortoIndicador(indId, detalle) {
+  const d = detalle || {};
+
+  if (indId === "puntualidad") {
+    const tarde = d.diasTarde || 0;
+    const min = d.minutosAcum || 0;
+    if (!tarde && !min) return "Sin retardos";
+    return `${plural(tarde, "día tarde", "días tarde")} · ${plural(min, "minuto", "minutos")}`;
+  }
+
+  if (indId === "resenas") {
+    const total = d.totalResenas || 0;
+    return total ? `${plural(total, "reseña", "reseñas")} este mes` : "Sin reseñas este mes";
+  }
+
+  const nov = d.novedades || 0;
+  if (!nov) return "Sin observaciones";
+  if (indId === "planilla") return `${plural(nov, "día", "días")} sin llenar`;
+  if (indId === "tienda" || indId === "tienda_e") return `${plural(nov, "día", "días")} con novedad en tienda`;
+  if (indId === "actitud") return `${plural(nov, "día", "días")} con actitud regular o mal`;
+  if (indId === "celular") return `${plural(nov, "día", "días")} con novedad de celular`;
+  if (indId === "uniforme") return `${plural(nov, "día", "días")} sin uniforme`;
+  return `${plural(nov, "día", "días")} con novedad`;
+}
+
+// Cómo se lee UN día para UN indicador concreto ("2 min tarde", "Sin llenar",
+// "Orden ✓ Uniforme ✗ Depósito ✓"). Devuelve null en días de descanso.
+function diaDeIndicador(indId, reg) {
+  if (!reg || reg.descanso) return null;
+  const marca = (v) => (v === "bien" || v === undefined || v === null ? "✓" : "✗");
+
+  if (indId === "puntualidad") {
+    const min = reg.minutos || 0;
+    if (!min) return { texto: "A tiempo", estado: "ok" };
+    return { texto: `${plural(min, "min tarde", "min tarde")}`, estado: min >= 10 ? "grave" : "mal" };
+  }
+  if (indId === "resenas") {
+    const n = reg.resenas || 0;
+    // Las reseñas no penalizan por día (la nota es el ratio del mes): nunca "mal".
+    return { texto: n ? plural(n, "reseña", "reseñas") : "Sin reseñas", estado: "ok" };
+  }
+  if (indId === "tienda") {
+    const ok = reg.tienda_orden === "bien" && reg.tienda_uniforme === "bien" && reg.tienda_deposito === "bien";
+    return {
+      texto: `Orden ${marca(reg.tienda_orden)} Uniforme ${marca(reg.tienda_uniforme)} Depósito ${marca(reg.tienda_deposito)}`,
+      estado: ok ? "ok" : "mal",
+    };
+  }
+  if (indId === "planilla") {
+    const ok = (reg.planilla || "bien") === "bien";
+    return { texto: ok ? "Al día" : "Sin llenar", estado: ok ? "ok" : "mal" };
+  }
+  if (indId === "actitud") {
+    const a = reg.actitud || "bien";
+    const nota = (reg.actitud_nota || "").trim();
+    if (a === "bien") return { texto: "Bien", estado: "ok" };
+    const et = a === "regular" ? "Regular" : "Mal";
+    return { texto: nota ? `${et} · ${nota}` : et, estado: "mal" };
+  }
+  // V1 (abril 2026 y antes)
+  if (indId === "celular" || indId === "uniforme" || indId === "tienda_e") {
+    const ok = (reg[indId] || "bien") === "bien";
+    return { texto: ok ? "Bien" : "Novedad", estado: ok ? "ok" : "mal" };
+  }
+  return null;
+}
+
 // Línea corta para el ranking por indicador (equivalente a infoDebajoNombre)
 export function textoRankingIndicador(indId, detalle, extra = {}) {
   const d = detalle || {};
@@ -227,10 +400,15 @@ export function textoRankingIndicador(indId, detalle, extra = {}) {
 // ============================================================================
 // VENTAS TOTALES DEL MES POR CIUDAD (hero admin)
 // ============================================================================
+// ⚠️ NO es un ranking: es CONTABILIDAD. Suma sobre el roster COMPLETO a
+// propósito. Si una vendedora se desactiva a mitad de mes, lo que vendió sigue
+// siendo plata que entró a la ciudad; sacarla dejaría el total de MED/BOG por
+// debajo de lo real. La regla R1 saca a las inactivas de los RANKINGS, no de las
+// cifras de dinero (mismo criterio que la nómina de comisiones).
 export function derivarVentasTotalesMes(datos, año, mes) {
   const ventas = datos?.metas?.[claveMesLocal(año, mes)]?.vendidas || {};
   let med = 0, bog = 0;
-  rosterUtil(datos, { incluirInactivas: true }).forEach(v => {
+  rosterCompleto(datos).forEach(v => {
     const val = Number(ventas[v.id]) || 0;
     if (v.ciudad === "MED") med += val;
     else if (v.ciudad === "BOG") bog += val;
@@ -244,7 +422,7 @@ export function derivarVentasTotalesMes(datos, año, mes) {
 export function derivarRankingMes(datos, ciudad, año, mes, miId) {
   const ventasDelMes = datos?.metas?.[claveMesLocal(año, mes)]?.vendidas || {};
 
-  const filas = rosterCiudad(datos, ciudad).map(v => ({
+  const filas = rosterParticipa(datos, "mensual", { ciudad, año, mes }).map(v => ({
     id: v.id,
     nombre: v.nombre,
     ciudad: v.ciudad,
@@ -266,23 +444,124 @@ export function derivarRankingMes(datos, ciudad, año, mes, miId) {
 // "ESTE MES" DE UNA VENDEDORA — ventas, comisión y NOTA REAL
 // ============================================================================
 export function derivarMesDeVendedora(datos, vendedora, año, mes) {
+  const vend = vendedoraDe(datos, vendedora);
   const roster = rosterUtil(datos, { incluirInactivas: true });
   const r = calcNotaMensual(
     datos?.registros || {},
     datos?.metas || {},
-    vendedora.id,
+    vend.id,
     año,
     mes,
     datos?.snapshots || {},
     roster
   );
 
-  const rol = vendedora.rolTienda === "admin" ? "admin" : "asesora";
+  // Rol de ESE mes, no el de hoy (ver rolDeMes): abrir el boletín de marzo
+  // después de un ascenso no puede pagarle a marzo el porcentaje de admin.
+  const { rol, datosCambioRol, historico: rolHistorico } = rolDeMes(vend, año, mes);
+
+  // Sin ciudad NO se puede calcular comisión, y punto.
+  // `calcComisionMensual` hace `aplicaPiso = ciudad === "MED"`, así que una
+  // ciudad null se colaba como trato de Bogotá (sin piso) — justo al revés del
+  // viejo fallback "MED" de calculos.js. La misma persona era de Medellín para
+  // la nota y de Bogotá para la plata. Criterio unificado con el núcleo:
+  // dato ausente → null, nunca un trato inventado (REGLA #2 de este archivo).
+  const ciudad = vend.ciudad || null;
+  const ciudadDesconocida = !ciudad;
   const ventasMes = r.real || 0;
+
+  // --- Tramo actual y siguiente (sobre el TOTAL vendido, no sobre el excedente)
+  // El tramo depende sólo de ventas y rol, no de la ciudad: se puede mostrar
+  // aunque falte la ciudad. Lo que NO se puede es traducirlo a pesos.
   const tramo = tramoActual(ventasMes, rol);
+  const tramoTabla = tramoParaVentas(ventasMes);
   const sig = siguienteTramo(ventasMes, rol);
   const faltaSig = sig ? Math.max(0, sig.minVentas - ventasMes) : 0;
-  const calc = calcComisionMensual({ ciudad: vendedora.ciudad, rol, ventasMes });
+
+  // --- Comisión del mes (calcComisionMensual ya aplica el piso de Medellín y,
+  //     si el ascenso cayó dentro del mes, la pro-rata día a día)
+  const calc = ciudadDesconocida
+    ? { comision: null, detalle: "Ciudad no disponible — comisión no calculable" }
+    : calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol });
+
+  // --- Cómo se EXPLICA esa comisión en una línea -----------------------------
+  // En un mes con cambio de rol, decir "4% sobre todo lo vendido" es falso: la
+  // cifra salió de una pro-rata de DOS tarifas (unos días al 2% de asesora y el
+  // resto al 4% de administradora), así que el porcentaje que se pinta y la
+  // plata que se paga no cuadran a la vista. `comisionTexto` trae siempre la
+  // frase verdadera; la UI la pinta tal cual en vez de armarla con `tramoInfo`.
+  const pro = calc.proRata || null;
+  const cambioRol = pro
+    ? {
+        diaCambio: datosCambioRol.diaCambio,
+        diasMes: datosCambioRol.diasMes,
+        desde: {
+          rol: pro.desde.rol,
+          rolLargo: ROL_LARGO[pro.desde.rol],
+          dias: pro.desde.dias,
+          pct: pro.desde.pct,
+          pctTexto: pctTexto(pro.desde.pct),
+          comision: pro.desde.comision,
+        },
+        hasta: {
+          rol: pro.hasta.rol,
+          rolLargo: ROL_LARGO[pro.hasta.rol],
+          dias: pro.hasta.dias,
+          pct: pro.hasta.pct,
+          pctTexto: pctTexto(pro.hasta.pct),
+          comision: pro.hasta.comision,
+        },
+        // "12 días como asesora al 2% + 19 días como administradora al 4%"
+        texto:
+          `${plural(pro.desde.dias, "día", "días")} como ${ROL_LARGO[pro.desde.rol]} al ${pctTexto(pro.desde.pct)}` +
+          ` + ${plural(pro.hasta.dias, "día", "días")} como ${ROL_LARGO[pro.hasta.rol]} al ${pctTexto(pro.hasta.pct)}`,
+      }
+    : null;
+
+  const comisionTexto = calc.comision === null
+    ? null
+    : (cambioRol ? cambioRol.texto : (tramo ? `${pctTexto(tramo.pct)} sobre todo lo vendido` : null));
+
+  // Porcentaje EFECTIVO que terminó cobrando (comisión ÷ ventas). En un mes con
+  // cambio de rol cae entre las dos tarifas: es el número que sí cuadra con la
+  // plata. null si no hay ventas o no hay comisión calculable.
+  const pctEfectivo = (calc.comision === null || !ventasMes) ? null : calc.comision / ventasMes;
+
+  // --- Piso Medellín: BOG no tiene piso, gana desde el primer peso.
+  //     Sin ciudad no hay piso que afirmar ni negar → null.
+  const aplicaPiso = ciudad === "MED";
+  const superoPiso = !aplicaPiso || ventasMes >= PISO_MED;
+  const pctPrimerTramo = rol === "admin" ? TRAMOS_2026[0].pctAdmin : TRAMOS_2026[0].pctAsesora;
+  const piso = ciudadDesconocida ? null : {
+    aplica: aplicaPiso,
+    monto: aplicaPiso ? PISO_MED : 0,
+    superado: superoPiso,
+    falta: aplicaPiso && !superoPiso ? PISO_MED - ventasMes : 0,
+    pct: aplicaPiso ? pctPrimerTramo : null,
+    // Lo que ganaría el día que toque el piso justo (sirve para el "ahí ganas X%")
+    comisionAlLlegar: aplicaPiso
+      ? calcComisionMensual({ ciudad, rol, ventasMes: PISO_MED, datosCambioRol }).comision
+      : null,
+  };
+
+  // --- A cuánto saltaría la comisión si llega al siguiente tramo
+  // OJO: `siguienteTramo`/`tramoActual` leen de la tabla TRAMOS[rol], que YA
+  // trae el pct del rol en `.pct`. NO existen `.pctAdmin`/`.pctAsesora` ahí
+  // (eso es de TRAMOS_2026) — leerlos daba NaN.
+  const pctSig = sig ? sig.pct : null;
+  const siguienteTramoInfo = sig
+    ? {
+        nombre: sig.nombre,
+        pct: pctSig,
+        pctTexto: `${Math.round(pctSig * 100)}%`,
+        minVentas: sig.minVentas,
+        falta: faltaSig,
+        // Comisión en el instante exacto en que cruza el tramo (sobre TODO lo vendido)
+        comisionAlLlegar: ciudadDesconocida
+          ? null
+          : calcComisionMensual({ ciudad, rol, ventasMes: sig.minVentas, datosCambioRol }).comision,
+      }
+    : null;
 
   const hoy = hoyColombia();
   const ultimoDia = new Date(año, mes, 0).getDate();
@@ -292,17 +571,58 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
     año,
     mes,
     nombreMes: nombreMes(mes),
+    ciudad,
+    // true = no se pudo determinar la ciudad → comisión y piso van en null a
+    // propósito (no es un $0 real). Misma bandera que devuelve calculos.js.
+    ciudadDesconocida,
+    rol,                                        // rol de ESE mes
+    rolHistorico,                               // true = salió de fechaAscensoAdmin
+    ascensoEnEsteMes: !!datosCambioRol,         // true = comisión prorrateada
     ventas: ventasMes,
-    meta: r.meta || 0,
-    pctMeta: r.pct || 0,
+    // meta/pctMeta pueden venir null desde el núcleo (mes cerrado sin meta, o
+    // ciudad desconocida). Un `|| 0` los convertía en "vendió el 0% de $0",
+    // que es un dato falso, no un dato ausente.
+    meta: r.meta ?? null,
+    pctMeta: r.pct ?? null,
     dia,
     diasMes: ultimoDia,
     diasTrabajados: r.dias || 0,
+
+    // --- Comisión (compat: `tramo` y `siguienteTramo` siguen siendo STRINGS,
+    //     los usa TabHoy; lo estructurado va en *Info)
     tramo: tramo ? tramo.nombre : null,
+    tramoInfo: tramo
+      ? {
+          nombre: tramo.nombre,
+          pct: tramo.pct,
+          pctTexto: `${Math.round(tramo.pct * 100)}%`,
+          minVentas: tramo.minVentas,
+          maxVentas: tramoTabla.max,
+          // ⚠️ true = hubo cambio de rol este mes: `pct`/`pctTexto` son los del
+          // rol FINAL y NO explican la comisión (es una pro-rata de dos
+          // tarifas). Cuando esto es true, pintar `comisionTexto`, no `pctTexto`.
+          mixto: !!cambioRol,
+        }
+      : null,
     ganado: calc.comision,
+    comision: calc.comision,                    // alias legible
     comisionDetalle: calc.detalle,
-    siguienteTramo: sig ? `${sig.nombre} (${(rol === "admin" ? sig.pctAdmin : sig.pctAsesora) * 100}%)` : null,
+    // Frase verdadera para pintar bajo la comisión:
+    //  · mes normal          → "4% sobre todo lo vendido"
+    //  · mes con cambio de rol → "12 días como asesora al 2% + 19 días como
+    //    administradora al 4%"
+    comisionTexto,
+    // Desglose auditable de la pro-rata (null si no hubo cambio de rol)
+    cambioRol,
+    proRata: pro,
+    pctEfectivo,                                // number | null (0.032 = 3.2%)
+    pctEfectivoTexto: pctEfectivo === null ? null : `${(pctEfectivo * 100).toFixed(2).replace(/\.?0+$/, "")}%`,
+    // (bug corregido: antes leía sig.pctAdmin/pctAsesora → "Tramo 2 (NaN%)" en TabHoy)
+    siguienteTramo: sig ? `${sig.nombre} (${Math.round(pctSig * 100)}%)` : null,
+    siguienteTramoInfo,
     faltaSiguiente: faltaSig,
+    piso,
+
     // Notas REALES (antes eran 0)
     nota: r.notaFinal,               // number | null
     notaComportamiento: r.notaBase,  // number | null
@@ -312,6 +632,9 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
     version: r.version,
     porInd: r.porInd || {},
     detalleInd: r.detalle || {},
+    // Notas por indicador ya formateadas (sin desglose día a día: eso lo da
+    // derivarIndicadoresMes, que es más caro y sólo lo pide la pantalla detalle)
+    indicadores: derivarIndicadoresMes(datos, vend, año, mes, { conDias: false }),
   };
 }
 
@@ -380,8 +703,9 @@ export function derivarSemanaDeVendedora(datos, vendedora, fechaISO) {
   const efectivo = efectivoDe(vendedora.id);          // number | null
   const disponible = efectivo !== null;
 
-  // Ranking de la ciudad — sólo con quienes tengan el dato
-  const conDato = rosterCiudad(datos, vendedora.ciudad)
+  // Ranking de la ciudad — sólo activas (R1) y sólo con quienes tengan el dato.
+  // La semana no tiene snapshot: siempre es roster VIVO.
+  const conDato = rosterParticipa(datos, "semanal", { ciudad: vendedora.ciudad })
     .map(v => ({ id: v.id, nombre: v.nombre, ciudad: v.ciudad, valor: efectivoDe(v.id) }))
     .filter(f => f.valor !== null)
     .sort((a, b) => b.valor - a.valor);
@@ -419,18 +743,32 @@ export function derivarTrimestreDeVendedora(datos, vendedora, año, q) {
   const añoQ = año || hoy.año;
   const qNum = q || Math.ceil(hoy.mes / 3);
   const meses = mesesTrimestre(qNum);
-  const roster = rosterUtil(datos, { incluirInactivas: true });
+  const roster = rosterCompleto(datos);
   const registros = datos?.registros || {};
   const metas = datos?.metas || {};
   const snapshots = datos?.snapshots || {};
+  const congelado = trimestreCerrado(datos, añoQ, qNum);
 
   const mio = calcTrimestre(registros, metas, vendedora.id, añoQ, qNum, snapshots, roster);
 
-  // Ranking trimestral de SU ciudad (MED y BOG no se mezclan)
-  const rankingCiudad = rosterCiudad(datos, vendedora.ciudad).map(v => {
+  // Ranking trimestral de SU ciudad (MED y BOG no se mezclan).
+  // `rosterCiudadTrimestre` YA aplicó R1+R3+R4: aquí sólo entra quien participa
+  // de verdad. Quien está inactiva, entró con el trimestre arrancado o le falta
+  // un mes ya cerrado no aparece — ni en la lista, ni aparte, ni en gris.
+  // Trimestre CERRADO → roster congelado de los snapshots, sin tocar `activa`.
+  const rankingCiudad = rosterCiudadTrimestre(datos, vendedora.ciudad, añoQ, qNum).map(v => {
     const t = calcTrimestre(registros, metas, v.id, añoQ, qNum, snapshots, roster);
     const realTrim = (t.datosMes || []).reduce((s, d) => s + (d?.real || 0), 0);
-    return { id: v.id, nombre: v.nombre, ciudad: v.ciudad, notaTrim: t.notaTrim, realTrim, completo: t.completo };
+    return {
+      id: v.id, nombre: v.nombre, ciudad: v.ciudad,
+      notaTrim: t.notaTrim, realTrim,
+      completo: t.completo,
+      completoALaFecha: t.completoALaFecha,
+      mesesConDatos: t.mesesConDatos,
+      activa: v.activa !== false,
+      eventual: v.eventual === true,
+      fechaIngreso: v.fechaIngreso || null,
+    };
   });
   const conNota = rankingCiudad
     .filter(v => v.notaTrim !== null)
@@ -444,7 +782,24 @@ export function derivarTrimestreDeVendedora(datos, vendedora, año, q) {
   const montoBase = Number(cfg.montoBase ?? 1_000_000);
   const montoExtra = Number(cfg.montoExtra ?? 1_000_000);
 
-  const premiosCiudad = calcPremios(conNota)[vendedora.ciudad === "BOG" ? "bog" : "med"];
+  // `{ año, q }`: sin eso calcPremios no puede resolver `entroTarde` desde
+  // `fechaIngreso` y pagaría el millón a quien entró con el trimestre empezado.
+  // `congelado`: trimestre ya cerrado → no se le quita el premio a quien salió
+  // de la operación DESPUÉS del cierre. La ganadora de un trimestre cerrado no
+  // cambia nunca.
+  const premiosCiudad = calcPremios(conNota, { año: añoQ, q: qNum, congelado })[vendedora.ciudad === "BOG" ? "bog" : "med"];
+
+  // Elegibilidad de ELLA — con el motivo, para que la pantalla pueda explicarlo
+  // en vez de mostrar un premio en $0 sin decir por qué.
+  const fichaMia = rosterCompleto(datos).find(x => x.id === vendedora.id);
+  const miElegibilidad = elegibilidadTrimestral({
+    activa: (fichaMia?.activa ?? vendedora.activa) !== false,
+    eventual: (fichaMia?.eventual ?? vendedora.eventual) === true,
+    fechaIngreso: fichaMia?.fechaIngreso ?? vendedora.fechaIngreso ?? null,
+    completoALaFecha: mio.completoALaFecha,
+    completo: mio.completo,
+    mesesConDatos: mio.mesesConDatos,
+  }, { año: añoQ, q: qNum, congelado });
   const ganoBase = premiosCiudad.conBono.some(v => v.id === vendedora.id);
   const ganoExtra = premiosCiudad.extraCiudad?.id === vendedora.id;
   const premioMonto = (ganoBase ? montoBase : 0) + (ganoExtra ? montoExtra : 0);
@@ -494,6 +849,12 @@ export function derivarTrimestreDeVendedora(datos, vendedora, año, q) {
     reconocimiento: cfg.reconocimiento || null,
     ganadoras,
     rankingCiudad: conNota,
+    // Su propia elegibilidad, con el motivo exacto si no compite. Sale de la
+    // MISMA función que usa calcPremios y que usa la pantalla del dueño.
+    elegibilidad: miElegibilidad,
+    compitePorPremio: miElegibilidad.compite,
+    motivoNoCompite: miElegibilidad.motivo,
+    textoNoCompite: miElegibilidad.texto,
   };
 }
 
@@ -505,7 +866,11 @@ export function derivarComportamientoDeVendedora(datos, vendedora, año, mes) {
   const a = año || hoy.año;
   const m = mes || hoy.mes;
 
-  const { nota, dias, porInd, detalle, cerrado } = calcMes(
+  // `indicadores` = las definiciones que el núcleo USÓ realmente: las del
+  // snapshot si el mes está cerrado, las vivas si está abierto. Antes esto era
+  // `getIndicadores(a, m)`, o sea las constantes de HOY: cambiar un peso o
+  // renombrar un id reescribía el desglose de meses ya publicados.
+  const { nota, dias, porInd, detalle, cerrado, indicadores: defs } = calcMes(
     datos?.registros || {},
     vendedora.id,
     a,
@@ -513,7 +878,6 @@ export function derivarComportamientoDeVendedora(datos, vendedora, año, mes) {
     datos?.snapshots || {}
   );
 
-  const defs = getIndicadores(a, m);
   const pesoTotal = defs.reduce((s, i) => s + i.peso, 0);
 
   const indicadores = defs.map(def => {
@@ -532,7 +896,10 @@ export function derivarComportamientoDeVendedora(datos, vendedora, año, mes) {
   });
 
   const hayWarn = indicadores.some(i => i.estado === "warn");
-  const factor = esFormulaV2(a, m) ? 0.4 : 0.7;
+  // Peso del comportamiento: 40% en V2, 70% en V1. La versión sale del
+  // snapshot si el mes está cerrado (ver versionDeMes) — mover FECHA_CORTE_V2
+  // no puede reetiquetar un mes que la vendedora ya vio.
+  const factor = versionDeMes(datos, a, m) === "v2" ? 0.4 : 0.7;
 
   return {
     año: a,
@@ -609,19 +976,27 @@ export function derivarRankingPorIndicador(datos, indicadorId = "general", ciuda
     datos?.metas || {},
     a,
     m,
-    rosterUtil(datos),          // sólo activas compiten
+    // Roster COMPLETO a propósito: `calcRanking` decide adentro quién participa
+    // (activas si el mes está abierto, el congelado del snapshot si ya cerró).
+    // Pasarle sólo las activas rompía el roster congelado de los meses cerrados.
+    rosterCompleto(datos),
     datos?.snapshots || {},
     ciudad || null
   );
 
-  const defs = getIndicadores(a, m);
+  // Definiciones del mes (snapshot si está cerrado) — de aquí salen el emoji,
+  // el color y el label con que se pinta la tarjeta del ranking.
+  const defs = indicadoresDelMes(a, m, datos?.snapshots || {});
   const def = defs.find(d => d.id === id) || null;
 
   let lista;
   if (id === "general") {
     lista = rk.filter(v => v.notaFinal !== null).map(v => ({ ...v, nota: v.notaFinal, n: v.rankGen }));
   } else if (id === "ventas") {
-    lista = rk.filter(v => v.meta > 0)
+    // Hace falta la meta Y las ventas. Sin `real` no hay % de meta que rankear:
+    // `null / meta` da 0 en JS, así que quien no tiene dato entraba a la lista
+    // por el sótano —con un 0% que nadie registró— en vez de quedar fuera.
+    lista = rk.filter(v => v.meta > 0 && v.real !== null && v.real !== undefined)
       .sort((x, y) => (y.real / Math.max(y.meta, 1)) - (x.real / Math.max(x.meta, 1)))
       .map((v, i) => ({ ...v, nota: v.notaVentas, n: i + 1 }));
   } else {
@@ -653,9 +1028,13 @@ export function derivarRankingPorIndicador(datos, indicadorId = "general", ciuda
 }
 
 // Tabs disponibles para la UI del ranking por indicador (7 en V2, 8 en V1)
-export function tabsRankingIndicador(año, mes) {
+// `datos` es opcional sólo por compatibilidad con el único llamador de hoy
+// (TabRankingIndicadores.jsx:66, que aún no lo pasa). Pasándolo, las tabs de un
+// mes CERRADO salen de su snapshot igual que las tarjetas del ranking
+// (derivarRankingPorIndicador); sin él se cae a las constantes vivas.
+export function tabsRankingIndicador(año, mes, datos = null) {
   const hoy = hoyColombia();
-  const defs = getIndicadores(año || hoy.año, mes || hoy.mes);
+  const defs = indicadoresDelMes(año || hoy.año, mes || hoy.mes, datos?.snapshots || null);
   return [
     { id: "general", label: "General", emoji: "🏅", color: "#7c3aed" },
     ...defs.map(d => ({ id: d.id, label: d.label, emoji: d.emoji, color: d.color })),
@@ -681,16 +1060,35 @@ export function derivarTotalAñoDeVendedora(datos, vendedora, año) {
   const mesesTrabajados = Math.max(0, hastaMes - mesInicio + 1);
   const salarioBase = mesesTrabajados * SALARIO_BASE_MES;
 
-  const rol = vendedora.rolTienda === "admin" ? "admin" : "asesora";
+  // ⚠️ El rol NO se calcula una vez para los 12 meses: se resuelve mes por mes
+  // contra `fechaAscensoAdmin` (ver rolDeMes). Con el rol de hoy, ascender a una
+  // asesora le duplicaba retroactivamente la comisión de todo el año (1%→2%,
+  // 2%→4%, 3%→6%) — plata que nunca se pagó apareciendo en meses ya cerrados.
+  const ciudad = vendedora.ciudad || null;
+  const ciudadDesconocida = !ciudad;   // sin ciudad no hay piso ni comisión (null, no 0)
   let premiosMensuales = 0;
   const meses = [];
 
   for (let m = mesInicio; m <= hastaMes; m++) {
     const ventasMes = Number(datos?.metas?.[claveMesLocal(a, m)]?.vendidas?.[vendedora.id]) || 0;
-    const comision = ventasMes > 0
-      ? calcComisionMensual({ ciudad: vendedora.ciudad, rol, ventasMes }).comision
-      : 0;
-    premiosMensuales += comision;
+    // Rol que tenía en ESE mes; si el ascenso cayó dentro del mes,
+    // `datosCambioRol` hace que calcComisionMensual prorratee día a día.
+    const { rol, datosCambioRol, historico: rolHistorico } = rolDeMes(vendedora, a, m);
+    const calcMesCom = (ciudadDesconocida || ventasMes <= 0)
+      ? null
+      : calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol });
+    const comision = ciudadDesconocida ? null : (calcMesCom ? calcMesCom.comision : 0);
+    if (comision !== null) premiosMensuales += comision;
+
+    // Mismo criterio que `derivarMesDeVendedora`: en un mes con cambio de rol el
+    // porcentaje del rol final NO explica la cifra (es pro-rata de dos tarifas).
+    const proMes = calcMesCom?.proRata || null;
+    const comisionTexto = proMes
+      ? `${plural(proMes.desde.dias, "día", "días")} como ${ROL_LARGO[proMes.desde.rol]} al ${pctTexto(proMes.desde.pct)}` +
+        ` + ${plural(proMes.hasta.dias, "día", "días")} como ${ROL_LARGO[proMes.hasta.rol]} al ${pctTexto(proMes.hasta.pct)}`
+      : (calcMesCom?.pct !== undefined && calcMesCom?.pct !== null
+          ? `${pctTexto(calcMesCom.pct)} sobre todo lo vendido`
+          : null);
 
     const cerrado = mesCerrado(datos, vendedora.id, a, m);
     const snapV = datos?.snapshots?.[claveMesLocal(a, m)]?.vendedoras?.[vendedora.id];
@@ -699,7 +1097,11 @@ export function derivarTotalAñoDeVendedora(datos, vendedora, año) {
       mes: m,
       nombre: `${nombreMes(m).charAt(0).toUpperCase()}${nombreMes(m).slice(1)} ${a}`,
       ventas: ventasMes,
-      comision,
+      comision,                                 // null = ciudad no disponible
+      rol,                                      // el que tenía ESE mes
+      rolHistorico,                             // true = salió de fechaAscensoAdmin
+      ascensoEnEsteMes: !!datosCambioRol,       // true = comisión prorrateada
+      comisionTexto,                            // frase verdadera del %, ver arriba
       nota: cerrado ? (snapV?.notaFinal ?? null) : null,
       cerrado,
     });
@@ -723,10 +1125,16 @@ export function derivarTotalAñoDeVendedora(datos, vendedora, año) {
   return {
     año: a,
     total,
+    // false = falta la comisión del año porque no se conoce la ciudad; el total
+    // está incompleto, no es que haya ganado eso exactamente.
+    totalCompleto: !ciudadDesconocida,
     mesesTrabajados,
     desglose: {
       salarioBase,
-      premiosMensuales,
+      // null (no 0) cuando no hay ciudad: sin ciudad no se sabe si aplica el
+      // piso de $15.000.000 de Medellín, así que no hay comisión que afirmar.
+      premiosMensuales: ciudadDesconocida ? null : premiosMensuales,
+      premiosMensualesDisponible: !ciudadDesconocida,
       // El efectivo semanal no se sincroniza a Firestore → no se puede sumar.
       // null (no 0) para que la UI pueda decir "no disponible".
       premiosSemanales: null,
@@ -774,13 +1182,27 @@ export function derivarDetalleVendedoraMes(datos, vendedora, año, mes) {
     nota: notaIndicadorDiaSeguro(reg, a, m),
   }));
 
-  const rol = vendedora.rolTienda === "admin" ? "admin" : "asesora";
-  const comision = calcComisionMensual({ ciudad: vendedora.ciudad, rol, ventasMes: mesData.ventas });
+  // La comisión NO se recalcula aquí: se reusa la de `derivarMesDeVendedora`,
+  // que ya resuelve el rol de ESE mes (fechaAscensoAdmin + pro-rata) y devuelve
+  // null si falta la ciudad. Recalcularla con `vendedora.rolTienda` (el rol de
+  // hoy) hacía que la vista admin mostrara para un mes viejo el porcentaje del
+  // cargo actual — el mismo bug de la comisión histórica, en otra pantalla.
+  const comision = {
+    comision: mesData.comision,
+    detalle: mesData.comisionDetalle,
+    // Frase verdadera + desglose de la pro-rata cuando hubo cambio de rol
+    texto: mesData.comisionTexto,
+    cambioRol: mesData.cambioRol,
+  };
 
   return {
     vendedora,
     año: a,
     mes: m,
+    rol: mesData.rol,                       // rol de ESE mes
+    rolHistorico: mesData.rolHistorico,
+    ascensoEnEsteMes: mesData.ascensoEnEsteMes,
+    ciudadDesconocida: mesData.ciudadDesconocida,
     nombreMes: nombreMes(m),
     version: mesData.version,
     cerrado: mesData.cerrado,
@@ -797,7 +1219,10 @@ export function derivarDetalleVendedoraMes(datos, vendedora, año, mes) {
       nota: mesData.notaVentas,
       comision: comision.comision,
       comisionDetalle: comision.detalle,
+      comisionTexto: comision.texto,        // "N días como asesora al X% + …"
+      cambioRol: comision.cambioRol,        // null si no hubo cambio de rol
       tramo: mesData.tramo,
+      tramoInfo: mesData.tramoInfo,         // .mixto = true → no pintar el pct solo
     },
     // Comportamiento
     comportamiento: comp,
@@ -831,7 +1256,9 @@ export function derivarPosicionRanking(datos, vendedora, año, mes, opts = {}) {
   const vend = vendedoraDe(datos, vendedora);
   const vid = vend.id;
   const { registros, metas, snapshots } = fuentes(datos);
-  const compiten = rosterUtil(datos);            // sólo activas compiten
+  // Roster COMPLETO: quién participa lo decide `calcRanking` (activas si el mes
+  // está abierto; el congelado del snapshot si ya cerró).
+  const compiten = rosterCompleto(datos);
 
   const ciudadFiltro = "ciudad" in opts ? (opts.ciudad || null) : (vend.ciudad || null);
 
@@ -896,6 +1323,12 @@ export function derivarComparativoMesAnterior(datos, vendedora, año, mes) {
 // trimDatos.datosMes.map(d => d.porInd[ind.id]) de los 3 meses del trimestre,
 // usando las definiciones de indicador del PRIMER mes del trimestre.
 // notaPromedio = null cuando ningún mes del trimestre trae ese indicador.
+//
+// ⚠️ LEGACY — promedio SIMPLE. La pantalla nueva del prototipo usa
+// `derivarIndicadoresTrimestre`, que promedia PONDERADO por 20/30/50 (igual que
+// la nota del trimestre) y además trae la tendencia mes a mes. Esta se mantiene
+// intacta sólo porque DetalleTrimestre.jsx (la pantalla vieja) ya muestra estos
+// números y cambiarlos movería lo que la vendedora ya vio.
 export function derivarPorIndicadorTrimestre(datos, vendedora, año, q) {
   const hoy = hoyColombia();
   const añoQ = año || hoy.año;
@@ -905,7 +1338,9 @@ export function derivarPorIndicadorTrimestre(datos, vendedora, año, q) {
   const { registros, metas, snapshots, roster } = fuentes(datos);
 
   const t = calcTrimestre(registros, metas, vid, añoQ, qNum, snapshots, roster);
-  const defs = getIndicadores(añoQ, meses[0]);
+  // Definiciones del PRIMER mes del trimestre (se mantiene ese criterio legacy),
+  // pero tomadas del snapshot si ese mes ya cerró, no de las constantes de hoy.
+  const defs = indicadoresDelMes(añoQ, meses[0], snapshots);
 
   return defs.map(def => {
     const vals = (t.datosMes || [])
@@ -960,7 +1395,8 @@ export function derivarPodioTop3(datos, ciudad, año, mes, miId = null) {
   const m = mes || hoy.mes;
   const { registros, metas, snapshots } = fuentes(datos);
 
-  const rk = calcRanking(registros, metas, a, m, rosterUtil(datos), snapshots, ciudad || null);
+  // Roster COMPLETO: `calcRanking` filtra por su cuenta (vivo vs congelado).
+  const rk = calcRanking(registros, metas, a, m, rosterCompleto(datos), snapshots, ciudad || null);
   const conDatos = rk.filter(v => v.notaFinal !== null).slice(0, 3);
 
   const MEDALLAS = ["🥇", "🥈", "🥉"];
@@ -1000,7 +1436,11 @@ export function derivarBoletinMes(datos, vendedora, año, mes) {
   const pos = derivarPosicionRanking(datos, vend, a, m);
   const comparativo = derivarComparativoMesAnterior(datos, vend, a, m);
 
-  const esV2 = esFormulaV2(a, m);
+  // La versión la manda el snapshot cuando el mes está cerrado (r.version viene
+  // de calcNotaMensual). Con `esFormulaV2(a, m)` vivo, mover FECHA_CORTE_V2
+  // reetiquetaba boletines ya publicados: un mes que la vendedora leyó como
+  // "comportamiento 70% / ventas 30%" pasaría a decir 40/60 con las MISMAS notas.
+  const esV2 = r.version === "v2";
 
   return {
     // Contexto
@@ -1043,6 +1483,563 @@ export function derivarBoletinMes(datos, vendedora, año, mes) {
     // Extras de la pantalla
     comparativo,                            // objeto | null
     frase: derivarFraseMotivacionalNota(pos.posicion, pos.total, r.notaFinal ?? null),
+  };
+}
+
+// ############################################################################
+// #                                                                          #
+// #   API DEL PROTOTIPO APROBADO (docs/prototipo-3-perfiles.html)            #
+// #   Todo lo de abajo es lo que consumen las pantallas nuevas de la         #
+// #   vendedora: Mi cash semanal / Mi mes / Mi trimestre / detalle de        #
+// #   indicador / rankings de ciudad.                                        #
+// #                                                                          #
+// ############################################################################
+
+// ============================================================================
+// 1) MI CASH SEMANAL — ranking de efectivo de SU ciudad
+// ============================================================================
+// ⚠️⚠️ DATO QUE HOY NO EXISTE EN FIRESTORE ⚠️⚠️
+//
+// El efectivo por vendedora NO se sincroniza a Firestore. Estado real hoy:
+//   · systemlap (Supabase) SÍ lo tiene: tabla `ventas`, campos `tipo`
+//     ("efectivo" / "Mixto-Efectivo") y `total`.
+//   · El Worker televentas-reportes lo calcula al vuelo para el correo diario
+//     (src/index.js → efectivoPorVendedora), pero NO lo escribe en ningún lado.
+//   · El sync a esta app (televentas-reportes/src/sync.js) sólo escribe
+//     `vendedoras` y `metas[YYYY_MM].vendidas` (ventas NETAS del MES).
+//     No escribe nada diario ni nada de efectivo.
+//   · El único escritor de `registros` es la pantalla de Ingreso Diario, que
+//     guarda indicadores de comportamiento (minutos, resenas, tienda_*,
+//     planilla, actitud) — nunca dinero.
+//
+// PARA QUE ESTA FUNCIÓN DEVUELVA DATOS hay que sincronizar, por vendedora y
+// por día, el efectivo acumulado en un campo del registro diario
+// (`efectivo` | `efectivoDia` | `efectivo_dia` — cualquiera de los tres sirve).
+// El día que ese campo aparezca, esta función empieza a funcionar sola: no
+// hay que tocar nada más.
+//
+// Mientras tanto devuelve `null` — NUNCA ceros. Un $0 aquí le diría a la
+// vendedora "no vendiste nada en efectivo", que es mentira.
+// Para pintar el estado "no disponible" con el rango de fechas correcto, la
+// pantalla usa `estadoEfectivoSemanal()`.
+export function derivarSemanaEfectivo(datos, vendedora, isoLunes) {
+  const hoy = hoyColombia();
+  const vend = vendedoraDe(datos, vendedora);
+  const fechas = fechasSemanaDe(isoLunes || hoy.iso);
+  const registros = datos?.registros || {};
+
+  const efectivoDe = (vid) => {
+    const regs = fechas.map(f => registros[claveRegistro(vid, f)]).filter(Boolean);
+    return sumaOpcional(regs, CAMPOS_EFECTIVO);
+  };
+
+  // Sólo activas (R1). El premio semanal de efectivo es un ranking en vivo.
+  const conDato = rosterParticipa(datos, "semanal", { ciudad: vend.ciudad })
+    .map(v => ({
+      id: v.id,
+      nombre: v.nombre,
+      nombreCorto: primerNombre(v.nombre),
+      ciudad: v.ciudad,
+      efectivo: efectivoDe(v.id),
+    }))
+    .filter(f => f.efectivo !== null);
+
+  // Nadie de la ciudad tiene el dato → el dato no existe. null, no ceros.
+  if (!conDato.length) return null;
+
+  conDato.sort((a, b) => b.efectivo - a.efectivo);
+
+  const club = conDato.filter(f => f.efectivo >= UMBRAL_EFECTIVO_SEMANA);
+  const lider = club[0] || null;
+
+  const filas = conDato.map((f, i) => ({
+    ...f,
+    n: i + 1,
+    esYo: f.id === vend.id,
+    gano: f.efectivo >= UMBRAL_EFECTIVO_SEMANA,
+    // El EXTRA sólo existe si 2+ llegaron al umbral (misma regla del reporte diario)
+    extra: club.length >= 2 && lider?.id === f.id,
+    falta: Math.max(0, UMBRAL_EFECTIVO_SEMANA - f.efectivo),
+    medalla: ["🥇", "🥈", "🥉"][i] || null,
+  }));
+
+  const yo = filas.find(f => f.esYo) || null;
+  const arriba = yo && yo.n > 1 ? filas[yo.n - 2] : null;
+
+  return {
+    disponible: true,
+    ciudad: vend.ciudad,
+    desde: fechas[0],
+    hasta: fechas[6],
+    fechas,
+    umbral: UMBRAL_EFECTIVO_SEMANA,
+    premio: PREMIO_EFECTIVO_SEMANA,
+    filas,
+    // Mi situación
+    miEfectivo: yo ? yo.efectivo : null,
+    miPosicion: yo ? yo.n : null,
+    total: filas.length,
+    gane: !!yo?.gano,
+    soyLider: !!yo?.extra,
+    faltaParaPremio: yo ? yo.falta : null,
+    arriba,
+    faltaParaSubir: arriba && yo ? Math.max(0, arriba.efectivo - yo.efectivo) : null,
+    // Quiénes ya pasaron los $2.500.000
+    club,
+    clubCount: club.length,
+    lider,
+    hayExtra: club.length >= 2,
+  };
+}
+
+// Estado del dato semanal, para que la pantalla pueda decir "no disponible"
+// con el rango de fechas correcto sin inventar cifras.
+export function estadoEfectivoSemanal(datos, vendedora, isoLunes) {
+  const hoy = hoyColombia();
+  const fechas = fechasSemanaDe(isoLunes || hoy.iso);
+  const r = derivarSemanaEfectivo(datos, vendedora, isoLunes);
+  return {
+    disponible: r !== null,
+    desde: fechas[0],
+    hasta: fechas[6],
+    umbral: UMBRAL_EFECTIVO_SEMANA,
+    premio: PREMIO_EFECTIVO_SEMANA,
+    motivo: r !== null
+      ? null
+      : "El efectivo de la semana todavía no se sincroniza desde systemlap, por eso no se puede armar el ranking.",
+  };
+}
+
+// ============================================================================
+// 4) MIS INDICADORES DEL MES — nota, detalle concreto y día por día
+// ============================================================================
+// Meses CERRADOS: `calcMes` devuelve el snapshot tal cual (nota y detalle no se
+// recalculan). El desglose día a día se lee de `registros`, que es la
+// observación en crudo — mirar los días NO mueve la nota del snapshot.
+export function derivarIndicadoresMes(datos, vendedora, año, mes, opts = {}) {
+  const { conDias = true } = opts;
+  const hoy = hoyColombia();
+  const vend = vendedoraDe(datos, vendedora);
+  const a = año || hoy.año;
+  const m = mes || hoy.mes;
+
+  // `indicadores` = las definiciones que usó el núcleo: snapshot si el mes está
+  // cerrado, constantes vivas si está abierto. Con `getIndicadores(a, m)` un
+  // cambio de peso o de id hoy repintaba el desglose de meses ya cerrados.
+  const { porInd, detalle, dias, cerrado, indicadores: defs } = calcMes(
+    datos?.registros || {},
+    vend.id,
+    a,
+    m,
+    datos?.snapshots || {}
+  );
+
+  const registrosMes = conDias ? registrosDeMes(datos?.registros, vend.id, a, m) : [];
+
+  return defs.map(def => {
+    const nota = porInd?.[def.id] ?? null;
+
+    const diasInd = conDias
+      ? registrosMes
+          .map(({ fecha, reg }) => {
+            if (!reg || reg.descanso) return null;
+            const d = diaDeIndicador(def.id, reg);
+            if (!d) return null;
+            return {
+              fecha,
+              etiqueta: diaLargo(fecha),          // "Lunes 4"
+              fechaBonita: fechaBonita(fecha),    // "lun 4 ago"
+              texto: d.texto,
+              estado: d.estado,                   // "ok" | "mal" | "grave"
+              nota: notaIndicador(reg, def.id, a, m),
+            };
+          })
+          .filter(Boolean)
+      : null;
+
+    return {
+      id: def.id,
+      nombre: def.label,
+      emoji: def.emoji,
+      color: def.color,
+      peso: def.peso,
+      nota,                                        // number | null
+      detalle: nota === null ? "Sin datos este mes" : detalleCortoIndicador(def.id, detalle?.[def.id]),
+      estado: estadoDeNota(nota),
+      crudo: detalle?.[def.id] || {},
+      dias: diasInd,                               // array | null (si conDias:false)
+      diasTrabajados: dias || 0,
+      cerrado: !!cerrado,
+    };
+  });
+}
+
+// ============================================================================
+// 3) MI TRIMESTRE EN VIVO — cerrados por snapshot + el mes en curso parcial
+// ============================================================================
+// ⚠️ REGLA DEL DUEÑO: los meses cerrados NO se recalculan. `calcNotaMensual`
+// devuelve `notaFinal` del snapshot cuando existe, así que un trimestre
+// completamente cerrado da EXACTAMENTE la ponderación de sus snapshots
+// (20/30/50, suma de pesos = 1). Aquí sólo se formatea.
+export function derivarTrimestreEnVivo(datos, vendedora, año, q) {
+  const hoy = hoyColombia();
+  const vend = vendedoraDe(datos, vendedora);
+  const añoQ = año || hoy.año;
+  const qNum = q || Math.ceil(hoy.mes / 3);
+  const meses = mesesTrimestre(qNum);
+  const { registros, metas, snapshots, roster } = fuentes(datos);
+
+  // Ponderación 20/30/50 normalizada por los pesos que tienen dato — la hace
+  // calcTrimestre, que es la fuente de verdad compartida con la app clásica.
+  const t = calcTrimestre(registros, metas, vend.id, añoQ, qNum, snapshots, roster);
+
+  let enCurso = null;
+  let pesosConDato = 0;
+
+  const mesesTrim = meses.map((mm, i) => {
+    const nota = t.notasMes[i] ?? null;
+    const cerrado = mesCerrado(datos, vend.id, añoQ, mm);
+    const esEnCurso = añoQ === hoy.año && mm === hoy.mes;
+    const yaPaso = añoQ < hoy.año || (añoQ === hoy.año && mm < hoy.mes);
+    const diasMes = new Date(añoQ, mm, 0).getDate();
+    const dia = esEnCurso ? hoy.dia : (yaPaso ? diasMes : 0);
+
+    if (nota !== null) pesosConDato += PESOS_TRIMESTRE[i];
+
+    const estado = cerrado ? "cerrado"
+      : esEnCurso ? "curso"
+      : yaPaso ? "abierto"
+      : "pendiente";
+
+    const etiquetaEstado = cerrado ? "cerrado"
+      : esEnCurso ? `en curso · día ${dia} de ${diasMes}`
+      : yaPaso ? "sin cerrar"
+      : "aún no empieza";
+
+    const fila = {
+      mes: mm,
+      año: añoQ,
+      nombre: nombreMes(mm).charAt(0).toUpperCase() + nombreMes(mm).slice(1),
+      peso: PESOS_TRIMESTRE[i],
+      pesoPct: Math.round(PESOS_TRIMESTRE[i] * 100),
+      nota,
+      cerrado,
+      enCurso: esEnCurso,
+      estado,
+      etiquetaEstado,
+      dia,
+      diasMes,
+      pctMes: diasMes ? Math.round((dia / diasMes) * 100) : 0,
+    };
+    if (esEnCurso) enCurso = fila;
+    return fila;
+  });
+
+  const nota = t.notaTrim;
+  const cerradoCompleto = mesesTrim.every(x => x.cerrado);
+
+  // ¿PARTICIPA en ESTE trimestre? Regla del dueño (R3/R4): quien entró con el
+  // trimestre ya arrancado no participa y ni siquiera aparece en el ranking
+  // trimestral. Sale de `elegibilidadTrimestral` (lib/calculos.js) — la MISMA
+  // función que usa `participantes()`, `calcPremios` y la pantalla del dueño.
+  // La pantalla usa esto para NO mostrarle una tabla en la que no está.
+  const fichaVend = rosterCompleto(datos).find(x => x.id === vend.id) || vend;
+  const eleg = elegibilidadTrimestral({
+    activa: fichaVend.activa !== false,
+    eventual: fichaVend.eventual === true,
+    fechaIngreso: fichaVend.fechaIngreso || null,
+    completoALaFecha: t.completoALaFecha,
+    completo: t.completo,
+    mesesConDatos: t.mesesConDatos,
+  }, { año: añoQ, q: qNum, congelado: trimestreCerrado(datos, añoQ, qNum) });
+
+  return {
+    año: añoQ,
+    q: `Q${qNum}`,
+    qNum,
+    ciudad: vend.ciudad,
+    // ¿Participa en el trimestre? Si es `false`, la pantalla NO le muestra el
+    // ranking (no está en él) y le explica por qué. Su nota personal se sigue
+    // calculando: le sirve de referencia y su mes y su semana no cambian.
+    compite: eleg.compite,
+    participa: eleg.compite,               // alias legible
+    motivoNoCompite: eleg.motivo,          // null | "inactiva" | "eventual" | "entroTarde" | "mesIncompleto"
+    textoNoCompite: eleg.texto,
+    fechaIngreso: eleg.fechaIngreso,
+    elegibilidad: eleg,
+    nota,                                   // number | null — EN VIVO
+    meta: META_NOTA_TRIMESTRE,
+    falta: nota === null ? null : Math.max(0, dosDec(META_NOTA_TRIMESTRE - nota)),
+    llegaAMeta: nota !== null && nota >= META_NOTA_TRIMESTRE,
+    mesesConDatos: t.mesesConDatos,
+    pesosConDato: dosDec(pesosConDato),     // 0.5 cuando sólo van jul+ago
+    completo: t.completo,                   // los 3 meses tienen nota
+    cerradoCompleto,                        // los 3 meses tienen SNAPSHOT
+    meses: mesesTrim,
+    notasMes: t.notasMes,
+    // "agosto va en el día 5 de 31"
+    enCurso,                                // fila del mes en curso | null
+    mesEnCurso: enCurso ? enCurso.mes : null,
+    nombreMesEnCurso: enCurso ? enCurso.nombre : null,
+    dia: enCurso ? enCurso.dia : null,
+    diasMes: enCurso ? enCurso.diasMes : null,
+    pctMes: enCurso ? enCurso.pctMes : null,
+  };
+}
+
+// ============================================================================
+// 5) MIS INDICADORES EN EL TRIMESTRE — el mismo indicador, mes a mes
+// ============================================================================
+// El promedio es PONDERADO por 20/30/50 sobre los meses que tienen dato
+// (igual que la nota del trimestre), no un promedio simple.
+// Las definiciones de indicador se toman del ÚLTIMO mes del trimestre, que es
+// la versión de fórmula con la que va a cerrar (importa sólo en Q2/2026, donde
+// abril es V1 y mayo/junio son V2).
+export function derivarIndicadoresTrimestre(datos, vendedora, año, q) {
+  const hoy = hoyColombia();
+  const vend = vendedoraDe(datos, vendedora);
+  const añoQ = año || hoy.año;
+  const qNum = q || Math.ceil(hoy.mes / 3);
+  const meses = mesesTrimestre(qNum);
+  const { registros, metas, snapshots, roster } = fuentes(datos);
+
+  const t = calcTrimestre(registros, metas, vend.id, añoQ, qNum, snapshots, roster);
+  // Definiciones del ÚLTIMO mes del trimestre (la versión con la que cierra).
+  // Si ese mes ya está cerrado, salen de su snapshot, no de las constantes de
+  // hoy — el trimestre publicado no se repinta solo.
+  const defs = indicadoresDelMes(añoQ, meses[2], snapshots);
+
+  const contextoMeses = meses.map((mm, i) => {
+    const cerrado = mesCerrado(datos, vend.id, añoQ, mm);
+    const esEnCurso = añoQ === hoy.año && mm === hoy.mes;
+    const diasMes = new Date(añoQ, mm, 0).getDate();
+    return {
+      mes: mm,
+      nombre: nombreMes(mm).charAt(0).toUpperCase() + nombreMes(mm).slice(1),
+      peso: PESOS_TRIMESTRE[i],
+      pesoPct: Math.round(PESOS_TRIMESTRE[i] * 100),
+      cerrado,
+      enCurso: esEnCurso,
+      dia: esEnCurso ? hoy.dia : 0,
+      diasMes,
+    };
+  });
+
+  const indicadores = defs.map(def => {
+    const notasMes = meses.map((_, i) => t.datosMes?.[i]?.porInd?.[def.id] ?? null);
+
+    // Promedio ponderado por los pesos del trimestre que tienen dato
+    let suma = 0, pesos = 0;
+    notasMes.forEach((n, i) => {
+      if (n !== null && n !== undefined) { suma += n * PESOS_TRIMESTRE[i]; pesos += PESOS_TRIMESTRE[i]; }
+    });
+    const promedio = pesos ? dosDec(suma / pesos) : null;
+
+    // Tendencia: último mes con dato vs el anterior con dato
+    const conDato = notasMes
+      .map((n, i) => ({ n, i }))
+      .filter(x => x.n !== null && x.n !== undefined);
+    const ult = conDato[conDato.length - 1] || null;
+    const prev = conDato.length >= 2 ? conDato[conDato.length - 2] : null;
+    const delta = ult && prev ? dosDec(ult.n - prev.n) : null;
+    const tendencia = delta === null ? null : (delta > 0 ? "sube" : delta < 0 ? "baja" : "igual");
+
+    const nombrePrev = prev ? contextoMeses[prev.i].nombre.toLowerCase() : null;
+    const texto = tendencia === null
+      ? (ult ? "Primer mes con datos" : "Sin datos en el trimestre")
+      : tendencia === "igual"
+        ? `Igual que ${nombrePrev}`
+        : tendencia === "sube"
+          ? `▲ subiendo · ${nombrePrev} ${prev.n.toFixed(2)}`
+          : `▼ bajando · ${nombrePrev} ${prev.n.toFixed(2)}`;
+
+    return {
+      id: def.id,
+      nombre: def.label,
+      emoji: def.emoji,
+      color: def.color,
+      peso: def.peso,
+      notasMes,                                    // [n|null, n|null, n|null]
+      promedio,                                    // number | null — PONDERADO
+      mesesConDatos: conDato.length,
+      pesosConDato: dosDec(pesos),
+      notaUltimo: ult ? ult.n : null,
+      mesUltimo: ult ? meses[ult.i] : null,
+      notaPrevio: prev ? prev.n : null,
+      mesPrevio: prev ? meses[prev.i] : null,
+      delta,                                       // number | null
+      tendencia,                                   // "sube"|"baja"|"igual"|null
+      texto,
+      estado: estadoDeNota(promedio),
+    };
+  });
+
+  return { año: añoQ, q: `Q${qNum}`, qNum, meses: contextoMeses, indicadores };
+}
+
+// ============================================================================
+// 6a) RANKING DEL MES DE SU CIUDAD — por VENTAS
+// ============================================================================
+// Fuente: metas[YYYY_MM].vendidas, que es lo único que el sync de systemlap
+// escribe. Si el mes todavía no existe en `metas`, no hay dato: disponible:false
+// y filas vacías (no un ranking de ceros).
+export function derivarRankingMesCiudad(datos, vendedora, año, mes) {
+  const hoy = hoyColombia();
+  const vend = vendedoraDe(datos, vendedora);
+  const a = año || hoy.año;
+  const m = mes || hoy.mes;
+
+  const docMes = datos?.metas?.[claveMesLocal(a, m)] || null;
+  const ciudad = vend.ciudad;
+
+  if (!docMes) {
+    return {
+      disponible: false, ciudad, año: a, mes: m, nombreMes: nombreMes(m),
+      meta: null, filas: [], miPosicion: null, misVentas: null, total: 0,
+      arriba: null, faltaParaSubir: null, esPrimera: false, totalCiudad: null,
+    };
+  }
+
+  const vendidas = docMes.vendidas || {};
+  // Mes ABIERTO → sólo activas (R1). Mes CERRADO → el roster congelado del
+  // snapshot, para que desactivar a alguien hoy no borre su fila de julio.
+  const crudas = rosterParticipa(datos, "mensual", { ciudad, año: a, mes: m }).map(v => {
+    const raw = vendidas[v.id] ?? vendidas[String(v.id)];
+    const ventas = raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    return {
+      id: v.id,
+      nombre: v.nombre,
+      nombreCorto: primerNombre(v.nombre),
+      ciudad: v.ciudad,
+      rol: v.rolTienda === "admin" ? "admin" : "asesora",
+      ventas,                                  // number | null (null = sin dato)
+      sinDato: ventas === null,
+    };
+  });
+
+  // Sin dato va al final — nunca se mezcla con un 0 real.
+  crudas.sort((x, y) => {
+    if (x.sinDato !== y.sinDato) return x.sinDato ? 1 : -1;
+    return (y.ventas || 0) - (x.ventas || 0);
+  });
+
+  const filas = crudas.map((f, i) => ({
+    ...f,
+    n: f.sinDato ? null : i + 1,
+    esYo: f.id === vend.id,
+    medalla: !f.sinDato && i < 3 ? ["🥇", "🥈", "🥉"][i] : null,
+  }));
+
+  const yo = filas.find(f => f.esYo) || null;
+  const conDato = filas.filter(f => !f.sinDato);
+  const arriba = yo && yo.n && yo.n > 1 ? conDato[yo.n - 2] : null;
+
+  return {
+    disponible: true,
+    ciudad,
+    año: a,
+    mes: m,
+    nombreMes: nombreMes(m),
+    meta: metaParaCiudad(docMes.meta, ciudad) || 0,
+    filas,
+    miPosicion: yo ? yo.n : null,
+    misVentas: yo ? yo.ventas : null,
+    total: conDato.length,
+    arriba,
+    // "Con $X más pasas a Fulana" — +1 peso para quedar por encima, no empatada
+    faltaParaSubir: arriba && yo && !yo.sinDato ? Math.max(1, arriba.ventas - yo.ventas + 1) : null,
+    esPrimera: !!(yo && yo.n === 1),
+    totalCiudad: conDato.reduce((s, f) => s + (f.ventas || 0), 0),
+  };
+}
+
+// ============================================================================
+// 6b) RANKING DEL TRIMESTRE DE SU CIUDAD — por NOTA TRIMESTRAL EN VIVO
+// ============================================================================
+// Misma nota en vivo de derivarTrimestreEnVivo para todas las de la ciudad.
+// MED y BOG nunca se mezclan (son 2 empresas separadas).
+export function derivarRankingTrimestreCiudad(datos, vendedora, año, q) {
+  const hoy = hoyColombia();
+  const vend = vendedoraDe(datos, vendedora);
+  const añoQ = año || hoy.año;
+  const qNum = q || Math.ceil(hoy.mes / 3);
+  const { registros, metas, snapshots, roster } = fuentes(datos);
+
+  // ⚠️ EL FILTRO YA ESTÁ HECHO: `rosterCiudadTrimestre` → `participantes()`.
+  // Lo que llega aquí es EXACTAMENTE quien participa en el trimestral (R1+R3+R4).
+  // Quien está inactiva, quien entró con el trimestre ya arrancado y quien no
+  // tiene los meses ya cerrados NO llega — no hay que marcarla ni listarla
+  // aparte: "ni debe aparecer". Por eso ya no existe `soloRankingMensual`.
+  //
+  // Trimestre CERRADO → roster congelado de sus snapshots: el `club` y el
+  // `hayExtra` del millón extra no pueden moverse porque hoy se desactivó a
+  // alguien.
+  const crudas = rosterCiudadTrimestre(datos, vend.ciudad, añoQ, qNum).map(v => {
+    const t = calcTrimestre(registros, metas, v.id, añoQ, qNum, snapshots, roster);
+    const ventasTrim = (t.datosMes || []).reduce((s, d) => s + (d?.real || 0), 0);
+    return {
+      id: v.id,
+      nombre: v.nombre,
+      nombreCorto: primerNombre(v.nombre),
+      ciudad: v.ciudad,
+      nota: t.notaTrim,                      // number | null
+      ventasTrim,
+      mesesConDatos: t.mesesConDatos,
+      completo: t.completo,
+      completoALaFecha: t.completoALaFecha,
+      activa: v.activa !== false,
+      eventual: v.eventual === true,
+      fechaIngreso: v.fechaIngreso || null,
+      compite: true,                         // por construcción
+    };
+  });
+
+  const conNota = crudas
+    .filter(v => v.nota !== null)
+    .sort((x, y) => (y.nota - x.nota) || (y.ventasTrim - x.ventasTrim));
+
+  const filas = conNota.map((f, i) => ({
+    ...f,
+    n: i + 1,
+    esYo: f.id === vend.id,
+    // Todas las de esta lista participan, así que llegar a 4.50 es premio.
+    ganaPremio: f.nota >= META_NOTA_TRIMESTRE,
+    llegaAlUmbral: f.nota >= META_NOTA_TRIMESTRE,
+    medalla: i < 3 ? ["🥇", "🥈", "🥉"][i] : null,
+  }));
+
+  const sinNota = crudas
+    .filter(v => v.nota === null)
+    .map(f => ({ ...f, n: null, esYo: f.id === vend.id, ganaPremio: false, llegaAlUmbral: false, medalla: null }));
+
+  const yo = filas.find(f => f.esYo) || null;
+  const arriba = yo && yo.n > 1 ? filas[yo.n - 2] : null;
+  const club = filas.filter(f => f.ganaPremio);
+
+  return {
+    ciudad: vend.ciudad,
+    año: añoQ,
+    q: `Q${qNum}`,
+    qNum,
+    meta: META_NOTA_TRIMESTRE,
+    filas,                                    // sólo las que tienen nota
+    sinNota,                                  // las que aún no tienen nota
+    miPosicion: yo ? yo.n : null,
+    miNota: yo ? yo.nota : null,
+    total: filas.length,
+    arriba,
+    faltaParaSubir: arriba && yo ? dosDec(arriba.nota - yo.nota) : null,
+    esPrimera: !!(yo && yo.n === 1),
+    club,
+    clubCount: club.length,
+    // El EXTRA de ciudad sólo se activa si 2+ llegan a 4.50 (regla de calcPremios).
+    // Todas las de la lista participan, así que el conteo es el de la disputa real.
+    hayExtra: club.length >= 2,
+    // ¿ELLA está en este ranking? Si no aparece en ninguna de las dos listas es
+    // porque no participa en el trimestral (R1/R3/R4). La pantalla usa esto para
+    // no mostrarle una tabla donde no está; el motivo exacto lo trae
+    // `derivarTrimestreEnVivo().motivoNoCompite`.
+    yoAparezco: !!(yo || sinNota.find(f => f.esYo)),
   };
 }
 
@@ -1093,10 +2090,11 @@ export function derivarFocoDelDia({ mes, ciudad, semana }) {
 // ============================================================================
 export function derivarDatosVendedora(datos, vendedora) {
   const hoy = hoyColombia();
+  const q = Math.ceil(hoy.mes / 3);
   const mesData = derivarMesDeVendedora(datos, vendedora, hoy.año, hoy.mes);
   const semanaData = derivarSemanaDeVendedora(datos, vendedora);
   const hoyData = derivarHoyDeVendedora(datos, vendedora);
-  const trimData = derivarTrimestreDeVendedora(datos, vendedora, hoy.año, Math.ceil(hoy.mes / 3));
+  const trimData = derivarTrimestreDeVendedora(datos, vendedora, hoy.año, q);
   const compData = derivarComportamientoDeVendedora(datos, vendedora, hoy.año, hoy.mes);
   const añoData = derivarTotalAñoDeVendedora(datos, vendedora, hoy.año);
   const rankingMes = derivarRankingMes(datos, vendedora.ciudad, hoy.año, hoy.mes, vendedora.id);
@@ -1119,6 +2117,15 @@ export function derivarDatosVendedora(datos, vendedora) {
     mesesCerrados: añoData.mesesCerrados,
     // La semana cerrada necesita efectivo histórico que hoy no está en Firestore
     semanaCerrada: null,
+
+    // --- Pantallas del prototipo aprobado ---
+    // null mientras el efectivo no se sincronice desde systemlap (ver
+    // derivarSemanaEfectivo). `estadoSemanaEfectivo` trae el "por qué".
+    semanaEfectivo: derivarSemanaEfectivo(datos, vendedora),
+    estadoSemanaEfectivo: estadoEfectivoSemanal(datos, vendedora),
+    trimestreVivo: derivarTrimestreEnVivo(datos, vendedora, hoy.año, q),
+    rankingMesCiudad: derivarRankingMesCiudad(datos, vendedora, hoy.año, hoy.mes),
+    rankingTrimCiudad: derivarRankingTrimestreCiudad(datos, vendedora, hoy.año, q),
   };
 }
 

@@ -49,10 +49,18 @@ export default function CargarMetas({ onVolver }) {
       flash("⚠️ Ingresa al menos una meta", "err");
       return;
     }
-    const nuevas = { ...datos.metas };
-    const prev = nuevas[clave] || { vendidas: {} };
-    nuevas[clave] = { ...prev, meta: { MED: medVal, BOG: bogVal } };
-    await datos.saveMetas(nuevas);
+    // Parche de UNA clave (este mes). Los demás meses ni se mencionan, así que
+    // es imposible pisarlos con una copia vieja de `metas`.
+    const prev = datos.metas?.[clave] || { vendidas: {} };
+    try {
+      await datos.guardarClaves("metas", {
+        [clave]: { ...prev, meta: { MED: medVal, BOG: bogVal } },
+      });
+    } catch (e) {
+      console.error(e);
+      flash(`❌ NO se guardó la meta: ${e?.message || "error guardando"}`, "err");
+      return;
+    }
     flash(`✅ Meta de ${MES_NAMES[mesSel - 1]} ${añoSel} guardada`);
   }
 

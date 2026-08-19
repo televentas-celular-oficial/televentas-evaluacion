@@ -16,9 +16,28 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase.js";
 import { primerNombre, hoyColombia } from "../lib/helpers.js";
-import { VENDEDORAS_DEFAULT } from "../../lib/constantes.js";
+import { VENDEDORAS_DEFAULT, rolDe } from "../../lib/constantes.js";
 import { useDatos } from "../data/DatosContext.jsx";
 import { notaDia, claveMes, fmtN, colorN, bgN } from "../../lib/calculos.js";
+
+// Sin conexión, la promesa de un guardado de Firestore puede no resolver NUNCA
+// (el SDK lo deja en cola esperando red). Sin este límite el botón se quedaba en
+// "⏳ Guardando..." para siempre y no había forma de saber si guardó o no.
+const LIMITE_GUARDADO_MS = 20000;
+
+function conLimiteDeTiempo(promesa, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => {
+      const e = new Error(`Pasaron ${Math.round(ms / 1000)} segundos sin respuesta del servidor.`);
+      e.esTimeout = true;
+      reject(e);
+    }, ms);
+    Promise.resolve(promesa).then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); }
+    );
+  });
+}
 
 function diaVacio() {
   return {
@@ -34,7 +53,7 @@ function diaVacio() {
   };
 }
 
-export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuardar }) {
+export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuardar, user = null }) {
   // Los datos crudos se leen directamente del contexto (no de props): esta pantalla
   // necesita `registros` para precargar el día y `snapshots` para saber si el mes
   // ya está cerrado. Ver App.jsx:426-438 y App.jsx:1075.
@@ -51,6 +70,11 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
   const [recienGuardado, setRecienGuardado] = useState(false); // se acaba de guardar en esta sesión
   const [tocadas, setTocadas] = useState(() => new Set()); // vids revisadas en esta sesión
   const [erroresFalt, setErroresFalt] = useState([]);
+  const [guardando, setGuardando] = useState(false);      // transacción en vuelo
+  const [errorGuardado, setErrorGuardado] = useState(null); // falló el guardado: hay que VERLO
+  // "error" = seguro que NO se guardó · "timeout" = no se puede afirmar ninguna
+  // de las dos cosas, y decir "no se guardó" sería tan mentira como decir que sí.
+  const [tipoFallo, setTipoFallo] = useState("error");
 
   // Año/mes del día que se está llenando (para nota del día y guard de mes cerrado)
   const [añoIng, mesIng] = useMemo(() => {
@@ -67,6 +91,32 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
     () => (vendedoras || []).filter(v => v.activa !== false),
     [vendedoras]
   );
+
+  // ─── Quién puede corregir un día ya guardado (App.jsx:1090-1097) ──────────
+  // La app clásica solo dejaba al admin tocar un día ya registrado; al operador
+  // le decía "Para corregir el día, contacta al admin" (App.jsx:1249). Ese
+  // bloqueo se perdió al reescribir la pantalla y se restaura aquí.
+  //
+  // Sin `user` (o con un usuario que no es el admin) NO se asume permiso: lo
+  // seguro es tratarlo como operador.
+  const esAdminSesion = rolDe(user) === "admin";
+
+  // Fuente de verdad EN VIVO de si el día ya tiene datos: se lee de `registros`
+  // (el onSnapshot de Firestore), no del estado `guardado`. Así el bloqueo no
+  // depende de que un efecto haya corrido ni de nada que viva solo en pantalla.
+  const diaYaTieneDatos = useMemo(
+    () => activas.some(v => !!registros[`${v.id}_${fecha}`]),
+    [activas, registros, fecha]
+  );
+
+  // Un día VACÍO lo puede llenar cualquiera de los dos —es lo que el operador
+  // está haciendo con los días de julio que faltan—. Un día YA GUARDADO solo lo
+  // modifica el admin.
+  const bloqueadoPorGuardado = diaYaTieneDatos && !esAdminSesion;
+
+  // Los dos motivos por los que la pantalla queda en solo lectura. Se mantienen
+  // separados porque el aviso y el texto del botón son distintos en cada caso.
+  const soloLectura = mesCerrado || bloqueadoPorGuardado;
 
   // ─── Precarga del día (App.jsx:426-438) ───
   // Al cambiar de fecha (o al llegar los datos) las filas se inicializan con lo
@@ -102,7 +152,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
   }, [fecha, activas, registros, datos.cargado]);
 
   function setFila(vid, campo, valor) {
-    if (mesCerrado) return;
+    if (soloLectura) return;
     setFilas(f => ({ ...f, [vid]: { ...(f[vid] || diaVacio()), [campo]: valor } }));
     if (!tocadasRef.current.has(vid)) {
       tocadasRef.current = new Set(tocadasRef.current).add(vid);
@@ -116,8 +166,24 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
   const activasMed = activas.filter(v => v.ciudad === "MED");
   const activasBog = activas.filter(v => v.ciudad === "BOG");
 
-  function guardarDia() {
+  async function guardarDia() {
     if (mesCerrado) return; // no se guarda nada sobre un mes ya cerrado
+    if (guardando) return;  // evita doble commit por doble clic
+
+    // ── Bloqueo REAL del día ya guardado, no cosmético ───────────────────────
+    // Deshabilitar el botón no basta. Aquí se vuelve a comprobar contra
+    // `registros` —el snapshot vivo de Firestore, no el estado de la pantalla—
+    // justo antes de escribir. Si un no-admin llega hasta esta función con un
+    // día que ya tiene datos (botón rehabilitado desde el inspector, un render
+    // viejo, lo que sea), la escritura se corta ANTES de llamar a onGuardar:
+    // no sale nada hacia Firestore.
+    if (!esAdminSesion && activas.some(v => !!registros[`${v.id}_${fecha}`])) {
+      setTipoFallo("bloqueo");
+      setErrorGuardado(
+        `El día ${fecha} ya estaba registrado, así que no se cambió nada de lo que ya había.`
+      );
+      return;
+    }
 
     // Validar actitud regular/mal con motivo
     const faltantes = trabajan.filter(v => {
@@ -139,6 +205,23 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
     }
 
     setErroresFalt([]);
+
+    // ── Nada que guardar NO es un guardado exitoso ───────────────────────────
+    // Si el roster llega vacío (la lectura de `vendedoras` falló, o todavía no
+    // sincronizó), `activas` queda en [] y el parche sale vacío: la escritura
+    // resolvía sin escribir un solo registro y la pantalla pintaba "✅ Día
+    // guardado". Carolina se iba tranquila y ese día no existía. Se corta aquí,
+    // y DatosContext.guardarDiaRegistros lo vuelve a cortar por si acaso.
+    if (activas.length === 0) {
+      setTipoFallo("error");
+      setErrorGuardado(
+        "No hay ninguna vendedora en pantalla, así que no se escribió nada. " +
+        "El equipo llega sincronizado desde systemlap: recarga la página, espera a ver los nombres " +
+        "y vuelve a guardar. Si sigue vacío, avísale a Luis antes de seguir llenando días."
+      );
+      return;
+    }
+
     // Se escriben TODAS las activas, no solo las que se tocaron (App.jsx:470-476).
     // Antes, una vendedora sin novedades no generaba registro y su día "bien"
     // simplemente no existía para el cálculo mensual.
@@ -146,9 +229,35 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
     activas.forEach(v => {
       payload[v.id] = { ...diaVacio(), ...(filas[v.id] || {}), vid: v.id, fecha };
     });
-    onGuardar?.({ fecha, filas: payload });
-    setGuardado(true);
-    setRecienGuardado(true);
+
+    // `vids` = las vendedoras que ESTA pantalla mostró para ESTE día: son las
+    // únicas claves que el guardado gobierna. Si una de ellas dejara de venir en
+    // el payload, su registro del día se borra de verdad. Cualquier otra clave
+    // —otro día, u otra vendedora que esta pantalla no mostró— queda intacta.
+    const vids = activas.map(v => v.id);
+
+    setGuardando(true);
+    setErrorGuardado(null);
+    try {
+      const promesa = onGuardar?.({ fecha, filas: payload, vids });
+      if (!promesa || typeof promesa.then !== "function") {
+        // Sin promesa no hay forma de saber si escribió: no se puede pintar ✅.
+        throw new Error(
+          "Esta pantalla no está conectada al guardado (no devolvió una promesa). No se escribió nada."
+        );
+      }
+      await conLimiteDeTiempo(promesa, LIMITE_GUARDADO_MS);
+      setGuardado(true);
+      setRecienGuardado(true);
+    } catch (e) {
+      // Nada de fallar en silencio: el operador NO puede irse creyendo que guardó.
+      console.error("Falló el guardado del día", fecha, e);
+      setRecienGuardado(false);
+      setTipoFallo(e?.esTimeout ? "timeout" : "error");
+      setErrorGuardado(e?.message || "No se pudo guardar. Revisa tu conexión e inténtalo otra vez.");
+    } finally {
+      setGuardando(false);
+    }
   }
 
   const progresoLlenado = trabajan.filter(
@@ -177,6 +286,35 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
         </div>
       )}
 
+      {/* Día ya guardado y quien mira no es el admin (App.jsx:1090-1097, 1249).
+          Tono: no es un error suyo ni un regaño. El día está bien, simplemente
+          ya quedó registrado y cambiarlo le toca al admin. Se dice además que
+          los días vacíos los sigue pudiendo llenar, que es lo que está haciendo
+          ahora mismo con julio. No se pinta junto al de mes cerrado: ese ya
+          explica que no se puede guardar nada. */}
+      {bloqueadoPorGuardado && !mesCerrado && (
+        <div style={{ background: "#eff6ff", border: "2px solid #93c5fd", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12.5, color: "#1e40af", lineHeight: 1.55 }}>
+          <div style={{ fontWeight: 900, marginBottom: 3 }}>🔒 Este día ya está guardado</div>
+          <div style={{ fontWeight: 700 }}>
+            Abajo ves tal cual lo que quedó registrado. Corregir un día ya guardado lo hace el
+            administrador: si algo no cuadra, cuéntaselo y él lo ajusta.
+            Los días que todavía no tienen datos los sigues llenando normal — solo cambia la fecha aquí arriba.
+          </div>
+        </div>
+      )}
+
+      {/* Roster vacío — el aviso va ANTES de que llene nada, no después de
+          guardar. `cargado` se marca incluso si la lectura de Firestore falló
+          (DatosContext.jsx:211-217), así que esta pantalla puede llegar aquí sin
+          una sola vendedora y con todo lo demás aparentemente normal. */}
+      {datos.cargado && activas.length === 0 && (
+        <div style={{ background: "#fffbeb", border: "2px solid #f59e0b", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12.5, fontWeight: 800, color: "#92400e", lineHeight: 1.55 }}>
+          ⚠️ No llegó ninguna vendedora. No se puede guardar el día así: no habría a quién registrarle nada.
+          El equipo se sincroniza desde systemlap — recarga la página y espera a ver los nombres.
+          Si sigue vacío, avísale a Luis.
+        </div>
+      )}
+
       {/* Selector de fecha */}
       <div className="v-card" style={{ background: "linear-gradient(135deg, #ecfeff, #f0f9ff)", borderLeft: "4px solid #06b6d4", border: "1px solid rgba(6, 182, 212, 0.2)" }}>
         <label style={{ fontSize: 11, fontWeight: 900, color: "#0e7490", textTransform: "uppercase", letterSpacing: 1.2, display: "block", marginBottom: 6 }}>📆 Fecha del día a llenar</label>
@@ -187,11 +325,14 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
           onChange={e => setFecha(e.target.value)}
           style={{ width: "100%", padding: "10px 12px", border: "1.5px solid #06b6d4", borderRadius: 10, fontSize: 15, fontFamily: "inherit", fontWeight: 700, color: "#164e63", background: "#fff" }}
         />
-        {guardado && (
+        {/* `!errorGuardado`: nunca un ✅ verde al lado del aviso de que NO se guardó */}
+        {guardado && !errorGuardado && (
           <div style={{ marginTop: 10, padding: "8px 12px", background: "#ecfdf5", color: "#047857", borderRadius: 8, fontSize: 13, fontWeight: 800, textAlign: "center" }}>
             {recienGuardado
               ? `✅ Día ${fecha} guardado`
-              : "✅ Día guardado — abajo ves lo ya registrado; puedes corregir y volver a guardar"}
+              : esAdminSesion
+                ? "✅ Día guardado — abajo ves lo ya registrado; puedes corregir y volver a guardar"
+                : "✅ Día guardado — abajo ves lo que quedó registrado"}
           </div>
         )}
       </div>
@@ -220,14 +361,14 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
             return (
               <button
                 key={v.id}
-                disabled={mesCerrado}
+                disabled={soloLectura}
                 onClick={() => setFila(v.id, "descanso", !desc)}
                 style={{
                   padding: "6px 12px",
                   borderRadius: 20,
                   border: "2px solid " + (desc ? "#fca5a5" : esBog ? "rgba(245, 158, 11, 0.4)" : "rgba(16, 185, 129, 0.4)"),
-                  cursor: mesCerrado ? "default" : "pointer",
-                  opacity: mesCerrado ? 0.6 : 1,
+                  cursor: soloLectura ? "default" : "pointer",
+                  opacity: soloLectura ? 0.6 : 1,
                   fontSize: 12,
                   fontWeight: 800,
                   background: desc ? "#fee2e2" : "#fff",
@@ -263,7 +404,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
           f={filas[v.id] || diaVacio()}
           onCambio={(campo, valor) => setFila(v.id, campo, valor)}
           enError={erroresFalt.includes(v.id)}
-          bloqueado={mesCerrado}
+          bloqueado={soloLectura}
           fecha={fecha}
           año={añoIng}
           mes={mesIng}
@@ -283,7 +424,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
           f={filas[v.id] || diaVacio()}
           onCambio={(campo, valor) => setFila(v.id, campo, valor)}
           enError={erroresFalt.includes(v.id)}
-          bloqueado={mesCerrado}
+          bloqueado={soloLectura}
           fecha={fecha}
           año={añoIng}
           mes={mesIng}
@@ -297,26 +438,75 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
         </div>
       )}
 
+      {/* Falló el guardado — tiene que ser imposible no verlo.
+          Se distinguen los casos porque exigen cosas distintas del operador:
+          con un error se reintenta; con un timeout NO se sabe si escribió, así
+          que primero hay que ir a mirar el día; y "bloqueo" no es un fallo —el
+          día está sano— así que no se pinta de rojo ni suena a regaño. */}
+      {errorGuardado && (() => {
+        const esTimeout = tipoFallo === "timeout";
+        const esBloqueo = tipoFallo === "bloqueo";
+        return (
+          <div style={{
+            background: esBloqueo ? "#eff6ff" : esTimeout ? "#fffbeb" : "#fee2e2",
+            border: `2px solid ${esBloqueo ? "#93c5fd" : esTimeout ? "#f59e0b" : "#dc2626"}`,
+            borderRadius: 12, padding: "12px 14px", marginTop: 10,
+            color: esBloqueo ? "#1e40af" : esTimeout ? "#92400e" : "#991b1b",
+          }}>
+            <div style={{ fontSize: 13.5, fontWeight: 900, marginBottom: 4 }}>
+              {esBloqueo ? `🔒 El día ${fecha} ya estaba guardado`
+                : esTimeout ? `⚠️ No se pudo confirmar el día ${fecha}`
+                : `❌ NO se guardó el día ${fecha}`}
+            </div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, lineHeight: 1.5 }}>
+              {errorGuardado}
+            </div>
+            <div style={{ fontSize: 11.5, fontWeight: 800, marginTop: 6, lineHeight: 1.5 }}>
+              {esBloqueo
+                ? "No hiciste nada mal: los días ya guardados los corrige el administrador. Pídeselo a él y sigue con otra fecha."
+                : esTimeout
+                  ? "Puede que haya guardado y puede que no: no lo des por hecho. Revisa tu conexión, recarga la página y mira si el día aparece registrado. Si no aparece, vuelve a guardarlo."
+                  : "Lo que llenaste sigue en pantalla. Vuelve a darle “Guardar día”."}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Botón guardar */}
-      <button
-        onClick={guardarDia}
-        disabled={mesCerrado}
-        style={{
-          width: "100%",
-          background: mesCerrado ? "#e2e8f0" : "linear-gradient(135deg, #10b981, #059669)",
-          color: mesCerrado ? "#94a3b8" : "#fff",
-          border: "none",
-          padding: "14px",
-          borderRadius: 14,
-          fontSize: 15,
-          fontWeight: 900,
-          marginTop: 12,
-          boxShadow: mesCerrado ? "none" : "0 4px 12px rgba(16, 185, 129, 0.35)",
-          cursor: mesCerrado ? "default" : "pointer",
-        }}
-      >
-        {mesCerrado ? "🔒 Mes cerrado — no se puede guardar" : "💾 Guardar día"}
-      </button>
+      {(() => {
+        const sinRoster = activas.length === 0;
+        // `bloqueadoPorGuardado` es solo la mitad del bloqueo: la otra mitad vive
+        // dentro de guardarDia() y es la que de verdad impide la escritura.
+        const inhabilitado = mesCerrado || guardando || sinRoster || bloqueadoPorGuardado;
+        const apagado = mesCerrado || sinRoster || bloqueadoPorGuardado;
+        return (
+          <button
+            onClick={guardarDia}
+            disabled={inhabilitado}
+            style={{
+              width: "100%",
+              background: apagado ? "#e2e8f0"
+                : guardando ? "#94a3b8"
+                : "linear-gradient(135deg, #10b981, #059669)",
+              color: apagado ? "#94a3b8" : "#fff",
+              border: "none",
+              padding: "14px",
+              borderRadius: 14,
+              fontSize: 15,
+              fontWeight: 900,
+              marginTop: 12,
+              boxShadow: inhabilitado ? "none" : "0 4px 12px rgba(16, 185, 129, 0.35)",
+              cursor: inhabilitado ? "default" : "pointer",
+            }}
+          >
+            {mesCerrado ? "🔒 Mes cerrado — no se puede guardar"
+              : sinRoster ? "⚠️ Sin vendedoras — no hay nada que guardar"
+              : bloqueadoPorGuardado ? "🔒 Día guardado — lo corrige el administrador"
+              : guardando ? "⏳ Guardando..."
+              : "💾 Guardar día"}
+          </button>
+        );
+      })()}
     </div>
   );
 }

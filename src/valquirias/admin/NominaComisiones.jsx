@@ -3,10 +3,31 @@
 // Cálculo automático con reglas: piso MED $15M, tramos, % por rol, pro-rata si cambio de rol mid-mes
 
 import { useState, useMemo } from "react";
-import { formatoPesos, hoyColombia, calcComisionMensual, PISO_MED } from "../lib/helpers.js";
+import {
+  formatoPesos,
+  hoyColombia,
+  calcComisionMensual,
+  PISO_MED,
+  // ROL HISTÓRICO — qué era la vendedora en el mes que se está pagando.
+  // Esta pantalla calculaba los 12 meses del selector con el rol de HOY:
+  // ascender a una asesora le duplicaba retroactivamente la comisión de todos
+  // los meses ya pagados (1%→2%, 2%→4%, 3%→6%). `rolDeMes` lo resuelve contra
+  // `fechaAscensoAdmin`.
+  //
+  // Antes esta función estaba COPIADA aquí y en data/derivar.js, con un
+  // comentario que pedía tocar las dos a la vez. Ahora hay UNA sola copia en
+  // lib/helpers.js: la cifra que ve la vendedora en su boletín y la que el
+  // dueño paga en esta pantalla salen literalmente del mismo código.
+  rolDeMes,
+  ROL_LARGO,
+  ROL_CORTO,
+  pctTexto,
+} from "../lib/helpers.js";
 import { useDatos } from "../data/DatosContext.jsx";
 
 const MES_NOMBRES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+const plural = (n, sing, plu) => `${n} ${n === 1 ? sing : plu}`;
 
 export default function NominaComisiones({ onVolver }) {
   const datos = useDatos();
@@ -24,23 +45,46 @@ export default function NominaComisiones({ onVolver }) {
 
   const filas = useMemo(() => {
     return vendedoras
-      .filter(v => v.activa !== false)
+      // QUIÉN ENTRA EN LA NÓMINA DE ESTE MES:
+      // las activas de hoy, MÁS cualquiera que tenga ventas registradas en el
+      // mes seleccionado aunque hoy ya no trabaje aquí. Antes el filtro era
+      // sólo `v.activa !== false`: cuando alguien salía, el worker la marcaba
+      // `activa: false` y desaparecía de la nómina de los meses que SÍ trabajó
+      // y SÍ generó comisión — el dueño le quedaba debiendo sin enterarse.
+      // Quien salió y no vendió nada ese mes sigue fuera (no aporta ruido).
+      .filter(v => v.activa !== false || Number(ventasFS[v.id]) > 0)
       .map(v => {
         const ventas = ventasFS[v.id] || 0;
-        const rolTienda = v.rolTienda || "asesora";
+        // Rol que tenía en el mes SELECCIONADO, no el de hoy. Si el ascenso
+        // cayó dentro del mes, `datosCambioRol` hace que calcComisionMensual
+        // prorratee día a día. Fuente única: lib/helpers.js.
+        const { rol, datosCambioRol, historico } = rolDeMes(v, selMes.año, selMes.mes);
         const calc = calcComisionMensual({
           ciudad: v.ciudad,
-          rol: rolTienda,
+          rol,
           ventasMes: ventas,
-          // TODO: si v.fechaAscensoAdmin cae en el mes, pasar datosCambioRol
+          datosCambioRol,
         });
-        return { v: { ...v, rolTienda }, ventas, calc };
+        return {
+          v: { ...v, rolTienda: rol },
+          ventas,
+          calc,
+          rolMes: rol,
+          rolHistorico: historico,
+          ascensoEnEsteMes: !!datosCambioRol,
+          // true = hoy ya no está en el roster, pero este mes trabajó y vendió
+          yaNoTrabaja: v.activa === false,
+        };
       })
       .sort((a, b) => b.calc.comision - a.calc.comision);
   }, [selMes, datos.metas, datos.vendedoras]);
 
   const filasMed = filas.filter(f => f.v.ciudad === "MED");
   const filasBog = filas.filter(f => f.v.ciudad === "BOG");
+  // Sin ciudad no se sabe si aplica el piso de $15M de Medellín → no se puede
+  // liquidar. No se inventa una cifra: se avisa, para que no desaparezca sin
+  // que nadie lo note (que es lo que pasaba antes con las inactivas).
+  const filasSinCiudad = filas.filter(f => f.v.ciudad !== "MED" && f.v.ciudad !== "BOG" && f.ventas > 0);
   const totalMed = filasMed.reduce((s, f) => s + f.calc.comision, 0);
   const totalBog = filasBog.reduce((s, f) => s + f.calc.comision, 0);
   const totalGen = totalMed + totalBog;
@@ -114,7 +158,16 @@ export default function NominaComisiones({ onVolver }) {
       {/* Info importante */}
       <div style={{ padding: "10px 12px", background: "rgba(168, 85, 247, 0.08)", borderLeft: "3px solid #a855f7", borderRadius: 10, fontSize: 11, color: "#5b21b6", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
         💡 Solo comisiones por ventas del mes. <strong>No incluye</strong> premios semanales ($50k) ni trimestrales ($1M) ni reconocimientos. Ventas ya vienen netas de devoluciones y cambios.
+        <br />El % es el del <strong>rol que tenía ese mes</strong>, no el cargo de hoy. Si ascendió a mitad de mes, la fila muestra la pro-rata día a día.
+        <br />Aparecen también las que <strong>ya no trabajan aquí</strong> si vendieron en este mes — se les debe igual.
       </div>
+
+      {filasSinCiudad.length > 0 && (
+        <div style={{ padding: "12px 14px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid #ef4444", borderRadius: 10, fontSize: 11.5, color: "#991b1b", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
+          🚫 Con ventas pero <strong>sin ciudad</strong> en su ficha, no se puede liquidar (no se sabe si aplica el piso de Medellín):{" "}
+          {filasSinCiudad.map(f => `${f.v.nombre} (${formatoPesos(f.ventas)})`).join(" · ")}. Corrige la ciudad en systemlap y vuelve a sincronizar.
+        </div>
+      )}
 
       {!hayVendedoras && (
         <div style={{ padding: "18px 16px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid #ef4444", borderRadius: 10, fontSize: 12, color: "#991b1b", fontWeight: 700, marginBottom: 10, lineHeight: 1.55, textAlign: "center" }}>
@@ -169,7 +222,9 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total }) {
         <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginTop: 2 }}>{subtitulo}</div>
       </div>
 
-      {filas.map(({ v, ventas, calc }) => (
+      {filas.map(({ v, ventas, calc, rolMes, ascensoEnEsteMes, yaNoTrabaja }) => {
+        const pro = calc.proRata || null;
+        return (
         <div key={v.id} style={{
           display: "grid",
           gridTemplateColumns: "1fr auto",
@@ -185,13 +240,47 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total }) {
           <div>
             <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>
               {v.nombre}
-              <span style={{ marginLeft: 6, fontSize: 9, background: v.rolTienda === "admin" ? "#faf5ff" : "#f0fdf4", color: v.rolTienda === "admin" ? "#7c3aed" : "#047857", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                {v.rolTienda === "admin" ? "Admin" : "Asesora"}
+              {/* El badge es el rol de ESE mes, no el cargo de hoy */}
+              <span style={{ marginLeft: 6, fontSize: 9, background: rolMes === "admin" ? "#faf5ff" : "#f0fdf4", color: rolMes === "admin" ? "#7c3aed" : "#047857", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                {ascensoEnEsteMes ? "Asesora → Admin" : ROL_CORTO[rolMes]}
               </span>
+              {/* Aparece porque vendió ESTE mes, aunque hoy ya no esté en el
+                  roster. El badge explica por qué está en la lista. */}
+              {yaNoTrabaja && (
+                <span style={{ marginLeft: 5, fontSize: 9, background: "#fef2f2", color: "#b91c1c", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5, border: "1px solid #fecaca" }}>
+                  Ya no trabaja aquí
+                </span>
+              )}
             </div>
             <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginTop: 2 }}>
-              Vendió {formatoPesos(ventas)} · {calc.detalle}
+              Vendió {formatoPesos(ventas)}
+              {ascensoEnEsteMes
+                ? ` · ${calc.tramo?.label || "Tramo"} · ascendió este mes`
+                : ` · ${calc.detalle}`}
             </div>
+
+            {/* Desglose de la pro-rata: el dueño tiene que poder auditar de
+                dónde sale la cifra que va a pagar, no confiar a ciegas. */}
+            {pro && (
+              <div style={{
+                marginTop: 5,
+                padding: "6px 8px",
+                background: "rgba(124, 58, 237, 0.07)",
+                borderLeft: "2px solid #a855f7",
+                borderRadius: 6,
+                fontSize: 10,
+                fontWeight: 700,
+                color: "#5b21b6",
+                lineHeight: 1.5,
+              }}>
+                <div>
+                  ⚖️ {plural(pro.desde.dias, "día", "días")} {ROL_LARGO[pro.desde.rol]} ({pctTexto(pro.desde.pct)}) → {formatoPesos(pro.desde.comision)}
+                </div>
+                <div>
+                  ＋ {plural(pro.hasta.dias, "día", "días")} {ROL_LARGO[pro.hasta.rol]} ({pctTexto(pro.hasta.pct)}) → {formatoPesos(pro.hasta.comision)}
+                </div>
+              </div>
+            )}
           </div>
           <div style={{
             fontSize: 15,
@@ -203,7 +292,8 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total }) {
             {formatoPesos(calc.comision)}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {filas.length > 0 && (
         <div style={{

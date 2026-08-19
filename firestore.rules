@@ -12,12 +12,13 @@ rules_version = '2';
 //   (después signOut si no está autorizada).
 //
 // Estructura Firestore actual:
-//   colección `televentas` con 5 docs:
+//   colección `televentas` con 6 docs:
 //     - registros   (llenados por Carolina y Luis)
 //     - metas       (cargadas por Luis, incluye ventas sincronizadas de systemlap)
 //     - vendedoras  (roster + emails privados)
 //     - snapshots   (meses cerrados, generados por Luis)
 //     - config      (whitelist, whitelistActiva, premiosTrim, rankingVisible)
+//     - efectivo    (efectivo por vendedora por día — SOLO lo escribe el worker)
 //
 // Emails privilegiados (hardcoded):
 //   Luis      → luisponce.tv@gmail.com     — admin (write TODO)
@@ -48,7 +49,8 @@ service cloud.firestore {
     // ---------- Colección principal ----------
     match /televentas/{docId} {
 
-      // LECTURA: cualquier autenticado.
+      // LECTURA: cualquier autenticado. Incluye `efectivo`: cada vendedora
+      // necesita leerlo para ver su cash de la semana y el de su ciudad.
       // (La validación fina — quién ES esta persona, qué puede ver — la hace el cliente.
       // La whitelist en config decide si el login se completa; si no, signOut inmediato.)
       allow read: if autenticado();
@@ -58,11 +60,24 @@ service cloud.firestore {
       // - registros: admin u oficina (Carolina llena diario)
       // - metas: admin u oficina (Carolina puede corregir ventas)
       // - config: solo admin
-      allow write: if (docId == 'vendedoras'  && esAdmin())
-                   || (docId == 'snapshots'   && esAdmin())
-                   || (docId == 'config'      && esAdmin())
-                   || (docId == 'registros'   && (esAdmin() || esOficina()))
-                   || (docId == 'metas'       && (esAdmin() || esOficina()));
+      // - efectivo: NADIE desde el cliente. Ni Luis, ni un respaldo, ni un bug.
+      //   Lo escribe el worker televentas-reportes con su service account, que se
+      //   salta estas reglas por definición (Admin SDK / REST con OAuth de
+      //   servicio), así que NO hay que darle permiso aquí. La app sólo lo lee.
+      //   Ese doc es la base del premio semanal de $50.000: si el cliente pudiera
+      //   escribirlo, cualquiera con sesión iniciada podría mover la plata.
+      //   El `docId != 'efectivo'` de adelante es redundante hoy —lo que no está
+      //   en la lista blanca ya queda negado— y está puesto a propósito: cubre el
+      //   descuido probable, que es ensanchar ESTA lista (un `|| esAdmin()` suelto
+      //   al final). No cubre el caso de agregar OTRO `allow write` aparte: en
+      //   Firestore los allow se suman, así que eso sí volvería a abrirlo. Regla
+      //   para quien edite: `efectivo` no se escribe desde el cliente. Punto.
+      allow write: if docId != 'efectivo'
+                   && ( (docId == 'vendedoras'  && esAdmin())
+                     || (docId == 'snapshots'   && esAdmin())
+                     || (docId == 'config'      && esAdmin())
+                     || (docId == 'registros'   && (esAdmin() || esOficina()))
+                     || (docId == 'metas'       && (esAdmin() || esOficina())) );
     }
 
     // ---------- Log de accesos (fase 2, cuando activemos Blaze) ----------

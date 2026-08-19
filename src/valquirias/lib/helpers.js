@@ -1,8 +1,29 @@
 // Helpers para Valquirias TLV — formato, fechas, cálculos rápidos
 
-// $12.345.678 → "$12.3M" o "$12.345.678" según variante
+// ============================================================================
+// UN DATO QUE NO EXISTE NO ES UN CERO
+// ============================================================================
+// `formatoPesos(null)` devolvía "$0" por culpa de `Number(n) || 0`. Eso hacía
+// INDISTINGUIBLES dos cosas que no se parecen en nada:
+//   · una comisión de $0 REAL (vendió bajo el piso de Medellín) — un hecho;
+//   · una comisión que todavía no se puede calcular (ventas sin sincronizar,
+//     ciudad sin cargar) — la ausencia de un hecho.
+// Pintar la segunda como "$0" es acusar a la vendedora de no haber vendido.
+// Con 13 personas compitiendo por plata, esa diferencia es el producto entero.
+//
+// Ahora: null / undefined / "" / NaN → SIN_DATO. El 0 real sigue siendo "$0".
+export const SIN_DATO = "—";
+
+// ¿Hay un número que mostrar? (0 SÍ es un dato; null/undefined/""/NaN no)
+export function hayDato(n) {
+  if (n === null || n === undefined || n === "") return false;
+  return Number.isFinite(Number(n));
+}
+
+// $12.345.678 → "$12.3M" o "$12.345.678" según variante · sin dato → "—"
 export function formatoPesos(n, opts = {}) {
-  const val = Number(n) || 0;
+  if (!hayDato(n)) return SIN_DATO;
+  const val = Number(n);
   if (opts.corto) {
     if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
     if (val >= 1_000) return `$${(val / 1_000).toFixed(0)}k`;
@@ -12,7 +33,8 @@ export function formatoPesos(n, opts = {}) {
 }
 
 export function formatoK(n) {
-  const val = Number(n) || 0;
+  if (!hayDato(n)) return SIN_DATO;
+  const val = Number(n);
   if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(2).replace(/\.?0+$/, "")}M`;
   if (val >= 1_000) return `$${Math.round(val / 1_000)}k`;
   return `$${val}`;
@@ -122,6 +144,19 @@ export function calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol = n
   }
 
   // Pro-rata por cambio de rol mid-mes
+  //
+  // ⚠️ LÍMITE CONOCIDO — ESTO ES UN PROMEDIO, NO EL NÚMERO EXACTO.
+  // Reparte las ventas TOTALES del mes de forma proporcional a los días de
+  // cada rol (13 de 31 días = 13/31 de las ventas del mes), NO las ventas
+  // reales que hizo en cada tramo. Se hace así porque Firestore sólo guarda el
+  // acumulado del mes (`metas[YYYY_MM].vendidas[vid]`): NO existe la venta día
+  // a día en esta app, así que el reparto real no se puede calcular.
+  // Consecuencia: si vendió casi todo en la primera quincena (siendo asesora),
+  // esta fórmula le paga de más; si vendió casi todo en la segunda (ya
+  // administradora), le paga de menos. Es aritméticamente consistente
+  // (las dos partes suman el 100% de las ventas) y auditable, pero nadie debe
+  // leerlo como "las ventas que hizo con cada cargo".
+  // El día que se sincronicen ventas por día, ESTE es el bloque a cambiar.
   const { desde, hasta, diaCambio, diasMes } = datosCambioRol;
   const diasDesde = diaCambio - 1;              // días con rol anterior
   const diasHasta = diasMes - diasDesde;         // días con rol nuevo
@@ -171,6 +206,99 @@ export function premioTramo(ventasMes, tramo) {
   if (!tramo) return 0;
   return Math.round(ventasMes * tramo.pct);
 }
+
+// ============================================================================
+// ROL HISTÓRICO — qué era la vendedora en un mes CONCRETO
+// ============================================================================
+// FUENTE ÚNICA DE VERDAD. Antes esta función estaba DUPLICADA LITERALMENTE en
+// src/valquirias/data/derivar.js y src/valquirias/admin/NominaComisiones.jsx,
+// con un comentario que decía "si se toca una, tocar la otra". Dos copias de la
+// fórmula que decide plata es una bomba de tiempo: vive aquí, al lado de
+// `calcComisionMensual`, que es quien la consume.
+//
+// La consumen las dos rutas que traducen rol → pesos:
+//   · derivar.js            → lo que la vendedora ve en su boletín
+//   · NominaComisiones.jsx  → lo que el dueño paga
+//
+// La comisión depende del rol (asesora 1/2/3% vs administradora 2/4/6%). Usar
+// el rol de HOY para los 12 meses del año significaba que ascender a una
+// asesora le duplicaba retroactivamente TODA su comisión del año — sobre $19M
+// son ~$190.000 inventados por cada mes ya pagado.
+//
+// `fechaAscensoAdmin` ("YYYY-MM-DD") llega desde systemlap por el sync
+// (columna `fecha_ascenso_admin`, televentas-reportes/src/sync.js:129).
+export function fechaAscenso(vend) {
+  const raw = vend?.fechaAscensoAdmin;
+  if (!raw) return null;
+  const [y, m, d] = String(raw).slice(0, 10).split("-").map(Number);
+  if (!y || !m) return null;
+  return { año: y, mes: m, dia: d || 1 };
+}
+
+// Devuelve { rol, datosCambioRol, historico, degradada }
+//  · ascenso POSTERIOR al mes  → asesora todo el mes
+//  · ascenso DENTRO del mes    → datosCambioRol para que calcComisionMensual
+//    aplique la pro-rata día a día
+//  · ascenso ANTERIOR al mes   → manda el `rolTienda` de HOY (ver abajo)
+//  · SIN fecha → se usa el rol actual. No es un supuesto alegre: es el único
+//    dato que existe. Devolver null dejaría sin comisión a casi todo el roster,
+//    porque hoy la mayoría de fichas no tiene la fecha cargada. El día que
+//    systemlap la cargue, este mismo código empieza a hacer la historia solo.
+export function rolDeMes(vend, año, mes) {
+  const rolHoy = vend?.rolTienda === "admin" ? "admin" : "asesora";
+  const asc = fechaAscenso(vend);
+  if (!asc) return { rol: rolHoy, datosCambioRol: null, historico: false, degradada: false };
+
+  // Ascenso posterior a este mes → todavía era asesora
+  if (asc.año > año || (asc.año === año && asc.mes > mes)) {
+    return { rol: "asesora", datosCambioRol: null, historico: true, degradada: false };
+  }
+
+  // ── Ascenso ANTERIOR a este mes ──────────────────────────────────────────
+  // CRITERIO (importante, cuesta plata): NO se asume "admin para siempre".
+  // Si la ficha hoy dice `rolTienda: "asesora"` pero trae `fechaAscensoAdmin`,
+  // se está contradiciendo: la ascendieron y después la devolvieron a asesora.
+  // No existe ninguna `fechaDegradacion` en el modelo, así que NO se puede
+  // saber cuándo la devolvieron. Entre las dos opciones:
+  //   (a) asumir admin para siempre → le paga 2/4/6% en TODOS los meses
+  //       posteriores, incluido el mes en curso, contra lo que dice su ficha;
+  //   (b) respetar el cargo que la ficha afirma HOY;
+  // se elige (b): es el único dato verificable, y (a) le pagaría al dueño una
+  // tarifa de administradora por alguien que hoy no lo es.
+  // Consecuencia asumida y consciente: los meses entre el ascenso y la
+  // degradación se liquidan como asesora. Cuando systemlap guarde la fecha de
+  // degradación, este es el punto exacto donde se compara.
+  if (asc.año < año || (asc.año === año && asc.mes < mes)) {
+    return {
+      rol: rolHoy,
+      datosCambioRol: null,
+      historico: rolHoy === "admin",   // el rol salió de la fecha sólo si sigue siendo admin
+      degradada: rolHoy !== "admin",   // true = ascendida y luego devuelta a asesora
+    };
+  }
+
+  // ── Ascenso DENTRO de este mes → pro-rata ────────────────────────────────
+  // Se prorratea aunque hoy figure como asesora: ese mes SÍ hubo un ascenso,
+  // y una degradación posterior no borra los días que trabajó como admin.
+  const diasMes = new Date(año, mes, 0).getDate();
+  const diaCambio = Math.min(Math.max(asc.dia, 1), diasMes);
+  // Ascendió el día 1: no hay tramo de asesora que prorratear (calcComisionMensual
+  // hace diasDesde = diaCambio - 1 = 0), así que es admin el mes entero.
+  if (diaCambio <= 1) return { rol: "admin", datosCambioRol: null, historico: true, degradada: false };
+  return {
+    rol: "admin",
+    datosCambioRol: { desde: "asesora", hasta: "admin", diaCambio, diasMes },
+    historico: true,
+    degradada: false,
+  };
+}
+
+// Etiquetas de rol para textos que lee el dueño / la vendedora
+export const ROL_LARGO = { admin: "administradora", asesora: "asesora" };
+export const ROL_CORTO = { admin: "Admin", asesora: "Asesora" };
+// 0.02 → "2%", 0.045 → "4.5%"
+export const pctTexto = (pct) =>
+  (pct === null || pct === undefined ? null : `${Math.round(pct * 1000) / 10}%`);
 
 // Días restantes hasta fin del mes actual (hora Colombia)
 // Ej: si hoy es día 15 y el mes tiene 31 → devuelve 16
