@@ -35,7 +35,7 @@ export const VENDEDORAS_DEFAULT = [
 ];
 
 // Colores de ciudad
-export const COLOR_CIUDAD = { BOG: "#f59e0b", MED: "#10b981" };
+export const COLOR_CIUDAD = { BOG: "#12161C", MED: "#12161C" };
 export const LABEL_CIUDAD = { BOG: "Bogotá", MED: "Medellín" };
 
 // Indicadores NUEVOS (mayo 2026 en adelante)
@@ -43,21 +43,21 @@ export const LABEL_CIUDAD = { BOG: "Bogotá", MED: "Medellín" };
 // Puntualidad pesa más (más objetiva, base de la disciplina)
 // Reseñas pesa menos (es la que más se "farmea")
 export const INDICADORES_V2 = [
-  { id: "puntualidad", label: "Puntualidad", emoji: "⏰", peso: 11, color: "#3b82f6" },  // azul — la más importante
-  { id: "tienda", label: "Tienda", emoji: "🏪", peso: 9, color: "#10b981" },              // verde
-  { id: "planilla", label: "Planilla", emoji: "📋", peso: 9, color: "#a855f7" },          // púrpura
-  { id: "actitud", label: "Actitud", emoji: "💪", peso: 6, color: "#ec4899" },             // rosa
-  { id: "resenas", label: "Reseñas", emoji: "⭐", peso: 5, color: "#eab308" },             // amarillo — la menos determinante
+  { id: "puntualidad", label: "Puntualidad", emoji: "⏰", peso: 11, color: "#0B5E2E" },  // azul — la más importante
+  { id: "tienda", label: "Tienda", emoji: "🏪", peso: 9, color: "#0B5E2E" },              // verde
+  { id: "planilla", label: "Planilla", emoji: "📋", peso: 9, color: "#0B5E2E" },          // púrpura
+  { id: "actitud", label: "Actitud", emoji: "💪", peso: 6, color: "#0B5E2E" },             // rosa
+  { id: "resenas", label: "Reseñas", emoji: "⭐", peso: 5, color: "#0B5E2E" },             // amarillo — la menos determinante
 ];
 
 // Indicadores VIEJOS (abril 2026 y antes — para retrocompatibilidad)
 export const INDICADORES_V1 = [
-  { id: "puntualidad", label: "Puntualidad", emoji: "⏰", peso: 15, color: "#3b82f6" },
-  { id: "resenas", label: "Reseñas", emoji: "⭐", peso: 10, color: "#eab308" },
-  { id: "celular", label: "Celular", emoji: "📱", peso: 10, color: "#06b6d4" },
-  { id: "uniforme", label: "Uniforme", emoji: "👔", peso: 10, color: "#8b5cf6" },
-  { id: "tienda_e", label: "Tienda", emoji: "🏪", peso: 10, color: "#10b981" },
-  { id: "planilla", label: "Planilla", emoji: "📋", peso: 15, color: "#a855f7" },
+  { id: "puntualidad", label: "Puntualidad", emoji: "⏰", peso: 15, color: "#0B5E2E" },
+  { id: "resenas", label: "Reseñas", emoji: "⭐", peso: 10, color: "#0B5E2E" },
+  { id: "celular", label: "Celular", emoji: "📱", peso: 10, color: "#0B5E2E" },
+  { id: "uniforme", label: "Uniforme", emoji: "👔", peso: 10, color: "#0B5E2E" },
+  { id: "tienda_e", label: "Tienda", emoji: "🏪", peso: 10, color: "#0B5E2E" },
+  { id: "planilla", label: "Planilla", emoji: "📋", peso: 15, color: "#0B5E2E" },
 ];
 
 // Color para Ventas (siempre naranja, marca)

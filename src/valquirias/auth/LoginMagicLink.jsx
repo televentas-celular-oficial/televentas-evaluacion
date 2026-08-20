@@ -1,4 +1,20 @@
-// Login con Firebase Magic Link (email link)
+// Login con Firebase Magic Link (email link) — SALIDA DE EMERGENCIA.
+// ============================================================================
+// Desde ago-2026 la puerta principal es correo y contraseña (IngresoClave.jsx).
+// Este camino SE CONSERVA porque es el único que no depende de recordar nada,
+// pero dejó de ser el primero por dos razones:
+//   · iOS: el link del correo abre Safari, no la app instalada. Quien tenga el
+//     ícono en su iPhone no puede terminar de entrar desde ahí.
+//   · Cuota: plan gratuito de Firebase = 5 correos de link mágico POR DÍA
+//     (firebase.google.com/docs/auth/limits). Con 13 personas no alcanza.
+//
+// OJO con un efecto documentado de Firebase: al entrar por link mágico,
+// "any previous unverified mechanism of sign-in will be removed from the user".
+// Es decir, si ella ya tenía contraseña puesta (y su correo no está verificado),
+// entrar por aquí se la BORRA. Por eso, después de entrar por link, hay que
+// volver a ponerla desde 🔑 Mi contraseña. Está avisado en pantalla.
+// ============================================================================
+//
 // La vendedora escribe su email, le llega un link, tap y entra.
 // El link se valida contra una whitelist de emails autorizados (doc vendedoras).
 //
@@ -19,32 +35,19 @@ import {
   signInWithEmailLink,
   signOut,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../../firebase.js";
-import { EMAIL_ADMIN, EMAIL_OFICINA } from "../../lib/constantes.js";
-
-const STORAGE_KEY = "valquirias_pending_email";
-const LAST_EMAIL_KEY = "valquirias_last_email";
-
-// Por qué se le negó el paso. Vive FUERA del componente a propósito:
-// signInWithEmailLink dispara onAuthStateChanged con el usuario, el padre
-// (ValquiriasApp) deja de renderizar este componente, y cuando el signOut del
-// rechazo lo vuelve a montar, todo su useState se perdió. Ese era el "rechazo
-// mudo": ella quedaba en el login limpio, sin saber qué pasó. sessionStorage
-// sobrevive ese desmonte y se limpia sola al cerrar la pestaña.
-const MOTIVO_KEY = "valquirias_motivo_acceso";
-
-// Safari en modo privado tira excepción al tocar storage: nunca debe tumbar el login.
-const lee = (store, k) => { try { return window[store].getItem(k); } catch { return null; } };
-const guarda = (store, k, v) => { try { window[store].setItem(k, v); } catch { /* sin storage */ } };
-const borra = (store, k) => { try { window[store].removeItem(k); } catch { /* sin storage */ } };
-
-// Lo que ella escribe en el teléfono trae espacio al final (autocompletado) y
-// mayúscula inicial (autocapitalize de iOS). Firebase compara el string exacto
-// contra el email del link, así que "Ana@X.com " ≠ "ana@x.com" y el login falla
-// con un link perfectamente bueno.
-const normalizaEmail = (v) => (v || "").trim().toLowerCase();
-const pareceEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+import { auth } from "../../firebase.js";
+// Las claves de storage, la normalización del correo y la verificación de
+// roster viven en acceso.js: los DOS caminos de ingreso comparten exactamente
+// las mismas reglas, para que no se separen con el tiempo.
+// (normalizaEmail existe porque lo que ella escribe en el teléfono trae espacio
+// al final y mayúscula inicial: "Ana@X.com " ≠ "ana@x.com", y Firebase compara
+// el string exacto contra el email del link.)
+import {
+  STORAGE_KEY, LAST_EMAIL_KEY, MOTIVO_KEY,
+  lee, guarda, borra,
+  normalizaEmail, pareceEmail,
+  asegurarPersistencia, verificarAcceso,
+} from "./acceso.js";
 
 const actionCodeSettings = {
   // La app abre este link al hacer tap en el correo
@@ -52,7 +55,7 @@ const actionCodeSettings = {
   handleCodeInApp: true,
 };
 
-export default function LoginMagicLink({ onLoggedIn }) {
+export default function LoginMagicLink({ onLoggedIn, onVolverAClave }) {
   // Pre-rellenar con el último email logueado (si existe en localStorage)
   const [email, setEmail] = useState(() => lee("localStorage", LAST_EMAIL_KEY) || "");
   // Campo de la pantalla "confirma tu email" (la que reemplaza al window.prompt)
@@ -142,6 +145,8 @@ export default function LoginMagicLink({ onLoggedIn }) {
 
     let cred;
     try {
+      // La sesión tiene que quedar guardada aunque cierre la app (queja original).
+      await asegurarPersistencia();
       cred = await signInWithEmailLink(auth, correo, window.location.href);
     } catch (err) {
       const code = err?.code || "";
@@ -189,39 +194,17 @@ export default function LoginMagicLink({ onLoggedIn }) {
       window.history.replaceState({}, document.title, window.location.pathname);
 
       const emailBajo = normalizaEmail(cred.user.email);
-      const esAdmin = emailBajo === normalizaEmail(EMAIL_ADMIN);
-      const esOficina = emailBajo === normalizaEmail(EMAIL_OFICINA);
 
       // Guardar email para pre-rellenar próxima vez que el usuario abra la app
       guarda("localStorage", LAST_EMAIL_KEY, emailBajo);
 
-      if (esAdmin || esOficina) {
-        cbRef.current?.(cred.user);
-        return;
-      }
-
-      // Gate global de acceso (config.whitelistActiva)
-      const cfgSnap = await getDoc(doc(db, "televentas", "config"));
-      const cfg = cfgSnap.exists() ? JSON.parse(cfgSnap.data().data || "{}") : {};
-      if (!cfg.whitelistActiva) {
+      // Mismas reglas que el ingreso con contraseña (acceso.js): cuentas de la
+      // casa pasan directo, el resto tiene que estar en el roster y con el
+      // acceso general encendido.
+      const r = await verificarAcceso(emailBajo, { via: "link" });
+      if (!r.ok) {
         await signOut(auth);
-        rechazar(
-          "🔒 La app todavía no está abierta. Tu link funcionó bien y tu correo quedó registrado: te avisamos apenas la habilitemos. No necesitas pedir otro link."
-        );
-        return;
-      }
-
-      // Whitelist = doc vendedoras (email vive ahí, no duplicado)
-      const vendSnap = await getDoc(doc(db, "televentas", "vendedoras"));
-      const vends = vendSnap.exists() ? JSON.parse(vendSnap.data().data || "[]") : [];
-      const enWL = vends.some(v =>
-        v.activa !== false && !v.eventual && normalizaEmail(v.email) === emailBajo
-      );
-      if (!enWL) {
-        await signOut(auth);
-        rechazar(
-          `⚠️ El correo ${emailBajo} no está en la lista de acceso. Tu link estaba bien — lo que falta es que el administrador registre este correo. Escríbele y dile con cuál correo estás entrando.`
-        );
+        rechazar(r.motivo);
         return;
       }
 
@@ -251,7 +234,7 @@ export default function LoginMagicLink({ onLoggedIn }) {
       setMsgTipo("ok");
     } catch (err) {
       const code = err?.code || "unknown";
-      setMsg(`Error: ${code}. Escríbele al administrador.`);
+      setMsg(`No pudimos enviarte el link (${code}). Revisa tu internet y vuelve a intentar; si sigue igual, escríbele al administrador.`);
       setMsgTipo("err");
       console.error("sendSignInLinkToEmail error:", err);
     } finally {
@@ -271,7 +254,7 @@ export default function LoginMagicLink({ onLoggedIn }) {
       <div className="v-app">
         <div className="v-login-wrap">
           <div className="v-login-card">
-            <div className="v-login-hero">⚡ Valquirias TLV</div>
+            <div className="v-login-hero">⚡ Valkyrias</div>
             <div className="v-login-sub">Entrando...</div>
             <div style={{ fontSize: 30, margin: "10px 0" }}>⏳</div>
           </div>
@@ -286,7 +269,7 @@ export default function LoginMagicLink({ onLoggedIn }) {
       <div className="v-app">
         <div className="v-login-wrap">
           <div className="v-login-card">
-            <div className="v-login-hero">⚡ Valquirias TLV</div>
+            <div className="v-login-hero">⚡ Valkyrias</div>
             <div className="v-login-sub">Confirma tu correo para entrar</div>
             <div style={{
               fontSize: 12.5, color: "#475569", fontWeight: 600, lineHeight: 1.6,
@@ -332,8 +315,17 @@ export default function LoginMagicLink({ onLoggedIn }) {
     <div className="v-app">
       <div className="v-login-wrap">
         <div className="v-login-card">
-          <div className="v-login-hero">⚡ Valquirias TLV</div>
-          <div className="v-login-sub">Ingresa con tu email · te enviamos un link mágico</div>
+          <div className="v-login-hero">⚡ Valkyrias</div>
+          <div className="v-login-sub">Entrar con un link al correo</div>
+          <div style={{
+            fontSize: 12, color: "#92400e", fontWeight: 700, lineHeight: 1.55,
+            textAlign: "left", background: "#fffbeb", borderRadius: 10,
+            padding: "10px 12px", marginBottom: 16,
+          }}>
+            Esto es la <strong>salida de emergencia</strong>. Solo se pueden mandar
+            <strong> 5 links por día</strong> en toda la empresa, y en iPhone el link
+            abre en Safari, no en la app instalada. Si puedes, entra con tu contraseña.
+          </div>
           <input
             type="email"
             className="v-login-input"
@@ -352,13 +344,23 @@ export default function LoginMagicLink({ onLoggedIn }) {
             onClick={enviar}
             disabled={enviando}
           >
-            {enviando ? "Enviando..." : "Enviar link mágico"}
+            {enviando ? "Enviando..." : "Enviarme el link al correo"}
           </button>
           {msg && (
             <div className={"v-login-msg " + msgTipo}>{msg}</div>
           )}
-          <div style={{ marginTop: 20, fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>
+          {onVolverAClave && (
+            <div style={{ marginTop: 16 }}>
+              <button style={linkTxt} onClick={() => { setMsg(null); onVolverAClave(); }}>
+                ← Entrar con mi correo y contraseña
+              </button>
+            </div>
+          )}
+          <div style={{ marginTop: 18, fontSize: 11, color: "#94a3b8", fontWeight: 700, lineHeight: 1.55 }}>
             💬 ¿No tienes email de acceso? Escríbele al administrador.
+            <br />
+            Si ya tenías contraseña, entrar por link te la borra: vuelve a crearla
+            en 🔑 Mi contraseña.
           </div>
         </div>
       </div>

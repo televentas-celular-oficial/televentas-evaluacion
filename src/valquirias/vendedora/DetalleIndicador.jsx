@@ -22,15 +22,27 @@ import {
   derivarTrimestreEnVivo,
 } from "../data/derivar.js";
 import { hoyColombia } from "../lib/helpers.js";
-import { colorN, bgN, fmtN } from "../../lib/calculos.js";
+import { fmtN } from "../../lib/calculos.js";
 
-const LINEA = "#e2e8f0";
-const APOYO = "#475569";
-const TENUE = "#94a3b8";
-const TINTA = "#0f172a";
-const LILA_BG = "#f7f4ff";
-const LILA_BORDE = "#ddd3f5";
-const LILA_TXT = "#5b2ec4";
+// Paleta Valkyrias — sólo colores. `colorN`/`bgN` de lib/calculos.js siguen
+// intactos porque los usan el admin y el ingreso diario, donde el rojo SÍ es
+// una alarma de verdad. Aquí la vendedora tiene su propia escala.
+// Los papeles de color viven en valquirias.css (:root). Aquí sólo se nombran.
+const LINEA = "var(--vk-borde)";        // Borde
+const APOYO = "var(--vk-secundario)";   // Niebla
+const TENUE = "var(--vk-tenue)";        // Sin dato
+const TINTA = "var(--vk-titulo)";       // Tinta
+const PAPEL = "var(--vk-tarjeta)";      // Papel
+const LILA_BG = "var(--vk-fondo)";      // Lienzo
+const LILA_BORDE = "var(--vk-borde)";   // Borde
+const LILA_TXT = "var(--vk-titulo)";    // Tinta (toda nota va en tinta)
+
+// Escala de notas: el canal principal es lleno contra hueco, no el tono.
+const colorNota = (n) =>
+  n >= 4.5 ? "var(--vk-bien-texto)" : n >= 3.5 ? "var(--est-atencion)" : n >= 2.5 ? "var(--est-medio)" : "var(--vk-medio)";
+const fondoNota = (n) =>
+  n >= 4.5 ? "var(--vk-bien-fondo)" : n >= 3.5 ? "var(--vk-tarjeta)" : n >= 2.5 ? "var(--est-medio-fondo)" : "var(--vk-neutro)";
+const anilloNota = (n) => (n >= 3.5 && n < 4.5 ? "inset 0 0 0 1.5px var(--est-atencion-borde)" : "none");
 
 // Consejo corto por indicador. Los indicadores diarios son observaciones
 // fotográficas: los días que pasaron NO se corrigen, así que aquí nunca se
@@ -38,7 +50,7 @@ const LILA_TXT = "#5b2ec4";
 const CONSEJOS = {
   puntualidad: "Cada día que llegas a tiempo suma. Un retardo de 10 minutos o más pesa mucho más que uno de 2.",
   tienda: "Se revisan tres cosas cada día: orden, uniforme y depósito.",
-  planilla: "La planilla se llena el mismo día. Los días que pasaron ya no se pueden recuperar, pero los que vienen sí.",
+  planilla: "La planilla se llena el mismo día. Un día que no se llenó queda así — lo que sí está en tus manos son los días que vienen.",
   actitud: "Solo se marca cuando hay algo puntual que anotar, y siempre con la explicación de qué pasó.",
   resenas: "Cada reseña que dejan tus clientas suma. Pedirlas al cerrar la venta es lo que mejor funciona.",
   // V1 (abril 2026 y antes)
@@ -54,11 +66,11 @@ const S = {
     alignItems: "center", gap: 5,
   },
   card: {
-    background: "#fff", border: `1px solid ${LINEA}`, borderRadius: 13,
+    background: PAPEL, border: `1px solid ${LINEA}`, borderRadius: 13,
     padding: 16, marginBottom: 10,
   },
   lbl: {
-    fontSize: 12, fontWeight: 800, color: "#334155", textTransform: "uppercase",
+    fontSize: 12, fontWeight: 800, color: APOYO, textTransform: "uppercase",
     letterSpacing: ".7px", marginBottom: 4, display: "block",
   },
   dia: {
@@ -81,18 +93,26 @@ function badge(nota, extra = {}) {
   return {
     display: "inline-flex", alignItems: "center", justifyContent: "center",
     borderRadius: 8, fontWeight: 800,
-    background: hay ? bgN(nota) : "#f1f5f9",
-    color: hay ? colorN(nota) : TENUE,
+    background: hay ? fondoNota(nota) : PAPEL,
+    color: hay ? colorNota(nota) : TENUE,
+    boxShadow: hay ? anilloNota(nota) : "none",
+    // Sin dato: hueco con borde punteado. El `outline` va por dentro, así que
+    // no mueve ni un píxel de lo que ya estaba.
+    ...(hay ? null : { outline: "1.5px dashed var(--est-sin-dato)", outlineOffset: "-1.5px" }),
     ...extra,
   };
 }
 
-// Verde si el día salió bien, rojo si hubo novedad. "grave" es rojo también,
-// pero se marca con un borde para que se note que pesó más.
+// Lleno cuando el día salió bien; HUECO con borde cuando hubo novedad. Aquí no
+// hay rojo: un día que ya pasó no se puede corregir, así que no es una alarma.
+// "grave" es el mismo hueco, con el borde más oscuro para que se note que pesó
+// más. Descanso y sin dato no son ni buenos ni malos: cada uno tiene su token.
 function estiloDia(estado) {
-  if (estado === "ok") return { background: "#f0fdf4", color: "#059669" };
-  if (estado === "grave") return { background: "#fef2f2", color: "#dc2626", boxShadow: "inset 0 0 0 1.5px #fca5a5" };
-  return { background: "#fef2f2", color: "#dc2626" };
+  if (estado === "ok") return { background: "var(--vk-bien-fondo)", color: "var(--vk-bien-texto)" };
+  if (estado === "grave") return { background: PAPEL, color: "var(--est-atencion)", boxShadow: "inset 0 0 0 1.5px var(--est-grave)" };
+  if (estado === "descanso") return { background: "var(--est-descanso)", color: "var(--est-descanso-texto)" };
+  if (estado === "sindato") return { background: PAPEL, color: TENUE, outline: "1.5px dashed var(--est-sin-dato)", outlineOffset: "-1.5px" };
+  return { background: PAPEL, color: "var(--est-atencion)", boxShadow: "inset 0 0 0 1.5px var(--est-atencion-borde)" };
 }
 
 function Marco({ onVolver, etiquetaVolver, children }) {
@@ -192,9 +212,9 @@ export default function DetalleIndicador({
     if (ind.tendencia === "igual") {
       lineaTendencia = { color: APOYO, texto: `Vas igual que en ${prev}.` };
     } else if (ind.tendencia === "sube") {
-      lineaTendencia = { color: "#059669", texto: `▲ Vienes subiendo — ${dif} más que en ${prev}. Sigue así.` };
+      lineaTendencia = { color: "var(--vk-bien)", texto: `▲ Vienes subiendo — ${dif} más que en ${prev}. Sigue así.` };
     } else if (ind.tendencia === "baja") {
-      lineaTendencia = { color: "#ea580c", texto: `▼ Vienes bajando — ${dif} menos que en ${prev}.${colaUltimo}` };
+      lineaTendencia = { color: "var(--est-atencion)", texto: `▼ Vienes bajando — ${dif} menos que en ${prev}.${colaUltimo}` };
     } else {
       lineaTendencia = { color: APOYO, texto: ind.texto };
     }

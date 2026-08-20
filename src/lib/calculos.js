@@ -9,8 +9,8 @@ import { INDICADORES_V1, INDICADORES_V2, esFormulaV2, getIndicadores, PESOS_TRIM
 // ============================================================
 
 export const fmtN = n => n === null || n === undefined ? "—" : Number(n).toFixed(2);
-export const colorN = n => n === null ? "#475569" : n >= 4.5 ? "#059669" : n >= 3.5 ? "#d97706" : n >= 2.5 ? "#ea580c" : "#dc2626";
-export const bgN = n => n === null ? "#f1f5f9" : n >= 4.5 ? "#d1fae5" : n >= 3.5 ? "#fef3c7" : n >= 2.5 ? "#ffedd5" : "#fee2e2";
+export const colorN = n => n === null ? "var(--vk-tenue)" : n >= 4.5 ? "var(--vk-bien-texto)" : n >= 3.5 ? "var(--est-atencion)" : n >= 2.5 ? "var(--est-medio)" : "var(--vk-medio)";
+export const bgN = n => n === null ? "var(--vk-tarjeta)" : n >= 4.5 ? "var(--vk-bien-fondo)" : n >= 3.5 ? "var(--vk-tarjeta)" : n >= 2.5 ? "var(--est-medio-fondo)" : "var(--vk-neutro)";
 export const hoyStr = () => {
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");

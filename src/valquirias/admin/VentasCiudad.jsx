@@ -23,7 +23,7 @@ const MES_CORTO = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep"
 const CIUDADES = [
   {
     id: "MED",
-    titulo: "🟢 Team Valquirias Medellín",
+    titulo: "🟢 Team Valkyrias Medellín",
     color: "#10b981",
     borde: "#10b981",
     tinte: "#047857",
@@ -31,7 +31,7 @@ const CIUDADES = [
   },
   {
     id: "BOG",
-    titulo: "🟡 Team Valquirias Bogotá",
+    titulo: "🟡 Team Valkyrias Bogotá",
     color: "#f59e0b",
     borde: "#f59e0b",
     tinte: "#b45309",

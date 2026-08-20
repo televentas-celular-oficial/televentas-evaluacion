@@ -55,7 +55,7 @@ export default function VerComoVendedora({ onVolver }) {
       {med.length > 0 && (
         <>
           <div style={{ fontSize: 12, fontWeight: 900, color: "#047857", padding: "8px 10px", background: "linear-gradient(90deg, #ecfdf5, transparent)", borderRadius: 6, marginBottom: 6 }}>
-            🟢 Team Valquirias Medellín ({med.length})
+            🟢 Team Valkyrias Medellín ({med.length})
           </div>
           {med.map(v => <FilaVer key={v.id} v={v} onClick={() => verComo(v)} />)}
         </>
@@ -64,7 +64,7 @@ export default function VerComoVendedora({ onVolver }) {
       {bog.length > 0 && (
         <>
           <div style={{ fontSize: 12, fontWeight: 900, color: "#b45309", padding: "8px 10px", background: "linear-gradient(90deg, #fef3c7, transparent)", borderRadius: 6, marginBottom: 6, marginTop: 12 }}>
-            🟡 Team Valquirias Bogotá ({bog.length})
+            🟡 Team Valkyrias Bogotá ({bog.length})
           </div>
           {bog.map(v => <FilaVer key={v.id} v={v} onClick={() => verComo(v)} />)}
         </>

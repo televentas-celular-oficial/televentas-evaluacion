@@ -21,19 +21,40 @@ import {
   derivarRankingTrimestreCiudad,
 } from "../data/derivar.js";
 import { formatoPesos, hoyColombia } from "../lib/helpers.js";
-import { colorN, bgN, fmtN, fechaLarga } from "../../lib/calculos.js";
+import { fmtN, fechaLarga } from "../../lib/calculos.js";
 
-// Paleta del prototipo (lavanda del trimestre, ámbar de premios, azul del aviso)
-const LILA_BG = "#f7f4ff";
-const LILA_BORDE = "#ddd3f5";
-const LILA_TXT = "#5b2ec4";
-const AMBAR_BG = "#fffaf0";
-const AMBAR_BORDE = "#f0d49a";
-const AMBAR_TXT = "#8a5a08";
-const LINEA = "#e2e8f0";
-const APOYO = "#475569";
-const TENUE = "#94a3b8";
-const TINTA = "#0f172a";
+// Paleta Valkyrias — sólo colores. `colorN`/`bgN` de lib/calculos.js siguen
+// intactos porque los usan el admin y el ingreso diario; aquí la vendedora
+// tiene su propia escala, sin rojo y sin morado.
+//
+// La tarjeta de la nota del trimestre es la tarjeta NOCHE de esta pantalla:
+// los tokens LILA_* son ahora los de esa superficie oscura.
+// Los papeles de color viven en valquirias.css (:root). Aquí sólo se nombran.
+const LILA_BG = "var(--vk-noche)";        // Noche
+const LILA_BORDE = "var(--vk-noche)";     // Noche
+const LILA_TXT = "var(--vk-noche-texto)"; // sobre la noche
+const N_APOYO = "var(--vk-noche-apoyo)";  // secundario sobre la noche
+// Los premios de este trimestre TODAVÍA no están ganados, así que aquí no va
+// oro: el oro se reserva para lo que ya se ganó.
+const AMBAR_BG = "var(--vk-fondo)";       // Lienzo
+const AMBAR_BORDE = "var(--vk-borde)";    // Borde
+const AMBAR_TXT = "var(--vk-titulo)";     // Tinta
+const LINEA = "var(--vk-borde)";          // Borde
+const APOYO = "var(--vk-secundario)";     // Niebla
+const TENUE = "var(--vk-tenue)";          // Sin dato
+const TINTA = "var(--vk-titulo)";         // Tinta
+const CIFRA = "var(--vk-cifra)";          // Tinta — cifras y notas
+const PAPEL = "var(--vk-tarjeta)";        // Papel
+const FONDO = "var(--vk-fondo)";          // Lienzo
+const VERDE = "var(--vk-bien)";           // Meta cumplida
+const VERDE_FONDO = "var(--vk-bien-fondo)"; // Verde claro
+
+// Escala de notas: el canal principal es lleno contra hueco, no el tono.
+const colorNota = (n) =>
+  n >= 4.5 ? "var(--vk-bien-texto)" : n >= 3.5 ? "var(--est-atencion)" : n >= 2.5 ? "var(--est-medio)" : "var(--vk-medio)";
+const fondoNota = (n) =>
+  n >= 4.5 ? "var(--vk-bien-fondo)" : n >= 3.5 ? "var(--vk-tarjeta)" : n >= 2.5 ? "var(--est-medio-fondo)" : "var(--vk-neutro)";
+const anilloNota = (n) => (n >= 3.5 && n < 4.5 ? "inset 0 0 0 1.5px var(--est-atencion-borde)" : "none");
 
 const S = {
   volver: {
@@ -44,14 +65,15 @@ const S = {
   titulo: { fontSize: 19, fontWeight: 800, margin: "0 0 12px", color: TINTA },
   subtitulo: { fontSize: 12, color: APOYO, margin: "-6px 0 12px" },
   card: {
-    background: "#fff", border: `1px solid ${LINEA}`, borderRadius: 13,
+    background: PAPEL, border: `1px solid ${LINEA}`, borderRadius: 13,
     padding: 16, marginBottom: 10,
   },
   lbl: {
-    fontSize: 12, fontWeight: 800, color: "#334155", textTransform: "uppercase",
+    fontSize: 12, fontWeight: 800, color: APOYO, textTransform: "uppercase",
     letterSpacing: ".7px", marginBottom: 4, display: "block",
   },
-  barra: { height: 8, background: "#e6dcfb", borderRadius: 4, overflow: "hidden", marginTop: 12 },
+  // Va dentro de la tarjeta noche: el riel es un blanco muy tenue.
+  barra: { height: 8, background: "rgba(var(--vk-velo-rgb),.14)", borderRadius: 4, overflow: "hidden", marginTop: 12 },
   filaMes: {
     display: "flex", alignItems: "center", gap: 10, padding: "9px 0",
     borderBottom: `1px dashed ${LINEA}`,
@@ -65,7 +87,8 @@ const S = {
     display: "flex", alignItems: "center", gap: 9, padding: "7px 10px",
     borderRadius: 9, marginBottom: 3, fontSize: 12.5,
   },
-  miniYo: { background: "#fffbeb", boxShadow: "inset 0 0 0 1.5px #fcd34d" },
+  // "TÚ" se marca con un anillo de tinta, no con un color de aviso.
+  miniYo: { background: FONDO, boxShadow: "inset 0 0 0 1.5px var(--vk-titulo)" },
   pieCard: {
     fontSize: 12, color: APOYO, fontWeight: 600, marginTop: 9, paddingTop: 9,
     borderTop: `1px dashed ${LINEA}`, lineHeight: 1.55,
@@ -77,8 +100,11 @@ function badge(nota, extra = {}) {
   return {
     display: "inline-flex", alignItems: "center", justifyContent: "center",
     minWidth: 46, padding: "3px 10px", borderRadius: 8, fontWeight: 800, fontSize: 14,
-    background: hay ? bgN(nota) : "#f1f5f9",
-    color: hay ? colorN(nota) : TENUE,
+    background: hay ? fondoNota(nota) : PAPEL,
+    color: hay ? colorNota(nota) : TENUE,
+    boxShadow: hay ? anilloNota(nota) : "none",
+    // Sin dato: hueco con borde punteado, por dentro para no mover nada.
+    ...(hay ? null : { outline: "1.5px dashed var(--est-sin-dato)", outlineOffset: "-1.5px" }),
     ...extra,
   };
 }
@@ -97,6 +123,21 @@ function listaMeses(meses) {
   return `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
 }
 
+// "julio 40% y agosto 60%" — la misma lista, cada mes con el peso que le toque.
+function listaMesesConPeso(meses, peso) {
+  const p = meses.map(m => `${(m.nombre || "").toLowerCase()} ${peso(m)}`);
+  if (p.length < 2) return p.join("");
+  return `${p.slice(0, -1).join(", ")} y ${p[p.length - 1]}`;
+}
+
+// 0.4 → "40%" · 0.2857… → "28,6%". Un decimal sólo cuando hace falta, para que
+// los pesos mostrados sigan sumando 100 y la cuenta se pueda rehacer a mano.
+function pctPeso(x) {
+  if (x === null || x === undefined) return null;
+  const v = Math.round(x * 1000) / 10;
+  return `${String(v).replace(".", ",")}%`;
+}
+
 // "▲ subiendo · 0.20 más que en julio" — la diferencia exacta, con su mes.
 function textoTendencia(ind, nombrePorMes) {
   if (ind.tendencia === null || ind.delta === null) return ind.texto;
@@ -109,8 +150,9 @@ function textoTendencia(ind, nombrePorMes) {
 }
 
 function colorTendencia(t) {
-  if (t === "sube") return "#059669";
-  if (t === "baja") return "#ea580c";
+  if (t === "sube") return VERDE;
+  // Bajando ya no es naranja de alarma: es ámbar de atención, no una urgencia.
+  if (t === "baja") return "var(--est-atencion)";
   return APOYO;
 }
 
@@ -192,7 +234,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
       <div>
         {onVolver && <button style={S.volver} onClick={onVolver}>‹ Volver</button>}
         <div style={S.titulo}>💎 Mi trimestre</div>
-        <div style={{ ...S.card, borderLeft: "4px solid #f59e0b", borderRadius: "0 13px 13px 0" }}>
+        <div style={{ ...S.card, borderLeft: "4px solid var(--est-atencion-borde)", borderRadius: "0 13px 13px 0" }}>
           <div style={S.lbl}>No podemos mostrarte tu trimestre</div>
           <div style={{ fontSize: 13.5, color: APOYO, fontWeight: 600, lineHeight: 1.6 }}>
             No pudimos determinar tu ciudad, y sin ella no hay forma de mostrarte bien tu
@@ -233,6 +275,37 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
   const participa = trim.compite !== false;
   const motivo = trim.motivoNoCompite;
 
+  // --------------------------------------------------------------------------
+  // CUÁNTO PESA CADA MES **HOY**
+  // --------------------------------------------------------------------------
+  // Los pesos del trimestre son 20/30/50, pero la nota en vivo se saca sólo con
+  // los meses que YA tienen nota y RENORMALIZA: calcTrimestre hace
+  // `suma(nota_i × peso_i) / suma(peso_i con dato)` (lib/calculos.js). Sin
+  // septiembre eso significa que julio no pesa 20% sino 20/50 = 40%, y agosto
+  // 30/50 = 60%.
+  //
+  // La pantalla decía 20 / 30 / 50 igual. Con esos números la nota del trimestre
+  // NO se puede reconstruir, y lo que ella concluye no es "me equivoqué en la
+  // cuenta", es "el número es inventado". Aquí no se cambia ni un cálculo: se
+  // nombra el peso que la fórmula ya está usando, y se dice cuál va a ser
+  // cuando entre el mes que falta.
+  const pesosConDato = trim.pesosConDato || 0;
+  const pesoHoy = (m) => (m.nota === null || m.nota === undefined || !pesosConDato ? null : m.peso / pesosConDato);
+
+  const mesesConNota = trim.meses.filter(m => m.nota !== null && m.nota !== undefined);
+  const mesesSinNota = trim.meses.filter(m => m.nota === null || m.nota === undefined);
+
+  // La cuenta se pinta SÓLO si cuadra con la nota que se está mostrando, y se
+  // rehace con los mismos porcentajes redondeados que ella ve. Si por redondeo
+  // no diera exacto, no se muestra ninguna cuenta: una cuenta que no da es peor
+  // que ninguna cuenta.
+  const cuenta = mesesConNota.length && pesosConDato
+    ? Math.round(
+        mesesConNota.reduce((s, m) => s + m.nota * (Math.round(pesoHoy(m) * 1000) / 1000), 0) * 100
+      ) / 100
+    : null;
+  const cuentaCuadra = cuenta !== null && nota !== null && cuenta === nota;
+
   return (
     <div>
       {onVolver && <button style={S.volver} onClick={onVolver}>‹ Volver</button>}
@@ -243,19 +316,21 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
       </div>
 
       {/* ── 1. Nota del trimestre EN VIVO ─────────────────────────────────── */}
+      {/* LA TARJETA NOCHE DE ESTA PANTALLA: la cifra principal de "Mi
+          trimestre" es esta nota. Es la única que se pinta en oscuro. */}
       <div style={{ ...S.card, background: LILA_BG, borderColor: LILA_BORDE }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <div style={{ flex: 1 }}>
-            <div style={{ ...S.lbl, color: LILA_TXT, marginBottom: 2 }}>
+            <div style={{ ...S.lbl, color: N_APOYO, marginBottom: 2 }}>
               Mi nota del trimestre · en vivo
             </div>
-            <div style={{ fontSize: 11.5, color: LILA_TXT, fontWeight: 600, lineHeight: 1.45 }}>
+            <div style={{ fontSize: 11.5, color: N_APOYO, fontWeight: 600, lineHeight: 1.45 }}>
               Se actualiza todos los días
             </div>
           </div>
           <span style={{
             display: "inline-flex", alignItems: "center", justifyContent: "center",
-            background: "#fff", color: nota === null ? TENUE : LILA_TXT,
+            background: LILA_TXT, color: nota === null ? TENUE : CIFRA,
             fontSize: 26, fontWeight: 800, minWidth: 80, padding: "9px 15px", borderRadius: 8,
           }}>
             {fmtN(nota)}
@@ -272,7 +347,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
             <div style={S.barra}>
               <i style={{
                 display: "block", height: "100%", borderRadius: 4,
-                width: `${Math.min(100, (nota / meta) * 100)}%`, background: "#7c3aed",
+                width: `${Math.min(100, (nota / meta) * 100)}%`, background: VERDE_FONDO,
               }} />
             </div>
             <div style={{ fontSize: 12.5, color: LILA_TXT, fontWeight: 600, marginTop: 8, lineHeight: 1.55 }}>
@@ -293,7 +368,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
       <div style={{
         padding: "11px 13px", borderRadius: 10, fontSize: 12, fontWeight: 700,
         lineHeight: 1.6, marginBottom: 10,
-        background: "#eff6ff", color: "#1e40af", borderLeft: "3px solid #3b82f6",
+        background: "var(--est-medio-fondo)", color: "var(--est-medio)", borderLeft: "3px solid var(--est-medio)",
       }}>
         {trim.enCurso ? (
           <>
@@ -319,29 +394,80 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
       {/* ── 3. Cómo se arma la nota: 3 meses, peso y estado ────────────────── */}
       <div style={S.card}>
         <div style={S.lbl}>Cómo se arma la nota</div>
-        {trim.meses.map((m, i) => (
-          <div
-            key={m.mes}
-            style={{ ...S.filaMes, borderBottom: i === trim.meses.length - 1 ? "none" : S.filaMes.borderBottom }}
-          >
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: m.cerrado ? TINTA : APOYO }}>
-                {m.nombre}
+        <div style={{ fontSize: 11.5, color: APOYO, fontWeight: 600, margin: "-4px 0 4px", lineHeight: 1.5 }}>
+          Cuánto pesa cada mes <strong style={{ color: TINTA }}>hoy</strong>
+        </div>
+        {trim.meses.map((m, i) => {
+          const ph = pesoHoy(m);
+          return (
+            <div
+              key={m.mes}
+              style={{ ...S.filaMes, borderBottom: i === trim.meses.length - 1 ? "none" : S.filaMes.borderBottom }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: m.cerrado ? TINTA : APOYO }}>
+                  {m.nombre}
+                </div>
+                <div style={{ fontSize: 11.5, color: APOYO, marginTop: 2 }}>
+                  {ph === null
+                    ? `Hoy no pesa · ${m.etiquetaEstado}`
+                    : `Hoy pesa ${pctPeso(ph)} · ${m.etiquetaEstado}`}
+                </div>
               </div>
-              <div style={{ fontSize: 11.5, color: APOYO, marginTop: 2 }}>
-                Pesa {m.pesoPct}% · {m.etiquetaEstado}
-              </div>
+              <span style={badge(m.nota, { fontSize: 14, minWidth: 46 })}>{fmtN(m.nota)}</span>
             </div>
-            <span style={badge(m.nota, { fontSize: 14, minWidth: 46 })}>{fmtN(m.nota)}</span>
+          );
+        })}
+
+        {/* La cuenta exacta, sólo si cuadra con la nota de arriba. Es la
+            diferencia entre "entiendo mi nota" y "ese número es inventado". */}
+        {cuentaCuadra && (
+          <div style={{ ...S.pieCard, fontWeight: 700 }}>
+            {mesesConNota.map((m, i) => (
+              <span key={m.mes}>
+                {i > 0 ? " + " : ""}
+                {(m.nombre || "").toLowerCase()} {fmtN(m.nota)} × {pctPeso(pesoHoy(m))}
+              </span>
+            ))}
+            {" = "}
+            <strong style={{ color: CIFRA }}>{fmtN(nota)}</strong>
           </div>
-        ))}
-        <div style={{ ...S.pieCard, borderTop: `1px dashed ${LINEA}` }}>
-          {ultimo?.nombre} pesa el {ultimo?.pesoPct}%
-          {ultimo?.estado === "pendiente"
-            ? " y todavía no ha empezado. Ahí es donde más se mueve todo."
-            : ultimo?.estado === "curso"
-              ? ` y va en curso — día ${ultimo.dia} de ${ultimo.diasMes}. Ahí es donde más se mueve todo.`
-              : " del trimestre: es el mes que más mueve la nota."}
+        )}
+
+        {/* --------------------------------------------------------------- */}
+        {/* POR QUÉ NO DICE 20 / 30 / 50                                     */}
+        {/* --------------------------------------------------------------- */}
+        {/* Los pesos de siempre son 20/30/50, pero mientras falte un mes la
+            nota se reparte sólo entre los que ya tienen nota. Decirlo de una
+            vez es también lo que el dueño quiere que entiendan: el trimestre se
+            mueve, y el mes que más pesa es el que todavía no ha pasado. */}
+        <div style={S.pieCard}>
+          {mesesSinNota.length === 0 ? (
+            <>
+              Los tres meses ya tienen nota, así que cada uno pesa lo suyo:{" "}
+              {listaMesesConPeso(trim.meses, m => `${m.pesoPct}%`)}.
+            </>
+          ) : mesesConNota.length === 0 ? (
+            <>
+              Cuando haya notas, el trimestre se reparte así:{" "}
+              {listaMesesConPeso(trim.meses, m => `${m.pesoPct}%`)}.
+            </>
+          ) : (
+            <>
+              Hoy la nota se arma sólo con {listaMeses(mesesConNota)}, porque{" "}
+              {listaMeses(mesesSinNota)} todavía no{" "}
+              {mesesSinNota.length > 1 ? "tienen" : "tiene"} nota: su peso se reparte entre lo
+              que sí hay, y por eso hoy{" "}
+              {listaMesesConPeso(mesesConNota, m => pctPeso(pesoHoy(m)))}.
+              <br />
+              Cuando {listaMeses(mesesSinNota)}{" "}
+              {mesesSinNota.length > 1 ? "tengan" : "tenga"} nota, los pesos vuelven a ser los de
+              siempre: {listaMesesConPeso(trim.meses, m => `${m.pesoPct}%`)}.
+              {ultimo && (ultimo.nota === null || ultimo.nota === undefined)
+                ? ` Por eso el mes que más mueve la nota del trimestre es ${ultimoNombre}, que todavía no ha pasado.`
+                : ""}
+            </>
+          )}
         </div>
       </div>
 
@@ -361,7 +487,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
         {!participa && (
           <div style={{
             marginTop: 10, padding: "10px 12px", borderRadius: 9,
-            background: "#fff", border: `1px solid ${AMBAR_BORDE}`,
+            background: PAPEL, border: `1px solid ${AMBAR_BORDE}`,
             fontSize: 12, color: AMBAR_TXT, fontWeight: 600, lineHeight: 1.6,
           }}>
             {motivo === "entroTarde" ? (
@@ -436,7 +562,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
               <span style={badge(ind.promedio, { fontSize: 13, minWidth: 42 })}>
                 {fmtN(ind.promedio)}
               </span>
-              <span style={{ color: "#a855f7", fontWeight: 800, fontSize: 17 }}>›</span>
+              <span style={{ color: APOYO, fontWeight: 800, fontSize: 17 }}>›</span>
             </button>
           ))
         )}
@@ -460,7 +586,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
                 <div key={f.id} style={{ ...S.mini, ...(f.esYo ? S.miniYo : null) }}>
                   <span style={{
                     width: 20, textAlign: "center", fontWeight: 800, flexShrink: 0,
-                    color: f.medalla ? "#059669" : TENUE,
+                    color: f.medalla ? VERDE : TENUE,
                   }}>
                     {f.medalla || f.n}
                   </span>
@@ -468,7 +594,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
                     {f.esYo ? `TÚ · ${f.nombreCorto}` : f.nombreCorto}
                     {f.ganaPremio ? " 💰" : ""}
                   </span>
-                  <span style={{ fontWeight: 800, whiteSpace: "nowrap", color: colorN(f.nota) }}>
+                  <span style={{ fontWeight: 800, whiteSpace: "nowrap", color: f.nota === null || f.nota === undefined ? TENUE : colorNota(f.nota) }}>
                     {fmtN(f.nota)}
                   </span>
                 </div>
@@ -493,7 +619,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
                   ? `💰 = hoy va en ${rank.meta.toFixed(2)} o más. Van ${rank.clubCount} en tu ciudad.`
                   : `Hoy todavía nadie llega al ${rank.meta.toFixed(2)} en tu ciudad.`}
                 {rank.arriba && rank.faltaParaSubir !== null ? (
-                  <> Con <strong style={{ color: TINTA }}>{rank.faltaParaSubir.toFixed(2)}</strong> más
+                  <> Con <strong style={{ color: CIFRA }}>{rank.faltaParaSubir.toFixed(2)}</strong> más
                   {" "}pasas a {rank.arriba.nombreCorto}.</>
                 ) : rank.esPrimera ? " Vas de primera 🏆" : ""}
                 <br />

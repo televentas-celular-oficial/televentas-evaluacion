@@ -16,32 +16,60 @@
 //   · Los meses cerrados se leen del snapshot: esta pantalla solo lee, nunca recalcula.
 //   · MED tiene piso de $15.000.000, BOG no. El texto del botón "Mi mes" cambia según eso.
 //   · Dato que no existe → null → la UI lo dice. NUNCA un 0 disfrazado de real.
+//
+// EL CASH SEMANAL SALE DE LA MISMA FUENTE QUE "Mi cash semanal":
+// `armarSemana()` / `ganadorasDe()` de MiCash.jsx, que leen el documento
+// `televentas/efectivo` (el que escribe el worker). Este Home llamaba a
+// `derivarSemanaEfectivo()`, que buscaba el efectivo dentro de los registros
+// diarios de Ingreso Diario — un campo que nunca existió, porque Ingreso Diario
+// sólo guarda comportamiento. Devolvía null y el botón decía "Sin dato todavía"
+// con la plata ya cargada en Firestore. Aquella función ya no existe: si alguna
+// vez hace falta tocar el cash, se toca UNA sola fuente y las dos pantallas
+// dicen lo mismo.
 
 import { useMemo, useState } from "react";
 import { useDatos } from "../data/DatosContext.jsx";
 import ConfettiRain from "../common/ConfettiRain.jsx";
 import {
-  derivarSemanaEfectivo,
   derivarMesDeVendedora,
   derivarRankingMesCiudad,
   derivarTrimestreEnVivo,
-  fechasSemanaDe,
+  UMBRAL_EFECTIVO_SEMANA,
+  PREMIO_EFECTIVO_SEMANA,
 } from "../data/derivar.js";
+import { armarSemana, ganadorasDe, fechasSemana, hoyISOColombia } from "./MiCash.jsx";
 import { formatoPesos, primerNombre, hoyColombia, esLunesEnColombia } from "../lib/helpers.js";
 
 // ---------------------------------------------------------------------------
 // Paleta exacta del prototipo
 // ---------------------------------------------------------------------------
-const TINTA = "#0f172a";
-const APOYO = "#475569";
-const COLOR_CIUDAD = { MED: "#10b981", BOG: "#f59e0b" };
+// Los papeles de color viven en valquirias.css (:root). Aquí sólo se nombran:
+// esta pantalla ya no conoce ningún valor de color.
+const V = {
+  fondo: "var(--vk-fondo)",             // Lienzo — filas suaves
+  tarjeta: "var(--vk-tarjeta)",         // Papel
+  neutro: "var(--vk-neutro)",           // Gris de resalte — globos y tarjeta gris
+  borde: "var(--vk-borde)",             // Borde
+  medio: "var(--vk-medio)",             // Texto sobre gris
+  secundario: "var(--vk-secundario)",   // Niebla
+  nocheTexto: "var(--vk-noche-texto)",  // Tinta invertida sobre la noche
+};
+
+const TINTA = "var(--vk-titulo)";       // Tinta — títulos y texto fuerte
+const CIFRA = "var(--vk-cifra)";        // Tinta — toda cifra de dinero y toda nota
+const APOYO = "var(--vk-secundario)";   // Niebla — texto secundario
+const NOCHE = "var(--vk-noche)";        // Una sola tarjeta por pantalla
+const ORO = "var(--vk-metal)";          // Sólo sobre la tarjeta noche, y sólo si ya ganó
+// Las ciudades dejan de tener color y se escriben: Medellín y Bogotá quedan en
+// tinta, como texto. Ninguna vuelve a ir pintada del color de un aviso.
+const COLOR_CIUDAD = { MED: TINTA, BOG: TINTA };
 const NOMBRE_CIUDAD = { MED: "Medellín", BOG: "Bogotá" };
 const PUNTO_CIUDAD = { MED: "🟢", BOG: "🟡" };
 
 const BOTONES = {
-  cash: { emoji: "💵", rotulo: "Mi cash semanal", fondo: "#f0fdf9", borde: "#b6e6d5", texto: "#046c4e", globo: "#c7f0e0" },
-  mes:  { emoji: "📅", rotulo: "Mi mes",          fondo: "#fff8f1", borde: "#f6d9be", texto: "#9a4a12", globo: "#fbe3cd" },
-  trim: { emoji: "💎", rotulo: "Mi trimestre",    fondo: "#f7f4ff", borde: "#ddd3f5", texto: "#5b2ec4", globo: "#e6dcfb" },
+  cash: { emoji: "💵", rotulo: "Mi cash semanal", fondo: V.tarjeta, borde: V.borde, texto: V.secundario, globo: V.neutro },
+  mes:  { emoji: "📅", rotulo: "Mi mes",          fondo: V.tarjeta, borde: V.borde, texto: V.secundario, globo: V.neutro },
+  trim: { emoji: "💎", rotulo: "Mi trimestre",    fondo: V.tarjeta, borde: V.borde, texto: V.secundario, globo: V.neutro },
 };
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -59,13 +87,17 @@ function rangoCorto(desde, hasta) {
     : `${a.getDate()} de ${MESES[a.getMonth()]} al ${b.getDate()} de ${MESES[b.getMonth()]}`;
 }
 
-// Lunes de la semana ANTERIOR (para leer la semana que ya cerró el domingo)
-function isoLunesPasado(isoHoy) {
-  const lunes = fechasSemanaDe(isoHoy)[0];
-  const d = new Date(`${lunes}T12:00:00`);
-  d.setDate(d.getDate() - 7);
+// Los 7 días (lun→dom) de la semana ANTERIOR a la que contiene `iso` — la que
+// ya cerró el domingo. La aritmética va en UTC sobre días pelados, igual que en
+// MiCash.jsx: un día UTC dura siempre 24 horas, así que restar 7 no puede correr
+// la fecha aunque el teléfono esté en otra zona horaria.
+function fechasSemanaPasadaDe(iso) {
+  const [a, m, d] = fechasSemana(iso)[0].split("-").map(Number);
+  const previo = new Date(Date.UTC(a, m - 1, d) - 7 * 86400000);
   const dd = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${dd(d.getMonth() + 1)}-${dd(d.getDate())}`;
+  return fechasSemana(
+    `${previo.getUTCFullYear()}-${dd(previo.getUTCMonth() + 1)}-${dd(previo.getUTCDate())}`
+  );
 }
 
 const nombreDeFila = (fila, esYo, vendedora) =>
@@ -77,7 +109,7 @@ const CSS = `
 .vk-gran{display:block;width:100%;text-align:left;border:1px solid;border-radius:18px;
   padding:18px 20px;margin-bottom:11px;cursor:pointer;font:inherit;
   transition:transform .12s ease,box-shadow .12s ease}
-.vk-gran:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(15,23,42,.07)}
+.vk-gran:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(var(--vk-sombra-rgb),.07)}
 .vk-gran:focus-visible{outline:2px solid currentColor;outline-offset:3px}
 .vk-tl-cerrar:hover{opacity:1}
 .vk-tl-cerrar:focus-visible{outline:2px solid currentColor;outline-offset:2px}
@@ -87,22 +119,25 @@ const CSS = `
 // ---------------------------------------------------------------------------
 // Tarjeta del lunes — ganadoras de la semana pasada
 // ---------------------------------------------------------------------------
-// `semana` es lo que devuelve derivarSemanaEfectivo() para la semana anterior.
-// Si es null (el efectivo todavía no se sincroniza desde systemlap) la tarjeta
-// NO se pinta: mejor no decir nada que inventar ganadoras.
+// `semana` es lo que devuelve `resumenLunes()` (más abajo), que adapta la salida
+// de `ganadorasDe()` de MiCash.jsx. Si es null — esa semana no tiene ni un día
+// procesado en el doc de efectivo — la tarjeta NO se pinta: mejor no decir nada
+// que inventar ganadoras.
 function TarjetaLunes({ semana, vendedora, onCerrar }) {
   if (!semana) return null;
 
-  const { club = [], clubCount = 0, hayExtra, gane, premio, umbral, desde, hasta } = semana;
-  const soyLiderDelClub = clubCount > 0 && String(club[0].id) === String(vendedora?.id);
+  const { club = [], clubCount = 0, hayExtra, empateExtra, lider,
+    gane, premio, umbral, desde, hasta } = semana;
+  const idLider = lider ? String(lider.id) : null;
+  const soyLiderDelClub = !!(idLider && idLider === String(vendedora?.id));
 
   if (!clubCount) {
     return (
-      <div style={{ ...estiloTarjeta, background: "#f4f4f5", border: "1px solid #d9d9dd", color: "#3f3f46" }}>
+      <div style={{ ...estiloTarjeta, background: V.neutro, border: `1px solid ${V.borde}`, color: V.medio }}>
         <BotonCerrar onCerrar={onCerrar} />
         <div style={estiloEyebrow}>Semana pasada</div>
         <div style={estiloTitulo}>Esta vez nadie llegó a los {peso(umbral)}</div>
-        <div style={{ ...estiloNota, borderTopColor: "rgba(0,0,0,.08)" }}>
+        <div style={{ ...estiloNota, borderTopColor: "rgba(var(--vk-sombra-rgb),.10)" }}>
           Los {peso(premio)} quedaron sin dueña. Hoy arranca semana nueva — todas en ceros
           y el premio otra vez sobre la mesa.
         </div>
@@ -110,9 +145,15 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
     );
   }
 
-  const fondo = gane ? "#fffaf0" : "#f7f7f8";
-  const borde = gane ? "#f0d49a" : "#dededf";
-  const tinta = gane ? "#8a5a08" : "#3f3f46";
+  // LA TARJETA NOCHE DEL HOME. Sólo cuando el premio YA ESTÁ GANADO: ahí, y sólo
+  // ahí, aparece el oro de la pantalla. Si ganaron otras, la misma tarjeta va en
+  // papel — la noticia es buena, pero la cifra principal no es suya.
+  const fondo = gane ? NOCHE : V.tarjeta;
+  const borde = gane ? NOCHE : V.borde;
+  const tinta = gane ? V.nocheTexto : TINTA;
+  const fondoFila = gane ? "rgba(var(--vk-velo-rgb),.07)" : V.fondo;
+  const fondoFilaYo = gane ? "rgba(var(--vk-metal-rgb),.12)" : V.tarjeta;
+  const lineaNota = gane ? "rgba(var(--vk-velo-rgb),.18)" : "rgba(var(--vk-sombra-rgb),.10)";
   const titulo = gane
     ? (hayExtra && soyLiderDelClub ? "Te llevaste los dos premios 🎉" : `Ganaste tus ${peso(premio)} 🎉`)
     : "Ganaron el premio de la semana";
@@ -120,24 +161,28 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
 
   return (
     <div style={{ ...estiloTarjeta, background: fondo, border: `1px solid ${borde}`, color: tinta }}>
-      <BotonCerrar onCerrar={onCerrar} />
+      <BotonCerrar onCerrar={onCerrar} oscura={gane} />
       <div style={estiloEyebrow}>Semana pasada{rango ? ` · ${rango}` : ""}</div>
-      <div style={estiloTitulo}>{titulo}</div>
+      <div style={{ ...estiloTitulo, color: gane ? ORO : TINTA }}>{titulo}</div>
 
       {club.map((f, i) => {
         const esYo = String(f.id) === String(vendedora?.id);
-        // El EXTRA sólo existe si 2+ llegaron al umbral (regla real de calcPremios)
-        const monto = i === 0 && hayExtra ? premio * 2 : premio;
+        // El EXTRA sólo existe si 2+ llegaron al umbral (regla real de
+        // calcPremios) Y no hay empate arriba: con empate `lider` viene null y
+        // nadie cobra doble.
+        const esLider = !!(idLider && String(f.id) === idLider);
+        const monto = hayExtra && esLider ? premio * 2 : premio;
         return (
           <div
             key={f.id}
             style={{
               ...estiloFila,
-              ...(esYo ? { background: "#fff", boxShadow: "inset 0 0 0 1.5px currentColor" } : null),
+              background: fondoFila,
+              ...(esYo ? { background: fondoFilaYo, boxShadow: "inset 0 0 0 1.5px currentColor" } : null),
             }}
           >
             <span style={{ fontSize: 16, width: 20, textAlign: "center", flexShrink: 0 }}>
-              {i === 0 && hayExtra ? "👑" : "💵"}
+              {hayExtra && esLider ? "👑" : "💵"}
             </span>
             <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 800 }}>
               {nombreDeFila(f, esYo, vendedora)}
@@ -147,26 +192,31 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
         );
       })}
 
-      <div style={estiloNota}>
+      <div style={{ ...estiloNota, borderTopColor: lineaNota }}>
         {hayExtra
           ? (soyLiderDelClub
               ? "Fuiste la que más efectivo vendió, así que sumaste el EXTRA. "
-              : `👑 ${primerNombre(club[0].nombre)} sumó el EXTRA por ser la que más efectivo vendió. `)
-          : `El EXTRA de ${peso(premio)} solo se reparte cuando llegan dos o más, así que esta vez no hubo. `}
+              : `👑 ${primerNombre(lider.nombre)} sumó el EXTRA por ser la que más efectivo vendió. `)
+          : empateExtra
+            // Dos o más quedaron iguales arriba: el EXTRA no se lo lleva nadie
+            // por el orden de una lista. Se dice lo que pasó.
+            ? `Arriba quedaron empatadas, así que el EXTRA de ${peso(premio)} quedó sin dueña. `
+            : `El EXTRA de ${peso(premio)} solo se reparte cuando llegan dos o más, así que esta vez no hubo. `}
         Hoy arranca semana nueva — todas en ceros.
       </div>
     </div>
   );
 }
 
-function BotonCerrar({ onCerrar }) {
+function BotonCerrar({ onCerrar, oscura = false }) {
   return (
     <button
       className="vk-tl-cerrar"
       onClick={onCerrar}
       aria-label="Cerrar el aviso de la semana pasada"
       style={{
-        position: "absolute", top: 11, right: 12, background: "rgba(0,0,0,.07)", border: "none",
+        position: "absolute", top: 11, right: 12,
+        background: oscura ? "rgba(var(--vk-velo-rgb),.16)" : "rgba(var(--vk-sombra-rgb),.07)", border: "none",
         width: 25, height: 25, borderRadius: "50%", font: "inherit", fontSize: 14, lineHeight: 1,
         cursor: "pointer", color: "inherit", opacity: 0.65,
       }}
@@ -179,8 +229,8 @@ function BotonCerrar({ onCerrar }) {
 const estiloTarjeta = { borderRadius: 18, padding: "17px 18px 15px", marginBottom: 16, position: "relative", overflow: "hidden" };
 const estiloEyebrow = { fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.1px", opacity: 0.8 };
 const estiloTitulo = { fontSize: 18, fontWeight: 800, letterSpacing: "-.3px", margin: "5px 0 12px", paddingRight: 26 };
-const estiloFila = { display: "flex", alignItems: "center", gap: 9, padding: "8px 11px", borderRadius: 11, marginBottom: 5, background: "rgba(255,255,255,.62)" };
-const estiloNota = { fontSize: 12.5, fontWeight: 600, lineHeight: 1.55, marginTop: 11, paddingTop: 11, borderTop: "1px solid rgba(0,0,0,.09)" };
+const estiloFila = { display: "flex", alignItems: "center", gap: 9, padding: "8px 11px", borderRadius: 11, marginBottom: 5, background: V.fondo };
+const estiloNota = { fontSize: 12.5, fontWeight: 600, lineHeight: 1.55, marginTop: 11, paddingTop: 11, borderTop: "1px solid rgba(var(--vk-sombra-rgb),.10)" };
 
 // ---------------------------------------------------------------------------
 // Botón grande
@@ -211,7 +261,7 @@ function BotonGrande({ tipo, valor, valorPendiente, pie, onIr }) {
         style={
           valorPendiente
             ? { fontSize: 16, fontWeight: 800, lineHeight: 1.2, color: APOYO }
-            : { fontSize: 27, fontWeight: 800, letterSpacing: "-.8px", lineHeight: 1, color: TINTA }
+            : { fontSize: 27, fontWeight: 800, letterSpacing: "-.8px", lineHeight: 1, color: CIFRA }
         }
       >
         {valor}
@@ -229,17 +279,56 @@ export default function Home({ vendedora, onIr }) {
   const [lunesCerrada, setLunesCerrada] = useState(false);
 
   const hoy = useMemo(() => hoyColombia(), []);
+  const hoyISO = useMemo(() => hoyISOColombia(), []);
   const esLunes = useMemo(() => esLunesEnColombia(), []);
 
+  // Los 7 días de la semana en curso, hora Colombia (misma función que MiCash).
+  const fechasEstaSemana = useMemo(() => fechasSemana(hoyISO), [hoyISO]);
+
+  // LA MISMA fuente que "Mi cash semanal": el doc `televentas/efectivo`.
+  // Devuelve { ok:true, … } o { ok:false, motivo } — nunca null, nunca ceros.
   const semana = useMemo(
-    () => (vendedora ? derivarSemanaEfectivo(datos, vendedora) : null),
-    [datos, vendedora]
+    () => (vendedora
+      ? armarSemana({
+          efectivoDoc: datos.efectivo,
+          vendedoras: datos.vendedoras,
+          vendedora,
+          fechas: fechasEstaSemana,
+        })
+      : null),
+    [datos.efectivo, datos.vendedoras, vendedora, fechasEstaSemana]
   );
 
-  const semanaPasada = useMemo(
-    () => (vendedora && esLunes ? derivarSemanaEfectivo(datos, vendedora, isoLunesPasado(hoy.iso)) : null),
-    [datos, vendedora, esLunes, hoy.iso]
-  );
+  // Ganadoras de la semana que cerró el domingo, sólo los lunes.
+  // `ganadorasDe` devuelve { ganadoras, extra, desde, hasta }; TarjetaLunes
+  // espera { club, clubCount, hayExtra, gane, premio, umbral }. Aquí se traduce.
+  const semanaPasada = useMemo(() => {
+    if (!vendedora?.ciudad || !esLunes) return null;
+    const r = ganadorasDe({
+      efectivoDoc: datos.efectivo,
+      vendedoras: datos.vendedoras,
+      ciudad: vendedora.ciudad,
+      fechas: fechasSemanaPasadaDe(hoyISO),
+    });
+    // null = esa semana no tiene ni un día procesado (o no hay equipo de su
+    // ciudad). No se pinta tarjeta: no hay nada verdadero que contar.
+    if (!r) return null;
+
+    const club = r.ganadoras || [];
+    return {
+      club,
+      clubCount: club.length,
+      // `extra` ya viene en null si hubo empate arriba: ahí el EXTRA no tuvo dueña.
+      lider: r.extra || null,
+      hayExtra: !!r.extra,
+      empateExtra: club.length >= 2 && !r.extra,
+      gane: club.some((g) => String(g.id) === String(vendedora.id)),
+      premio: PREMIO_EFECTIVO_SEMANA,
+      umbral: UMBRAL_EFECTIVO_SEMANA,
+      desde: r.desde,
+      hasta: r.hasta,
+    };
+  }, [datos.efectivo, datos.vendedoras, vendedora, esLunes, hoyISO]);
 
   const mes = useMemo(
     () => (vendedora ? derivarMesDeVendedora(datos, vendedora, hoy.año, hoy.mes) : null),
@@ -279,30 +368,41 @@ export default function Home({ vendedora, onIr }) {
   const colorCiudad = COLOR_CIUDAD[ciudad] || APOYO;
 
   // --- Botón 1: Mi cash semanal --------------------------------------------
-  // semana === null → el efectivo no se sincroniza todavía desde systemlap.
-  // No se pinta un 0: se dice que el dato no está.
-  const semanaArranca = esLunes && (semana?.clubCount || 0) === 0;
+  // `armarSemana` NUNCA devuelve null: o `{ ok:true, … }` o `{ ok:false, motivo }`.
+  // Cuando no se puede armar el ranking se imprime SU motivo, que dice
+  // exactamente qué falta (la ciudad, el doc, un día procesado, el equipo) en vez
+  // del genérico "el efectivo aún no llega".
+  // "Arranca la semana" sólo si todas están de verdad en cero, no por ser lunes.
+  const semanaArranca = esLunes && !!semana?.ok && semana.filas.every((f) => f.efectivo === 0);
   let cashValor, cashPie, cashPendiente = false;
-  if (!semana) {
+  if (!datos.cargado) {
+    // Mientras los documentos no hayan llegado no se afirma nada: un estado
+    // vacío prematuro se lee como "no vendiste".
+    cashPendiente = true;
+    cashValor = "Cargando…";
+    cashPie = "Buscando el efectivo de la semana";
+  } else if (!semana?.ok) {
     cashPendiente = true;
     cashValor = "Sin dato todavía";
-    cashPie = "El efectivo de la semana aún no llega desde systemlap";
+    cashPie = semana?.motivo
+      || "El efectivo de la semana todavía no ha llegado desde systemlap.";
   } else if (semana.miEfectivo == null) {
-    // El ranking de la ciudad SÍ se armó (otras ya tienen efectivo cargado),
-    // pero de ella todavía no hay dato: derivarSemanaEfectivo la deja fuera de
-    // `filas` y devuelve miEfectivo/faltaParaPremio en null. Pintar eso daba
-    // "$0" y "Te faltan $0 para tus $50.000" — un cero que no es suyo y una
-    // meta que se contradice sola.
+    // El ranking de su ciudad SÍ se armó, pero ella no aparece en él: no es que
+    // falte su dato, es que `participantes()` no la tiene compitiendo esta
+    // semana (eventual o ya no activa). Pintar "$0" y "te faltan $2.500.000"
+    // sería un cero que no es suyo y una meta que ella no está corriendo.
     cashPendiente = true;
-    cashValor = "Sin dato todavía";
-    cashPie = "Tu efectivo de esta semana aún no llega desde systemlap";
+    cashValor = "No estás en el concurso";
+    cashPie = "No apareces entre las que compiten esta semana · escríbele al administrador";
   } else {
     cashValor = peso(semana.miEfectivo);
     cashPie = semanaArranca
       ? `Semana nueva · ${peso(semana.premio)} otra vez en juego`
       : semana.gane
-        ? (semana.soyLider
-            ? `Ganaste los ${peso(semana.premio)} y vas de primera por el EXTRA`
+        ? (semana.voyPrimeraDelClub
+            ? (semana.hayExtra
+                ? `Ganaste los ${peso(semana.premio)} y vas de primera por el EXTRA`
+                : `Ganaste los ${peso(semana.premio)} · el EXTRA se activa cuando llegue otra`)
             : `Ya tienes tus ${peso(semana.premio)} · pelea por el EXTRA`)
         : semana.faltaParaPremio != null
           ? `Te faltan ${peso(semana.faltaParaPremio)} para tus ${peso(semana.premio)}`

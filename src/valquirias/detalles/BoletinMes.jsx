@@ -97,7 +97,8 @@ export default function BoletinMes({
         <div className="v-card" style={{ textAlign: "center", padding: "26px 14px" }}>
           <div style={{ fontSize: 30, marginBottom: 8 }}>📭</div>
           <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, lineHeight: 1.55 }}>
-            No se pudo identificar a la vendedora. Vuelve a entrar con tu enlace.
+            No se pudo identificar a la vendedora. Cierra sesión y vuelve a entrar con tu
+            correo y tu contraseña.
           </div>
         </div>
       </>

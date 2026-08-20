@@ -82,11 +82,22 @@ import { UMBRAL_EFECTIVO_SEMANA, PREMIO_EFECTIVO_SEMANA } from "../data/derivar.
 import { participantes } from "../../lib/calculos.js";
 import { formatoPesos, primerNombre, textoActualizado } from "../lib/helpers.js";
 
-const TINTA = "#0f172a";
-const APOYO = "#475569";
-const TENUE = "#94a3b8";
-const VERDE = "#059669";
-const LINEA = "#e2e8f0";
+// Los papeles de color viven en valquirias.css (:root). Aquí sólo se nombran.
+const TITULO = "var(--vk-titulo)";        // Tinta — títulos y nombres
+const CIFRA = "var(--vk-cifra)";          // Tinta — toda cifra de dinero
+const APOYO = "var(--vk-secundario)";     // Niebla
+const TENUE = "var(--vk-tenue)";          // Sin dato
+const VERDE = "var(--vk-bien)";           // Plata ganada
+const LINEA = "var(--vk-borde)";          // Borde
+const FONDO = "var(--vk-fondo)";          // Lienzo
+const PAPEL = "var(--vk-tarjeta)";        // Papel
+const NEUTRO = "var(--vk-neutro)";        // Gris de resalte
+const MEDIO = "var(--vk-medio)";          // Texto sobre gris
+const NOCHE = "var(--vk-noche)";          // Su propia fila: la cifra principal de la pantalla
+const NOCHE_TXT = "var(--vk-noche-texto)";  // Tinta invertida sobre la noche
+const NOCHE_APOYO = "var(--vk-noche-apoyo)";// Secundario sobre la noche
+const VERDE_FONDO = "var(--vk-bien-fondo)"; // Verde claro de fondo
+const ORO = "var(--vk-metal)";            // Sólo sobre la noche, y sólo si ya ganó
 
 const NOMBRE_CIUDAD = { MED: "Medellín", BOG: "Bogotá" };
 
@@ -175,7 +186,7 @@ export function armarSemana({ efectivoDoc, vendedoras, vendedora, fechas }) {
     return {
       ok: false,
       motivo: "No podemos saber en qué ciudad estás compitiendo, y el premio se pelea " +
-        "por ciudad. Avísale a la oficina para que revise tu ficha.",
+        "por ciudad. Escríbele al administrador para que revise tus datos.",
     };
   }
 
@@ -313,9 +324,12 @@ function mensajeMotivacional(semana, semanaArranca) {
   const { premio, umbral, club, clubCount, hayExtra, empateExtra, lider,
     gane, voyPrimeraDelClub, miEfectivo, faltaParaPremio, yo } = semana;
 
-  const MORADO = { fondo: "#f7f4ff", borde: "#ddd3f5", tinta: "#5b2ec4" };
-  const VERDE_S = { fondo: "#f0fdf9", borde: "#8fdcc0", tinta: "#046c4e" };
-  const AMBAR = { fondo: "#fffaf0", borde: "#f3d59b", tinta: "#8a5a08" };
+  // Lo informativo y lo que falta va en neutro — gris, nunca rojo ni morado.
+  // Lo ganado va en verde: LLENO cuando además va de primera, HUECO cuando el
+  // premio ya es suyo pero todavía queda algo por pelear.
+  const MORADO = { fondo: NEUTRO, borde: LINEA, tinta: MEDIO };
+  const VERDE_S = { fondo: VERDE_FONDO, borde: LINEA, tinta: VERDE };
+  const AMBAR = { fondo: PAPEL, borde: LINEA, tinta: VERDE };
 
   // No está en el ranking de su ciudad (eventual, o ya no activa). Se dice, no
   // se le inventa una posición ni una meta.
@@ -324,8 +338,8 @@ function mensajeMotivacional(semana, semanaArranca) {
       ...MORADO,
       titulo: "No estás en el concurso de esta semana",
       mensaje: `Este ranking es de las que están compitiendo por los ${peso(premio)} en ` +
-        `${NOMBRE_CIUDAD[semana.ciudad] || semana.ciudad}, y tu ficha no aparece entre ellas. ` +
-        "Si crees que es un error, avísale a la oficina.",
+        `${NOMBRE_CIUDAD[semana.ciudad] || semana.ciudad}, y tu nombre no aparece entre ellas. ` +
+        "Si crees que es un error, escríbele al administrador.",
     };
   }
 
@@ -347,7 +361,7 @@ function mensajeMotivacional(semana, semanaArranca) {
       mensaje: seg
         ? `Tienes tus ${peso(premio)} asegurados y vas de primera por el EXTRA. ` +
           `${primerNombre(seg.nombre)} está a ${peso(Math.max(0, miEfectivo - seg.efectivo))} ` +
-          "de pasarte — la semana todavía da."
+          "de pasarte — la semana no ha cerrado."
         : `Tienes tus ${peso(premio)}. El EXTRA de ${peso(premio)} sólo se activa cuando ` +
           "llegue otra al umbral, y por ahora vas de primera.",
     };
@@ -373,7 +387,7 @@ function mensajeMotivacional(semana, semanaArranca) {
       mensaje: hayExtra && arriba
         ? `Van ${clubCount} en el club esta semana, así que el EXTRA de ${peso(premio)} se ` +
           `pelea entre ustedes. ${primerNombre(arriba.nombre)} va de primera con ` +
-          `${peso(arriba.efectivo)} — te faltan ${peso(faltaExtra)} para pasarla.`
+          `${peso(arriba.efectivo)} — te faltan ${peso(faltaExtra)} para quedar por encima.`
         : `Ya cruzaste los ${peso(umbral)} y el premio es tuyo. Lo que vendas de aquí al ` +
           `domingo es lo que pelea el EXTRA de ${peso(premio)}.`,
     };
@@ -384,10 +398,11 @@ function mensajeMotivacional(semana, semanaArranca) {
     ...MORADO,
     titulo: `Te faltan ${peso(faltaParaPremio)}`,
     mensaje: clubCount
-      ? `Vas en ${peso(miEfectivo)}. Con eso entras al club de los ${peso(premio)}; ya van ` +
-        `${clubCount} adentro peleando el EXTRA y la semana no ha cerrado.`
-      : `Vas en ${peso(miEfectivo)}. Con eso te ganas ${peso(premio)}. Nadie ha llegado ` +
-        "todavía esta semana: la primera que cruce arranca peleando el EXTRA.",
+      ? `Vas en ${peso(miEfectivo)}. Con ${peso(faltaParaPremio)} más entras al club de los ` +
+        `${peso(premio)}; ya van ${clubCount} adentro peleando el EXTRA y la semana no ha cerrado.`
+      : `Vas en ${peso(miEfectivo)}. Con ${peso(faltaParaPremio)} más te ganas los ` +
+        `${peso(premio)}. Nadie ha llegado todavía esta semana: la primera que cruce arranca ` +
+        "peleando el EXTRA.",
   };
 }
 
@@ -397,7 +412,7 @@ function mensajeMotivacional(semana, semanaArranca) {
 const CSS = `
 .vk-volver{background:none;border:none;font:inherit;font-size:14px;font-weight:700;
   color:${APOYO};cursor:pointer;padding:0 0 12px;display:flex;align-items:center;gap:5px}
-.vk-volver:focus-visible{outline:2px solid #ea580c;outline-offset:2px}
+.vk-volver:focus-visible{outline:2px solid ${TITULO};outline-offset:2px}
 `;
 
 function Volver({ onVolver }) {
@@ -411,7 +426,7 @@ function Volver({ onVolver }) {
 function Encabezado({ subtitulo, nota }) {
   return (
     <>
-      <div style={{ fontSize: 19, fontWeight: 800, margin: "0 0 12px", color: TINTA }}>
+      <div style={{ fontSize: 19, fontWeight: 800, margin: "0 0 12px", color: TITULO }}>
         💵 Mi cash semanal
       </div>
       {subtitulo && (
@@ -432,8 +447,8 @@ function ComoSeGana({ umbral = UMBRAL_EFECTIVO_SEMANA, premio = PREMIO_EFECTIVO_
   return (
     <div
       style={{
-        background: "#f7f4ff", border: "1px solid #ddd3f5", borderRadius: 16,
-        padding: "16px 18px", marginTop: 12, lineHeight: 1.6, color: "#5b2ec4",
+        background: FONDO, border: `1px solid ${LINEA}`, borderRadius: 16,
+        padding: "16px 18px", marginTop: 12, lineHeight: 1.6, color: TITULO,
       }}
     >
       <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6 }}>Cómo se gana</div>
@@ -459,11 +474,11 @@ function TarjetaLunesPasado({ resumen, premio }) {
     return (
       <div
         style={{
-          background: "#f8fafc", border: `1px solid ${LINEA}`, borderRadius: 16,
+          background: FONDO, border: `1px solid ${LINEA}`, borderRadius: 16,
           padding: "14px 16px", marginBottom: 14, lineHeight: 1.6, color: APOYO,
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 800, color: TINTA, marginBottom: 4 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: TITULO, marginBottom: 4 }}>
           Semana cerrada
         </div>
         <div style={{ fontSize: 13, fontWeight: 600 }}>
@@ -476,8 +491,8 @@ function TarjetaLunesPasado({ resumen, premio }) {
   return (
     <div
       style={{
-        background: "#f0fdf9", border: "1px solid #8fdcc0", borderRadius: 16,
-        padding: "14px 16px", marginBottom: 14, lineHeight: 1.6, color: "#046c4e",
+        background: VERDE_FONDO, border: `1px solid ${LINEA}`, borderRadius: 16,
+        padding: "14px 16px", marginBottom: 14, lineHeight: 1.6, color: VERDE,
       }}
     >
       <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>
@@ -507,8 +522,8 @@ function SinDato({ motivo, subtitulo, tarjetaLunes, onVolver }) {
 
       <div
         style={{
-          background: "#f4f4f5", border: "1px solid #d9d9dd", borderRadius: 16,
-          padding: "18px 18px 16px", color: "#3f3f46",
+          background: NEUTRO, border: `1px solid ${LINEA}`, borderRadius: 16,
+          padding: "18px 18px 16px", color: MEDIO,
         }}
       >
         <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 6 }}>
@@ -612,31 +627,34 @@ export default function MiCash({ vendedora, onVolver }) {
       <Encabezado subtitulo={subtitulo} nota={nota} />
       {tarjetaLunes}
 
+      {/* SU fila es la tarjeta noche de esta pantalla: la cifra principal de
+          "Mi cash" es su propio efectivo de la semana. El oro aparece una sola
+          vez, en esa misma fila, y sólo si el premio ya está ganado. */}
       {semana.filas.map((f) => (
         <div
           key={f.id}
           style={{
             display: "flex", alignItems: "center", gap: 10,
-            background: f.esYo ? "#fffbeb" : "#fff",
-            border: `1px solid ${f.esYo ? "#fcd34d" : LINEA}`,
+            background: f.esYo ? NOCHE : PAPEL,
+            border: `1px solid ${f.esYo ? NOCHE : LINEA}`,
             borderRadius: 11, padding: "11px 13px", marginBottom: 5,
           }}
         >
           <span
             style={{
               fontSize: 15, fontWeight: 800, width: 26, textAlign: "center", flexShrink: 0,
-              color: f.gano ? VERDE : TENUE,
+              color: f.esYo ? (f.gano ? ORO : NOCHE_APOYO) : (f.gano ? VERDE : TENUE),
             }}
           >
             {f.medalla || f.n}
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: TINTA }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: f.esYo ? NOCHE_TXT : TITULO }}>
               {f.esYo
                 ? `TÚ · ${primerNombre(vendedora.nombre)}`
                 : String(f.nombre || "").split(" ").slice(0, 2).join(" ")}
             </div>
-            <div style={{ fontSize: 11, color: APOYO, marginTop: 2 }}>
+            <div style={{ fontSize: 11, color: f.esYo ? NOCHE_APOYO : APOYO, marginTop: 2 }}>
               {f.gano ? `✅ ganó ${peso(semana.premio)}` : `faltan ${peso(f.falta)}`}
               {f.extra
                 ? (semana.empateExtra
@@ -645,7 +663,10 @@ export default function MiCash({ vendedora, onVolver }) {
                 : ""}
             </div>
           </div>
-          <span style={{ fontWeight: 800, fontSize: 14, whiteSpace: "nowrap", color: f.gano ? VERDE : TINTA }}>
+          <span style={{
+            fontWeight: 800, fontSize: 14, whiteSpace: "nowrap",
+            color: f.esYo ? (f.gano ? ORO : NOCHE_TXT) : (f.gano ? VERDE : CIFRA),
+          }}>
             {peso(f.efectivo)}
           </span>
         </div>

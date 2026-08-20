@@ -1,83 +1,288 @@
 rules_version = '2';
 
 // ============================================================
-// Reglas Firestore Valquirias TLV — v3 (SIN Cloud Functions)
+// Reglas Firestore Valquirias TLV — v4 (SIN Cloud Functions)
 // ============================================================
 //
-// Modelo de auth simplificado (sin custom claims):
-// - Todos entran con Firebase Auth (Magic Link).
-// - La whitelist real vive en Firestore doc `config` → campo `whitelist`.
-// - Estas rules controlan solo qué email puede leer/escribir qué doc.
-// - El bloqueo whitelistActiva=false lo hace el cliente en LoginMagicLink.jsx
-//   (después signOut si no está autorizada).
+// Modelo de auth (sin custom claims):
+// - Todos entran con Firebase Auth: correo y contraseña (puerta principal) o
+//   link mágico (salida de emergencia).
+// - La whitelist real vive DENTRO del doc `vendedoras` (campo `email` de cada
+//   ficha) y la aplica el cliente en acceso.js → verificarAcceso(), que hace
+//   signOut si el correo no está en el roster.
+// - Estas rules controlan qué email puede leer/escribir qué doc.
 //
 // Estructura Firestore actual:
 //   colección `televentas` con 6 docs:
 //     - registros   (llenados por Carolina y Luis)
-//     - metas       (cargadas por Luis, incluye ventas sincronizadas de systemlap)
-//     - vendedoras  (roster + emails privados)
+//     - metas       (metas por ciudad + ventas sincronizadas de systemlap)
+//     - vendedoras  (roster + correos personales — lo escribe el worker)
 //     - snapshots   (meses cerrados, generados por Luis)
-//     - config      (whitelist, whitelistActiva, premiosTrim, rankingVisible)
+//     - config      (whitelistActiva, premiosTrim, rankingVisible)
 //     - efectivo    (efectivo por vendedora por día — SOLO lo escribe el worker)
 //
 // Emails privilegiados (hardcoded):
-//   Luis      → luisponce.tv@gmail.com     — admin (write TODO)
-//   Carolina  → info@televentas.com        — oficina (write registros y metas)
+//   Luis      → luisponce.tv@gmail.com     — admin (escribe registros, metas,
+//                                            snapshots y config)
+//   Carolina  → info@televentas.com        — oficina (escribe SOLO registros)
 //
-// Vendedoras (13): lectura de todos los docs — necesario para ver ranking,
-// nota, ventas propias, config de premios trimestrales, etc.
-// Los DATOS SENSIBLES personales de cada vendedora deben quedar en su UI,
-// no en un doc separado (mismo modelo que la app vieja).
-
-function esAdmin() {
-  return request.auth != null
-      && request.auth.token.email == 'luisponce.tv@gmail.com';
-}
-
-function esOficina() {
-  return request.auth != null
-      && request.auth.token.email == 'info@televentas.com';
-}
-
-function autenticado() {
-  return request.auth != null && request.auth.token.email != null;
-}
+// ────────────────────────────────────────────────────────────────────────────
+// LO QUE ESTAS REGLAS *NO* RESUELVEN — LÉELO ANTES DE CONFIAR EN ELLAS
+// ────────────────────────────────────────────────────────────────────────────
+// La lectura ya NO es de cualquier autenticado (ver el bloque siguiente), pero
+// entre los 15 que entran sigue siendo TODO-O-NADA, y es a propósito:
+//
+//   1. Los 6 documentos guardan un ÚNICO campo `data` con un JSON serializado.
+//      El motor de reglas no puede abrir ese string: no existe JSON.parse en
+//      Firestore Rules. Por eso la whitelist NO se puede sacar del doc
+//      `vendedoras` — ahí es texto dentro de un string, invisible a la regla.
+//      Esa es toda la razón de que exista el doc `acceso`.
+//
+//   2. Firestore no filtra campos: o se lee el documento entero o nada. Ocultar
+//      "la comisión de la otra" exige que ese dato viva en OTRO documento.
+//
+//   3. El cliente (data/DatosContext.jsx) se suscribe a los 6 docs y exige que
+//      los 6 lleguen para marcar `cargado`. Si una regla niega UNO SOLO, la
+//      carga entera queda en `estado: "error"` y la app se ve rota para esa
+//      persona. Negar un doc por rol SIN tocar ese archivo no cierra un hueco:
+//      apaga la app. Por eso el filtro es por PERSONA (entra o no entra), no
+//      por documento.
+//
+// ────────────────────────────────────────────────────────────────────────────
+// LA LECTURA ESTÁ CERRADA A LOS CORREOS DE `televentas/acceso`
+// ────────────────────────────────────────────────────────────────────────────
+// El worker televentas-reportes (src/sync.js, `syncAcceso`) mantiene solo el
+// documento `televentas/acceso`, con CAMPOS DE VERDAD — no un string:
+//
+//     televentas/acceso
+//       correos     : array de strings   ["ana@gmail.com", "info@televentas.com", ...]
+//       total       : integer            15
+//       actualizado : string ISO         "2026-08-19T18:21:34.792Z"
+//
+// Es una LISTA, no un mapa. (Una versión vieja de este comentario proponía
+// `emails: { "ana@x.com": true }` y consultarlo con `.data.emails[correo]`:
+// quedó OBSOLETO y no se debe resucitar. Con lista, el correo es un VALOR que
+// se compara entero contra cada elemento; con mapa es una RUTA DE CAMPO, y los
+// correos llevan punto — todos, en el dominio, y tres además antes de la @.
+// La forma con lista no tiene esa pregunta encima.)
+//
+// El ciclo completo, sin que nadie publique nada al contratar:
+//   Luis crea a la vendedora en systemlap con su correo → el worker sincroniza
+//   cada 5 minutos y la copia a `vendedoras` y a `acceso` → ella entra a
+//   valkyrias.pages.dev, toca "Crear mi contraseña" con ESE mismo correo → lee.
+//   Cuando se retira, Luis la desactiva en systemlap y a los 5 minutos sale de
+//   `acceso`: la regla la deja afuera aunque su cuenta de Auth siga existiendo.
+//
+// ORDEN DE PUBLICACIÓN — NO SE NEGOCIA:
+//   1º el worker desplegado y `televentas/acceso` existiendo con total: 15.
+//   2º estas reglas.
+// Al revés apaga la app para las 15: `get()` sobre un documento que no existe
+// devuelve null, `null.data` es un error de evaluación, y un error NIEGA.
+//
+// SI EL DOCUMENTO NO EXISTE, LA REGLA NIEGA — ES LA DECISIÓN, NO UN DESCUIDO:
+//   · Luis y Carolina NO dependen de él: van antes en el `||`, comparados
+//     contra su correo escrito aquí. Entran aunque `acceso` no exista, esté
+//     vacío o Firestore devuelva error. Los dos que pueden arreglar cualquier
+//     cosa nunca quedan afuera. Ese es "el lado seguro".
+//   · No se dejó un "si no existe, que entre cualquier autenticado" porque ese
+//     respaldo es MUDO: la app funcionaría igual y nadie se enteraría de que la
+//     whitelist dejó de aplicar. Además tampoco cubriría el caso que dice
+//     cubrir: un `get()` que falla por infraestructura no devuelve null, aborta
+//     la evaluación y niega igual. Solo taparía el estado que ya controlamos
+//     con el orden de publicación.
+//   · Para una vendedora, negar la lectura NO le borra la cuenta. IngresoClave
+//     borra la cuenta recién creada solo con causa "fuera-del-roster"
+//     (IngresoClave.jsx:171-175), y esa causa exige haber LEÍDO `vendedoras`.
+//     Si la regla niega, `verificarAcceso` cae en causa "error" (acceso.js:124)
+//     → "No pudimos verificar tu acceso" y la cuenta se conserva. Por eso la
+//     recién contratada que llegue en la ventana de 5 minutos entre systemlap y
+//     el worker no pierde nada: reintenta y entra.
+//
+// COSTO (verificado, no estimado):
+//   · Cada `get()`/`exists()` dentro de una regla ES una lectura facturable, y
+//     se cobra aunque la regla niegue.
+//   · Límite: 10 accesos a documentos por evaluación del conjunto de reglas en
+//     peticiones de un solo documento y en consultas; 20 en lecturas de varios
+//     documentos, transacciones y escrituras por lote (dentro de un lote, el
+//     límite de 10 sigue aplicando a cada operación).
+//   · Esta regla hace 1 solo `get()`, y solo en `allow read`. Los 6 documentos
+//     de la app son 6 suscripciones independientes → 6 evaluaciones separadas,
+//     1 de 10 cada una. Aun si los 6 llegaran en una sola petición serían 6 de
+//     10. En ninguno de los dos casos se topa el límite: sobran 4.
+//   · Las escrituras NO llevan `get()` a propósito: `restaurarTodo` manda un
+//     writeBatch y ahí el presupuesto es más apretado.
+//   · Precio: una carga completa de la app pasa de 6 lecturas a 12. Con las 15
+//     personas y el worker reescribiendo hasta 3 documentos cada 5 minutos, el
+//     peor caso —las 15 con la app abierta todo el día— son unas 27.000
+//     lecturas diarias, debajo de la cuota gratuita de 50.000 lecturas por día.
+//     Hoy esto cuesta 0 pesos. Y si algún día se saliera de la cuota, 27.000
+//     lecturas al día son 810.000 al mes, y a 0,06 dólares por cada 100.000
+//     lecturas eso son 0,49 dólares al mes: unos 1.960 pesos colombianos.
+//
+// POR QUÉ `acceso` NO SE PUEDE LEER DESDE LA APP:
+//   `get()` dentro de las reglas NO pasa por las reglas, así que el documento
+//   no necesita estar en la lista blanca de `allow read` — y no lo está. Es la
+//   lista de los 15 correos: ningún cliente tiene por qué descargarla.
+//
+// ────────────────────────────────────────────────────────────────────────────
+// EL REGISTRO ABIERTO NO SE ARREGLA AQUÍ
+// ────────────────────────────────────────────────────────────────────────────
+// Que un desconocido pueda crearse cuenta es un ajuste del proyecto de Firebase
+// (Authentication → Settings → User actions → "Enable create (sign-up)"), no de
+// estas reglas. Y tiene que seguir ENCENDIDO: es como cada vendedora crea su
+// contraseña sola, sin que Luis publique nada.
+//
+// Lo que cambia con la whitelist de arriba: esa cuenta de desconocido ya no lee
+// nada. Queda un caso vivo, y hay que decirlo: el correo de una vendedora NO se
+// verifica al crear la contraseña, así que quien se adelante y registre el
+// correo de ella antes que ella sí leería. Se cierra por el lado del negocio —
+// el correo se crea en systemlap y ella entra el mismo día— y del lado de
+// Firebase exigiendo verificación de correo, que es otro archivo, no este.
+// ────────────────────────────────────────────────────────────────────────────
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ---------- Funciones ----------
+    // Viven DENTRO de este `match` y no en la raíz del archivo por una razón
+    // concreta: `enLaLista()` usa `$(database)`, y esa variable la declara la
+    // línea de arriba. Desde la raíz del archivo no está en alcance.
+
+    function autenticado() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    // El correo de la sesión, en minúscula. SIEMPRE detrás de `autenticado()`:
+    // `&&` corta la evaluación, y llamar .lower() sobre null sería un error → niega.
+    //
+    // El .lower() no es adorno. El worker guarda los correos normalizados
+    // (trim + minúscula, igual que `normalizaEmail` en acceso.js:47) y ella escribe
+    // el correo desde el celular, con la mayúscula que le mete el autocapitalize de
+    // iOS. Comparar sin normalizar es dejar a alguien afuera por una mayúscula.
+    function correo() {
+      return request.auth.token.email.lower();
+    }
+
+    function esAdmin() {
+      return autenticado() && correo() == 'luisponce.tv@gmail.com';
+    }
+
+    function esOficina() {
+      return autenticado() && correo() == 'info@televentas.com';
+    }
+
+    // Luis y Carolina. Van SIEMPRE primero en el `||` de la lectura: entran sin
+    // consultar `acceso`, así que no gastan la lectura extra y —lo que importa— no
+    // dependen de que ese documento exista ni de que el worker esté vivo. Si todo
+    // lo demás se cae, estos dos entran y pueden arreglarlo.
+    function esCasa() {
+      return esAdmin() || esOficina();
+    }
+
+    // La whitelist que se mantiene sola. 1 sola lectura extra, y a propósito:
+    //   · un solo `get()` — no se usa `exists()` + `get()`, que serían DOS accesos
+    //     facturables para averiguar lo mismo;
+    //   · si el documento no existe, `get()` devuelve null, `null.data` es un error
+    //     de evaluación y la regla NIEGA. Es el comportamiento buscado: ver el
+    //     bloque "SI EL DOCUMENTO NO EXISTE" arriba;
+    //   · `correos` es una LISTA y `in` compara el correo entero contra cada
+    //     elemento. Nunca se parte por los puntos del correo.
+    function enLaLista() {
+      return autenticado()
+          && correo() in get(/databases/$(database)/documents/televentas/acceso).data.correos;
+    }
+
+    // Todo escrito por la app tiene exactamente esta forma: un solo campo `data`
+    // con un string. Cualquier otra cosa (campos sueltos, un número, un mapa
+    // anidado) es un cliente que no es esta app, y se rechaza antes de tocar el
+    // documento. No valida el CONTENIDO del JSON — eso el motor no puede verlo.
+    function formaValida() {
+      return request.resource.data.keys().hasOnly(['data'])
+          && request.resource.data.data is string;
+    }
+
     // ---------- Colección principal ----------
     match /televentas/{docId} {
 
-      // LECTURA: cualquier autenticado. Incluye `efectivo`: cada vendedora
-      // necesita leerlo para ver su cash de la semana y el de su ciudad.
-      // (La validación fina — quién ES esta persona, qué puede ver — la hace el cliente.
-      // La whitelist en config decide si el login se completa; si no, signOut inmediato.)
-      allow read: if autenticado();
+      // LECTURA: la casa siempre, y las demás solo si su correo está hoy en
+      // `televentas/acceso`. Y sólo los 6 documentos que la app conoce: la lista
+      // de nombres no es adorno — sin ella `televentas/loQueSea` también se
+      // leería, y el día que alguien cree ahí un doc con datos sensibles nacería
+      // legible sin que nadie toque este archivo. `acceso` NO está en la lista:
+      // nadie lo descarga desde el cliente.
+      //
+      // EL ORDEN DE LAS TRES CONDICIONES ES DELIBERADO:
+      //   1) `docId in [...]` primero: un documento que no existe se niega sin
+      //      gastar la lectura del `get()`.
+      //   2) `esCasa()` antes que `enLaLista()`: Luis y Carolina no gastan
+      //      lectura y, sobre todo, no dependen del documento `acceso`.
+      //   3) `enLaLista()` al final: es lo único que cuesta una lectura.
+      allow read: if docId in ['registros', 'metas', 'vendedoras', 'snapshots', 'config', 'efectivo']
+                  && ( esCasa() || enLaLista() );
 
-      // ESCRITURA por doc:
-      // - vendedoras + snapshots: solo admin (Luis)
-      // - registros: admin u oficina (Carolina llena diario)
-      // - metas: admin u oficina (Carolina puede corregir ventas)
-      // - config: solo admin
-      // - efectivo: NADIE desde el cliente. Ni Luis, ni un respaldo, ni un bug.
-      //   Lo escribe el worker televentas-reportes con su service account, que se
-      //   salta estas reglas por definición (Admin SDK / REST con OAuth de
-      //   servicio), así que NO hay que darle permiso aquí. La app sólo lo lee.
-      //   Ese doc es la base del premio semanal de $50.000: si el cliente pudiera
-      //   escribirlo, cualquiera con sesión iniciada podría mover la plata.
-      //   El `docId != 'efectivo'` de adelante es redundante hoy —lo que no está
-      //   en la lista blanca ya queda negado— y está puesto a propósito: cubre el
-      //   descuido probable, que es ensanchar ESTA lista (un `|| esAdmin()` suelto
-      //   al final). No cubre el caso de agregar OTRO `allow write` aparte: en
-      //   Firestore los allow se suman, así que eso sí volvería a abrirlo. Regla
-      //   para quien edite: `efectivo` no se escribe desde el cliente. Punto.
-      allow write: if docId != 'efectivo'
-                   && ( (docId == 'vendedoras'  && esAdmin())
-                     || (docId == 'snapshots'   && esAdmin())
+      // ESCRITURA por doc — quién escribe QUÉ, y nada más:
+      //
+      // - registros  → admin u oficina. Es lo único que Carolina llena
+      //                (IngresoDiario es su única pantalla).
+      // - metas      → SOLO admin. Antes también oficina "por si tenía que
+      //                corregir ventas": ya no. Las ventas llegan de systemlap
+      //                cada 5 minutos y la meta la carga Luis desde Admin →
+      //                Cargar Metas. Ninguna pantalla de oficina escribe metas,
+      //                así que este permiso era ancho sin que nadie lo usara.
+      // - snapshots  → SOLO admin. Es el mes cerrado: lo que paga comisiones y
+      //                premios, y no cambia nunca más.
+      // - config     → SOLO admin (whitelistActiva, premiosTrim, rankingVisible).
+      //
+      // - vendedoras → NADIE desde el cliente. Es el roster Y la whitelist de
+      //                acceso: quien lo escriba se agrega solo a la lista y se
+      //                cambia el rol (rolTienda "admin" duplica el porcentaje de
+      //                comisión). Lo escribe el worker de systemlap con service
+      //                account, que se salta estas reglas por definición.
+      //                ⚠️ ESTO ROMPE "Restaurar respaldo" (Admin → Backup):
+      //                DatosContext.restaurarTodo incluye `vendedoras` en un
+      //                writeBatch, y si un doc del batch se niega, FALLA EL BATCH
+      //                ENTERO — no se restaura tampoco registros ni snapshots.
+      //                Arreglo de una línea, en data/DatosContext.jsx:
+      //                  const DOCS_RESTAURABLES = DOCS.filter(
+      //                    n => n !== "efectivo" && n !== "vendedoras");
+      //                Restaurar el roster además no sirve: el worker lo vuelve
+      //                a escribir en los 5 minutos siguientes.
+      //
+      // - efectivo   → NADIE desde el cliente. Ni Luis, ni un respaldo, ni un
+      //                bug. Es la base del premio semanal de $50.000: si el
+      //                cliente pudiera escribirlo, cualquiera con sesión movería
+      //                la plata. Lo escribe el worker televentas-reportes.
+      //
+      // - acceso     → NADIE desde el cliente, y este es el más grave de los
+      //                tres: es la lista que decide quién lee. Quien lo escriba
+      //                se agrega solo a la whitelist, o saca a las 13 de una.
+      //                Hoy ya queda negado dos veces (no está en ningún `||` de
+      //                abajo, y `formaValida()` exige un único campo `data` que
+      //                este documento no tiene), pero lleva su `docId !=`
+      //                explícito igual que `efectivo` y `vendedoras`: el
+      //                descuido probable es ensanchar la lista de abajo.
+      //
+      // Los `docId !=` de adelante son redundantes hoy —lo que no está en la
+      // lista blanca ya queda negado— y están puestos a propósito: cubren el
+      // descuido probable, que es ensanchar ESTA lista (un `|| esAdmin()` suelto
+      // al final). No cubren el caso de agregar OTRO `allow write` aparte: en
+      // Firestore los allow se suman, así que eso sí volvería a abrirlo. Regla
+      // para quien edite: `efectivo`, `vendedoras` y `acceso` no se escriben
+      // desde el cliente. Punto.
+      allow create, update: if formaValida()
+                   && docId != 'efectivo'
+                   && docId != 'vendedoras'
+                   && docId != 'acceso'
+                   && ( (docId == 'snapshots'   && esAdmin())
                      || (docId == 'config'      && esAdmin())
-                     || (docId == 'registros'   && (esAdmin() || esOficina()))
-                     || (docId == 'metas'       && (esAdmin() || esOficina())) );
+                     || (docId == 'metas'       && esAdmin())
+                     || (docId == 'registros'   && (esAdmin() || esOficina())) );
+
+      // BORRAR un documento entero no es una operación de esta app: no hay un
+      // solo deleteDoc en src/. Borrar `registros` es borrar el año completo de
+      // comportamiento de las 13. Antes estaba permitido para admin y oficina
+      // porque `allow write` incluye delete sin decirlo.
+      allow delete: if false;
     }
 
     // ---------- Log de accesos (fase 2, cuando activemos Blaze) ----------
@@ -87,8 +292,82 @@ service cloud.firestore {
     }
 
     // ---------- Deny-all al final: cualquier otra ruta bloqueada ----------
+    // Ojo: este deny-all NO es lo que protege a `televentas/acceso`. Ese
+    // documento cae dentro de `match /televentas/{docId}` de arriba, y ahí lo
+    // niegan la lista blanca de lectura y los `docId !=` de escritura. Esto de
+    // acá cubre colecciones nuevas, no documentos nuevos.
     match /{path=**} {
       allow read, write: if false;
     }
   }
 }
+
+// ============================================================================
+// TABLA DE PRUEBAS — Rules Playground (consola de Firebase → Firestore → Reglas
+// → Playground). Evalúa las reglas del editor, SIN publicar, contra los datos
+// reales de la base. Por eso las filas 1 a 4 se pueden correr HOY, con el
+// documento `acceso` todavía ausente.
+//
+// ANTES DE EMPEZAR: en el simulador hay que marcar "Autenticado", proveedor
+// "Contraseña", y agregar el campo `email` al token. Si se deja el token sin
+// email, `autenticado()` da falso y TODO niega — y eso no es un hallazgo, es el
+// simulador mal configurado.
+//
+// Correos de ejemplo: cambia ana@gmail.com y ana.maria@gmail.com por dos de los
+// 13 reales, uno normal y otro de los tres que llevan punto antes de la @.
+//
+// ── TANDA A — HOY, con `acceso` inexistente (404). Es la prueba del apagón. ──
+//  #   correo                     operación   documento                esperado
+//  A1  luisponce.tv@gmail.com     get         televentas/registros     PERMITIDO
+//  A2  info@televentas.com        get         televentas/registros     PERMITIDO
+//  A3  ana@gmail.com              get         televentas/registros     DENEGADO
+//  A4  ana@gmail.com              get         televentas/config        DENEGADO
+//      A1 y A2 son la prueba de que la lista caída no deja a Luis afuera.
+//      A3 y A4 son la razón del orden de despliegue: así se ve la app apagada
+//      para las 13 si alguien publica esto antes de que el worker corra.
+//
+// ── TANDA B — DESPUÉS de que `acceso` exista con total: 15 ──
+//  #   correo                     operación   documento                esperado
+//  B1  luisponce.tv@gmail.com     get         televentas/registros     PERMITIDO
+//  B2  info@televentas.com        get         televentas/efectivo      PERMITIDO
+//  B3  ana@gmail.com              get         televentas/registros     PERMITIDO
+//  B4  ana@gmail.com              get         televentas/metas         PERMITIDO
+//  B5  ana@gmail.com              get         televentas/vendedoras    PERMITIDO
+//  B6  ana@gmail.com              get         televentas/snapshots     PERMITIDO
+//  B7  ana@gmail.com              get         televentas/config        PERMITIDO
+//  B8  ana@gmail.com              get         televentas/efectivo      PERMITIDO
+//      B3 a B8 son los 6 documentos que DatosContext exige. Si UNO solo sale
+//      denegado, la app queda en "error" para ella: se prueban los seis.
+//  B9  ana.maria@gmail.com        get         televentas/registros     PERMITIDO
+//      El correo con punto antes de la @. Es la prueba de que la lista no se
+//      parte por los puntos.
+//  B10 Ana.Maria@Gmail.COM        get         televentas/registros     PERMITIDO
+//      La misma persona escrita por el celular con mayúsculas: prueba .lower().
+//  B11 desconocida@gmail.com      get         televentas/registros     DENEGADO
+//      Cuenta creada por fuera de la app con la API key pública.
+//  B12 exvendedora@gmail.com      get         televentas/registros     DENEGADO
+//      La baja: cuenta de Auth viva, correo ya fuera de `acceso`. Esta fila es
+//      la que prueba que desactivar en systemlap la saca de todo.
+//  B13 ana@gmail.com              get         televentas/acceso        DENEGADO
+//  B14 luisponce.tv@gmail.com     get         televentas/acceso        DENEGADO
+//      Ni el dueño lo lee. La regla sí lo consulta: `get()` interno no pasa por
+//      reglas. Si B14 saliera PERMITIDO, la lista de los 15 sería descargable.
+//  B15 ana@gmail.com              get         televentas/loQueSea      DENEGADO
+//  B16 (sin autenticar)           get         televentas/registros     DENEGADO
+//
+// ── TANDA C — escritura. No cambia con esta edición, salvo C5 y C6. ──
+//  #   correo                     operación   documento             datos        esperado
+//  C1  info@televentas.com        update      televentas/registros  {data:"[]"}  PERMITIDO
+//  C2  info@televentas.com        update      televentas/metas      {data:"{}"}  DENEGADO
+//  C3  luisponce.tv@gmail.com     update      televentas/metas      {data:"{}"}  PERMITIDO
+//  C4  ana@gmail.com              update      televentas/registros  {data:"[]"}  DENEGADO
+//  C5  luisponce.tv@gmail.com     update      televentas/acceso     {correos:["x@y.com"],total:1,actualizado:"z"}  DENEGADO
+//  C6  luisponce.tv@gmail.com     update      televentas/acceso     {data:"[]"}  DENEGADO
+//      C5 y C6 son el guardia nuevo: ni con la forma del worker ni con la forma
+//      de la app. Quien escriba ese documento se agrega solo a la whitelist.
+//  C7  luisponce.tv@gmail.com     update      televentas/vendedoras {data:"[]"}  DENEGADO
+//  C8  luisponce.tv@gmail.com     update      televentas/efectivo   {data:"{}"}  DENEGADO
+//  C9  luisponce.tv@gmail.com     delete      televentas/registros  —            DENEGADO
+//  C10 luisponce.tv@gmail.com     get         accesos_log/loQueSea  —            PERMITIDO
+//  C11 ana@gmail.com              get         accesos_log/loQueSea  —            DENEGADO
+// ============================================================================

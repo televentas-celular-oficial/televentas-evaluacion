@@ -18,7 +18,7 @@ export default function InputPesos({ inputRef, defaultValue = "", placeholder, s
     <div style={{ position: "relative" }}>
       <span style={{
         position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
-        color: "#94a3b8", fontWeight: 700, fontSize: 13, pointerEvents: "none",
+        color: "var(--vk-secundario)", fontWeight: 700, fontSize: 13, pointerEvents: "none",
       }}>$</span>
       <input
         type="text"

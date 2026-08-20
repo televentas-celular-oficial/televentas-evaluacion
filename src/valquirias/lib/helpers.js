@@ -70,7 +70,7 @@ export function minutosDesde(iso) {
 
 export function textoActualizado(iso) {
   const min = minutosDesde(iso);
-  if (min == null) return "sync desconocido";
+  if (min == null) return "sin hora de actualización";
   if (min < 1) return "actualizado hace segundos";
   if (min < 60) return `actualizado hace ${min} min`;
   const h = Math.floor(min / 60);
@@ -79,7 +79,7 @@ export function textoActualizado(iso) {
 
 // Confetti pieces (18 unidades)
 export const CONFETTI_PIECES = Array.from({ length: 18 }, (_, i) => {
-  const colores = ["#f472b6", "#fbbf24", "#34d399", "#60a5fa", "#a855f7", "#f97316", "#ec4899", "#10b981", "#eab308", "#06b6d4"];
+  const colores = ["#E0B01C", "#0B5E2E", "#8A6708", "#2F3841", "#E0B01C", "#5B6472", "#0B5E2E", "#EBEDEF", "#E0B01C", "#12161C"];
   const forma = i % 3 === 0 ? "round" : i % 3 === 1 ? "thin" : "";
   return {
     id: i,

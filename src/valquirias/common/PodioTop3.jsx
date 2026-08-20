@@ -46,7 +46,7 @@ export default function PodioTop3({ datos, ciudad, año, mes, miId = null, onAbr
           >
             <div
               className="v-podio-nombre"
-              style={{ color: COLOR_CIUDAD[v.ciudad] || "#475569" }}
+              style={{ color: COLOR_CIUDAD[v.ciudad] || "var(--vk-titulo)" }}
             >
               {v.esYo ? "TÚ" : v.nombreCorto}
             </div>

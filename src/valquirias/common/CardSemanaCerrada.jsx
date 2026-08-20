@@ -18,17 +18,17 @@ export default function CardSemanaCerrada({ semanaCerrada, onCerrar }) {
 
       {/* Ganadora del EXTRA */}
       <div className="v-sc-extra">
-        <div className="v-sc-badge">🥇 $50k EXTRA</div>
+        <div className="v-sc-badge">🥇 $50.000 EXTRA</div>
         <div className="v-sc-nombre-big">
           {extra.esYo ? "¡GANASTE TÚ! 🎉" : primerNombre(extra.nombre)}
         </div>
         <div className="v-sc-monto">{formatoPesos(extra.monto)} en efectivo</div>
       </div>
 
-      {/* Ganadoras del +$50k base */}
+      {/* Ganadoras del +$50.000 base */}
       {ganadoras50k && ganadoras50k.length > 0 && (
         <div className="v-sc-50k">
-          <div className="v-sc-50k-titulo">✅ +$50k para:</div>
+          <div className="v-sc-50k-titulo">✅ +$50.000 para:</div>
           <div className="v-sc-50k-lista">
             {ganadoras50k.map((g, i) => (
               <span

@@ -1,4 +1,4 @@
-// Panel Carolina (rol oficina) — Ingreso diario de indicadores
+// Panel del operador (rol oficina) — Ingreso diario de indicadores
 // Portado de PantallaIngreso vieja (App.jsx:1067-1250)
 //
 // Flujo:
@@ -152,6 +152,14 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
   }, [fecha, activas, registros, datos.cargado]);
 
   function setFila(vid, campo, valor) {
+    // Un día ya guardado no se toca desde aquí. Antes el control simplemente no
+    // respondía y ella no sabía por qué; ahora lo dice al intentarlo, que es
+    // cuando la explicación sirve.
+    if (bloqueadoPorGuardado && !mesCerrado) {
+      setTipoFallo("bloqueo");
+      setErrorGuardado("Para modificar contacta al admin.");
+      return;
+    }
     if (soloLectura) return;
     setFilas(f => ({ ...f, [vid]: { ...(f[vid] || diaVacio()), [campo]: valor } }));
     if (!tocadasRef.current.has(vid)) {
@@ -180,7 +188,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
     if (!esAdminSesion && activas.some(v => !!registros[`${v.id}_${fecha}`])) {
       setTipoFallo("bloqueo");
       setErrorGuardado(
-        `El día ${fecha} ya estaba registrado, así que no se cambió nada de lo que ya había.`
+        "Para modificar contacta al admin."
       );
       return;
     }
@@ -275,7 +283,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
       </div>
 
       <div className="v-greeting">
-        Hola <strong>Carolina</strong> <span className="v-role-mini oficina">Oficina</span>
+        Hola <strong>operador</strong> <span className="v-role-mini oficina">Oficina</span>
         <div style={{ marginTop: 4, fontSize: 12, color: "#0891b2", fontWeight: 900 }}>📝 Ingreso diario de indicadores</div>
       </div>
 
@@ -292,16 +300,6 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
           los días vacíos los sigue pudiendo llenar, que es lo que está haciendo
           ahora mismo con julio. No se pinta junto al de mes cerrado: ese ya
           explica que no se puede guardar nada. */}
-      {bloqueadoPorGuardado && !mesCerrado && (
-        <div style={{ background: "#eff6ff", border: "2px solid #93c5fd", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12.5, color: "#1e40af", lineHeight: 1.55 }}>
-          <div style={{ fontWeight: 900, marginBottom: 3 }}>🔒 Este día ya está guardado</div>
-          <div style={{ fontWeight: 700 }}>
-            Abajo ves tal cual lo que quedó registrado. Corregir un día ya guardado lo hace el
-            administrador: si algo no cuadra, cuéntaselo y él lo ajusta.
-            Los días que todavía no tienen datos los sigues llenando normal — solo cambia la fecha aquí arriba.
-          </div>
-        </div>
-      )}
 
       {/* Roster vacío — el aviso va ANTES de que llene nada, no después de
           guardar. `cargado` se marca incluso si la lectura de Firestore falló
@@ -331,8 +329,8 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
             {recienGuardado
               ? `✅ Día ${fecha} guardado`
               : esAdminSesion
-                ? "✅ Día guardado — abajo ves lo ya registrado; puedes corregir y volver a guardar"
-                : "✅ Día guardado — abajo ves lo que quedó registrado"}
+                ? "✅ Día guardado"
+                : "✅ Día guardado"}
           </div>
         )}
       </div>
@@ -394,7 +392,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
       {/* Sección MED */}
       {activasMed.filter(v => !filas[v.id]?.descanso).length > 0 && (
         <div style={{ fontSize: 11, fontWeight: 900, color: "#047857", padding: "6px 10px", background: "linear-gradient(90deg, #ecfdf5, transparent)", borderRadius: 6, marginBottom: 6 }}>
-          🟢 Team Valquirias Medellín
+          🟢 Team Valkyrias Medellín
         </div>
       )}
       {activasMed.filter(v => !filas[v.id]?.descanso).map(v => (
@@ -414,7 +412,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
       {/* Sección BOG */}
       {activasBog.filter(v => !filas[v.id]?.descanso).length > 0 && (
         <div style={{ fontSize: 11, fontWeight: 900, color: "#b45309", padding: "6px 10px", background: "linear-gradient(90deg, #fef3c7, transparent)", borderRadius: 6, marginBottom: 6, marginTop: 10 }}>
-          🟡 Team Valquirias Bogotá
+          🟡 Team Valkyrias Bogotá
         </div>
       )}
       {activasBog.filter(v => !filas[v.id]?.descanso).map(v => (
@@ -454,7 +452,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
             color: esBloqueo ? "#1e40af" : esTimeout ? "#92400e" : "#991b1b",
           }}>
             <div style={{ fontSize: 13.5, fontWeight: 900, marginBottom: 4 }}>
-              {esBloqueo ? `🔒 El día ${fecha} ya estaba guardado`
+              {esBloqueo ? "🔒 Día cerrado"
                 : esTimeout ? `⚠️ No se pudo confirmar el día ${fecha}`
                 : `❌ NO se guardó el día ${fecha}`}
             </div>
@@ -463,7 +461,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
             </div>
             <div style={{ fontSize: 11.5, fontWeight: 800, marginTop: 6, lineHeight: 1.5 }}>
               {esBloqueo
-                ? "No hiciste nada mal: los días ya guardados los corrige el administrador. Pídeselo a él y sigue con otra fecha."
+                ? null
                 : esTimeout
                   ? "Puede que haya guardado y puede que no: no lo des por hecho. Revisa tu conexión, recarga la página y mira si el día aparece registrado. Si no aparece, vuelve a guardarlo."
                   : "Lo que llenaste sigue en pantalla. Vuelve a darle “Guardar día”."}
@@ -501,7 +499,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
           >
             {mesCerrado ? "🔒 Mes cerrado — no se puede guardar"
               : sinRoster ? "⚠️ Sin vendedoras — no hay nada que guardar"
-              : bloqueadoPorGuardado ? "🔒 Día guardado — lo corrige el administrador"
+              : bloqueadoPorGuardado ? "🔒 Día cerrado — lo modifica el admin"
               : guardando ? "⏳ Guardando..."
               : "💾 Guardar día"}
           </button>

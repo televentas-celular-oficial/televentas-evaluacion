@@ -10,13 +10,119 @@
     <meta name="theme-color" content="#7c3aed" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Valquirias TLV" />
+    <meta name="apple-mobile-web-app-title" content="Valkyrias" />
 
     <!-- Icono -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
 
-    <title>Valquirias TLV</title>
+    <title>Valkyrias</title>
+
+    <!-- =====================================================================
+         PROBADOR DE PALETAS — no forma parte de la app.
+         =====================================================================
+         Se enciende SÓLO con ?tema=salon|esmeralda|vino|grafito. Sin ese
+         parámetro y sin preferencia guardada, este script pone el atributo en
+         ningún lado, no crea ningún control y la app se ve exactamente igual
+         que hoy: las trece nunca se topan con esto.
+
+         Va aquí arriba, dentro del <head> y antes de la hoja de estilos, para
+         que el atributo `data-tema` ya esté puesto cuando el navegador pinte
+         el primer píxel. Por eso no parpadea.
+
+         "normal" en el control borra la preferencia y devuelve la app a como
+         está en producción, sin recargar.
+         ===================================================================== -->
+    <script>
+      (function () {
+        var TEMAS = ['salon', 'esmeralda', 'vino', 'grafito'];
+        var LIENZO = { salon: '#080B12', esmeralda: '#04140F', vino: '#12070B', grafito: '#0F0E0C' };
+        var CLAVE = 'vk_tema';
+        var NORMAL = '#7c3aed'; // el theme-color de siempre
+
+        function guardar(t) {
+          try { t ? localStorage.setItem(CLAVE, t) : localStorage.removeItem(CLAVE); } catch (e) {}
+        }
+
+        // ?tema= manda. Si viene con un valor que no es ninguno de los cuatro
+        // (?tema=off, ?tema=normal, cualquier cosa), apaga y limpia.
+        var pedido = null;
+        try { pedido = new URLSearchParams(location.search).get('tema'); } catch (e) {}
+
+        var tema = null;
+        if (pedido !== null) {
+          pedido = String(pedido).toLowerCase();
+          tema = TEMAS.indexOf(pedido) >= 0 ? pedido : null;
+          guardar(tema);
+        } else {
+          try {
+            var g = localStorage.getItem(CLAVE);
+            if (TEMAS.indexOf(g) >= 0) tema = g;
+          } catch (e) {}
+        }
+
+        if (!tema) return;
+
+        var raiz = document.documentElement;
+        raiz.setAttribute('data-tema', tema);
+        pintarBarraDeEstado(tema);
+
+        function pintarBarraDeEstado(t) {
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m) m.setAttribute('content', t ? LIENZO[t] : NORMAL);
+        }
+
+        function aplicar(t) {
+          guardar(t);
+          if (t) raiz.setAttribute('data-tema', t);
+          else raiz.removeAttribute('data-tema');
+          pintarBarraDeEstado(t);
+          try {
+            var u = new URL(location.href);
+            if (t) u.searchParams.set('tema', t);
+            else u.searchParams.delete('tema');
+            history.replaceState({}, '', u.toString());
+          } catch (e) {}
+          var caja = document.getElementById('vk-tema-switch');
+          if (!caja) return;
+          if (!t) { caja.remove(); return; }
+          var bs = caja.querySelectorAll('button[data-t]');
+          for (var i = 0; i < bs.length; i++) {
+            bs[i].className = bs[i].getAttribute('data-t') === t ? 'on' : '';
+          }
+        }
+
+        function montar() {
+          if (document.getElementById('vk-tema-switch')) return;
+          var caja = document.createElement('div');
+          caja.id = 'vk-tema-switch';
+          TEMAS.forEach(function (t) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.setAttribute('data-t', t);
+            b.title = t;
+            b.setAttribute('aria-label', 'Paleta ' + t);
+            if (t === tema) b.className = 'on';
+            b.addEventListener('click', function () { aplicar(t); });
+            caja.appendChild(b);
+          });
+          var off = document.createElement('button');
+          off.type = 'button';
+          off.className = 'vk-tema-off';
+          off.textContent = 'normal';
+          off.title = 'Volver a como está en producción';
+          off.addEventListener('click', function () { aplicar(null); });
+          caja.appendChild(off);
+          document.body.appendChild(caja);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', montar);
+        } else {
+          montar();
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

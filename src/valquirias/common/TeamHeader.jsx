@@ -1,4 +1,4 @@
-// Header con saludo + identidad de equipo (Team Valquirias MED/BOG)
+// Header con saludo + identidad de equipo (Team Valkyrias MED/BOG)
 
 import { primerNombre } from "../lib/helpers.js";
 
@@ -19,7 +19,7 @@ export default function TeamHeader({ vendedora, rol, ciudad, totalAño = 0 }) {
         Hola <strong>{nom}</strong>{" "}
         <span className={"v-role-mini " + rolClass}>{rolLabel}</span>
         <div className={"v-team-title " + (esBog ? "bog" : "med")}>
-          {esBog ? "🟡 Team Valquirias Bogotá" : "🟢 Team Valquirias Medellín"}
+          {esBog ? "🟡 Team Valkyrias Bogotá" : "🟢 Team Valkyrias Medellín"}
         </div>
       </div>
     </>

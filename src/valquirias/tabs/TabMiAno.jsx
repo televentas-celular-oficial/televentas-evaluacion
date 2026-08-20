@@ -134,7 +134,7 @@ export default function TabMiAno({
 
       {!semanalesDisponible && (
         <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, lineHeight: 1.5, padding: "8px 4px 0" }}>
-          El premio semanal de $50k en efectivo se entrega aparte: todavía no queda registrado en la app, por eso no se suma aquí.
+          El premio semanal de $50.000 en efectivo se entrega aparte: todavía no queda registrado en la app, por eso no se suma aquí.
         </div>
       )}
 

@@ -157,7 +157,7 @@ export default function NominaComisiones({ onVolver }) {
 
       {/* Info importante */}
       <div style={{ padding: "10px 12px", background: "rgba(168, 85, 247, 0.08)", borderLeft: "3px solid #a855f7", borderRadius: 10, fontSize: 11, color: "#5b21b6", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
-        💡 Solo comisiones por ventas del mes. <strong>No incluye</strong> premios semanales ($50k) ni trimestrales ($1M) ni reconocimientos. Ventas ya vienen netas de devoluciones y cambios.
+        💡 Solo comisiones por ventas del mes. <strong>No incluye</strong> premios semanales ($50.000) ni trimestrales ($1.000.000) ni reconocimientos. Ventas ya vienen netas de devoluciones y cambios.
         <br />El % es el del <strong>rol que tenía ese mes</strong>, no el cargo de hoy. Si ascendió a mitad de mes, la fila muestra la pro-rata día a día.
         <br />Aparecen también las que <strong>ya no trabajan aquí</strong> si vendieron en este mes — se les debe igual.
       </div>
@@ -185,7 +185,7 @@ export default function NominaComisiones({ onVolver }) {
         <>
           {/* Sección MED */}
           <SeccionCiudad
-            titulo="🟢 Team Valquirias Medellín"
+            titulo="🟢 Team Valkyrias Medellín"
             subtitulo={`Piso ${formatoPesos(PISO_MED)} · sin llegar al piso → $0`}
             color="green"
             filas={filasMed}
@@ -194,7 +194,7 @@ export default function NominaComisiones({ onVolver }) {
 
           {/* Sección BOG */}
           <SeccionCiudad
-            titulo="🟡 Team Valquirias Bogotá"
+            titulo="🟡 Team Valkyrias Bogotá"
             subtitulo="Sin piso · gana desde la primera venta"
             color="amber"
             filas={filasBog}

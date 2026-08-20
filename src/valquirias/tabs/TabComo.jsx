@@ -65,7 +65,7 @@ export default function TabComo({ ciudad }) {
         </div>
         <div style={{ background: "rgba(168, 85, 247, 0.05)", borderRadius: 10, padding: 6, marginTop: 8, overflowX: "auto" }}>
           <div style={{ ...filaTablaHeader }}>
-            <span>Rango de ventas</span><span>Asesora</span><span>Admin</span>
+            <span>Rango de ventas</span><span>Asesora</span><span>Administradora</span>
           </div>
           <div style={filaTabla}>
             <span style={cellRango}>$0 – $19.278.642</span>
@@ -84,23 +84,23 @@ export default function TabComo({ ciudad }) {
           </div>
         </div>
         <div style={{ marginTop: 8, fontSize: 11, color: "#64748b", fontWeight: 600 }}>
-          💡 Rangos vigentes para 2026. El admin los actualiza cuando cambien.
+          💡 Rangos vigentes para 2026. El administrador los actualiza cuando cambien.
         </div>
       </Acordeon>
 
       <Acordeon titulo="⚡ Premio semanal en efectivo" abierto={abierto === "sem"} onToggle={() => tog("sem")}>
         <div>Cada semana (lun-dom) puedes ganar:</div>
         <div style={premioBox}>💵 <strong>$50.000</strong> si vendes ≥$2.500.000 en efectivo</div>
-        <div style={premioBox}>🏆 <strong>$50.000 EXTRA</strong> a la que más vendió en efectivo entre las que ya ganaron los $50k</div>
+        <div style={premioBox}>🏆 <strong>$50.000 EXTRA</strong> a la que más vendió en efectivo entre las que ya ganaron los $50.000</div>
         <div style={{ color: "#64748b", marginTop: 6 }}>Se cierra domingo · se paga lunes</div>
       </Acordeon>
 
       <Acordeon titulo="💎 Premio trimestral" abierto={abierto === "trim"} onToggle={() => tog("trim")}>
         <div style={premioBox}>💰 <strong>$1.000.000</strong> si tu nota trimestral llega a <strong>4.50</strong></div>
         <div style={premioBox}>🌟 <strong>$1.000.000 EXTRA</strong> a la mejor de la ciudad si hay 2+ que pasan 4.50</div>
-        <div style={{ marginTop: 6 }}>🏆 <strong>Reconocimiento sorpresa</strong> a la #1 (este trimestre: TV 42")</div>
+        <div style={{ marginTop: 6 }}>📺 La TV entra en juego el próximo trimestre.</div>
         <div style={{ marginTop: 8, fontSize: 11, color: "#64748b", fontWeight: 600 }}>
-          💡 Los premios de cada trimestre los define el admin. Este acordeón los muestra siempre actualizados.
+          💡 Los premios de cada trimestre los define el administrador. Este acordeón los muestra siempre actualizados.
         </div>
       </Acordeon>
 

@@ -26,27 +26,43 @@ import { useDatos } from "../data/DatosContext.jsx";
 import { derivarMesDeVendedora, derivarRankingMesCiudad } from "../data/derivar.js";
 import { formatoPesos, primerNombre, hoyColombia, pctTexto, PISO_MED } from "../lib/helpers.js";
 
-// Paleta del prototipo
-const COL_CIUDAD = { MED: "#10b981", BOG: "#f59e0b" };
+// Paleta Valkyrias — sólo colores.
+// Las ciudades dejan de tener color: lo que era el verde de Medellín y el ámbar
+// de Bogotá pasa a ser el verde de las barras de avance, igual para las dos.
+// Los papeles de color viven en valquirias.css (:root). Aquí sólo se nombran.
+const COL_CIUDAD = { MED: "var(--vk-bien)", BOG: "var(--vk-bien)" };
 const NOMBRE_CIUDAD = { MED: "Medellín", BOG: "Bogotá" };
-const VERDE = "#046c4e";
-const LAVANDA_TXT = "#5b2ec4";
-const TINTA = "#0f172a";
-const APOYO = "#475569";
-const TENUE = "#94a3b8";
-const LINEA = "#e2e8f0";
+const VERDE = "var(--vk-bien)";            // Plata ganada
+const LAVANDA_TXT = "var(--vk-titulo)";    // Tinta
+const TINTA = "var(--vk-titulo)";          // Tinta
+const CIFRA = "var(--vk-cifra)";           // Tinta — cifras y notas
+const APOYO = "var(--vk-secundario)";      // Niebla
+const TENUE = "var(--vk-tenue)";           // Sin dato
+const LINEA = "var(--vk-borde)";           // Borde
+const FONDO = "var(--vk-fondo)";           // Lienzo
+const PAPEL = "var(--vk-tarjeta)";         // Papel
+const NEUTRO = "var(--vk-neutro)";         // Gris de resalte
 
+// La tarjeta de la plata es la tarjeta NOCHE de esta pantalla. Sobre ella el
+// texto se invierte: estos son sus tres tonos.
+const NOCHE = "var(--vk-noche)";
+const N_TXT = "var(--vk-noche-texto)";     // cifras y palabras fuertes sobre la noche
+const N_APOYO = "var(--vk-noche-apoyo)";   // secundario sobre la noche
+const N_VERDE = "var(--vk-bien-fondo)";    // lo ganado, sobre la noche
+
+// Escala de notas: el canal principal es lleno contra hueco, no el tono.
 const colorNota = (n) =>
-  n >= 4.5 ? "#059669" : n >= 3.5 ? "#d97706" : n >= 2.5 ? "#ea580c" : "#dc2626";
+  n >= 4.5 ? "var(--vk-bien-texto)" : n >= 3.5 ? "var(--est-atencion)" : n >= 2.5 ? "var(--est-medio)" : "var(--vk-medio)";
 const fondoNota = (n) =>
-  n >= 4.5 ? "#d1fae5" : n >= 3.5 ? "#fef3c7" : n >= 2.5 ? "#ffedd5" : "#fee2e2";
+  n >= 4.5 ? "var(--vk-bien-fondo)" : n >= 3.5 ? "var(--vk-tarjeta)" : n >= 2.5 ? "var(--est-medio-fondo)" : "var(--vk-neutro)";
+const anilloNota = (n) => (n >= 3.5 && n < 4.5 ? "inset 0 0 0 1.5px var(--est-atencion-borde)" : "none");
 
 const capitalizar = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 const nDias = (n) => (n === 1 ? "1 día" : `${n} días`);
 
 const S = {
   card: {
-    background: "#fff",
+    background: PAPEL,
     border: `1px solid ${LINEA}`,
     borderRadius: 13,
     padding: 16,
@@ -55,7 +71,7 @@ const S = {
   lbl: {
     fontSize: 12,
     fontWeight: 800,
-    color: "#334155",
+    color: APOYO,
     textTransform: "uppercase",
     letterSpacing: ".7px",
     marginBottom: 4,
@@ -63,7 +79,7 @@ const S = {
   },
   barra: {
     height: 8,
-    background: "#f1f5f9",
+    background: NEUTRO,
     borderRadius: 4,
     overflow: "hidden",
     marginTop: 10,
@@ -115,6 +131,34 @@ function BotonVolver({ onVolver }) {
   );
 }
 
+// Una de las dos mitades de la nota del mes (comportamiento / ventas), con su
+// peso a la vista. La nota del mes NO es un número suelto: es una suma con
+// pesos, y sin ver las dos partes por separado no hay forma de entenderla.
+function FilaMitad({ titulo, peso, nota, ultima = false, children }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 10,
+        alignItems: "flex-start",
+        padding: "10px 0",
+        borderBottom: ultima ? "none" : `1px dashed ${LINEA}`,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: TINTA }}>
+          {titulo}{" "}
+          <span style={{ color: APOYO, fontWeight: 700 }}>· pesa {peso}%</span>
+        </div>
+        <div style={{ fontSize: 11.5, color: APOYO, fontWeight: 600, marginTop: 3, lineHeight: 1.5 }}>
+          {children}
+        </div>
+      </div>
+      <Badge nota={nota} />
+    </div>
+  );
+}
+
 function Badge({ nota, grande = false }) {
   const hay = nota != null;
   return (
@@ -125,8 +169,11 @@ function Badge({ nota, grande = false }) {
         justifyContent: "center",
         borderRadius: 8,
         fontWeight: 800,
-        background: hay ? fondoNota(nota) : "#f1f5f9",
+        background: hay ? fondoNota(nota) : PAPEL,
         color: hay ? colorNota(nota) : TENUE,
+        boxShadow: hay ? anilloNota(nota) : "none",
+        // Sin dato: hueco con borde punteado, por dentro para no mover nada.
+        ...(hay ? null : { outline: "1.5px dashed var(--est-sin-dato)", outlineOffset: "-1.5px" }),
         fontSize: grande ? 23 : 13,
         minWidth: grande ? 72 : 42,
         padding: grande ? "8px 13px" : "3px 10px",
@@ -173,7 +220,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
         <div
           style={{
             ...S.card,
-            borderLeft: "4px solid #f59e0b",
+            borderLeft: "4px solid var(--est-atencion-borde)",
             borderRadius: "0 13px 13px 0",
           }}
         >
@@ -181,7 +228,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
           <div style={{ fontSize: 13.5, color: APOYO, fontWeight: 600, lineHeight: 1.6 }}>
             No pudimos determinar tu ciudad, y sin ella no hay forma de calcular bien tu
             comisión: Medellín y Bogotá tienen reglas distintas — Medellín tiene un piso de{" "}
-            <strong style={{ color: TINTA }}>{formatoPesos(PISO_MED)}</strong> y Bogotá no.
+            <strong style={{ color: CIFRA }}>{formatoPesos(PISO_MED)}</strong> y Bogotá no.
           </div>
           <div
             style={{
@@ -230,6 +277,68 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
   const rolMixto = !!(mes.cambioRol || mes.ascensoEnEsteMes || mes.tramoInfo?.mixto);
   const cr = mes.cambioRol || null;
 
+  // --------------------------------------------------------------------------
+  // LAS DOS MITADES DE LA NOTA — se muestran, no se recalculan
+  // --------------------------------------------------------------------------
+  // La nota del mes es comportamiento × su peso + ventas × su peso (+ bono en
+  // V2). Los tres números ya salen del motor (calcNotaMensual: notaBase,
+  // notaVentas, bono). Aquí sólo se nombran los pesos de la versión de fórmula
+  // de ESE mes — los mismos que ya usa el boletín (derivar.js → pesoVentas).
+  // Mostrar el 2.91 sin sus dos mitades es pedirle que crea un número: en una
+  // app que reparte plata, eso no se hace.
+  const esV1 = mes.version === "v1";
+  const pesoComp = esV1 ? 70 : 40;
+  const pesoVent = esV1 ? 30 : 60;
+  const notaVent = mes.notaVentas ?? null;
+  const bono = mes.bono || 0;
+  const hayMeta = mes.meta != null && mes.meta > 0;
+
+  // Cuando `notaVentas` existe, el motor SÍ tuvo una cifra real de ventas
+  // (`sePuedeCalcularVentas = meta > 0 && hayVentas` en calcNotaMensual), así
+  // que ahí `mes.ventas` no puede ser el cero duro de `r.real || 0`: es la misma
+  // cifra con la que se calculó esa nota. Fuera de ese caso no se pinta nada.
+  const ventasNota = notaVent != null ? mes.ventas : null;
+
+  // LA CUENTA SÓLO SE PINTA SI CUADRA.
+  // Se rehace con los MISMOS números redondeados que ella está viendo. Si por
+  // redondeo no diera exacto, no se muestra ninguna cuenta: mejor no mostrar
+  // una cuenta que mostrar una que no da (que es justo lo que destruye la
+  // confianza en el número).
+  const cuenta =
+    mes.nota != null && notaComp != null && notaVent != null
+      ? Math.round(notaComp * pesoComp + notaVent * pesoVent + bono * 100) / 100
+      : null;
+  const cuentaCuadra = cuenta !== null && cuenta === mes.nota;
+
+  // --------------------------------------------------------------------------
+  // DÓNDE ESTÁ PARADA EN EL MES
+  // --------------------------------------------------------------------------
+  // La meta es de MES COMPLETO. A mitad de mes la nota de ventas se ve baja por
+  // diseño, no por desempeño (misma regla que ya aplica MiTrimestre.jsx en su
+  // aviso azul). Decirlo no es consolar: es evitar que lea como calificación
+  // algo que todavía no terminó de pasar.
+  const pctMes = mes.diasMes ? Math.round((mes.dia / mes.diasMes) * 100) : null;
+  const mesEnCurso = mes.dia < mes.diasMes;
+
+  // --------------------------------------------------------------------------
+  // RITMO — lo único accionable, y sólo donde existe el piso (Medellín)
+  // --------------------------------------------------------------------------
+  // `mes.ventas` es el acumulado que sincroniza systemlap, que cierra con el día
+  // ANTERIOR (el de hoy todavía se está vendiendo). Por eso el promedio se saca
+  // sobre los días YA CERRADOS (dia - 1) y los días que quedan incluyen hoy:
+  // los dos números suman el mes completo y no se pisan.
+  // Esto no es una proyección ni una promesa: son dos divisiones sobre datos que
+  // ya existen. "Te faltan $X" a secas suena a reproche; "te faltan $X, o sea $Y
+  // diarios, y vas en $Z diarios" es información con la que se puede hacer algo.
+  const diasCerrados = Math.max(0, mes.dia - 1);
+  const diasRestantes = Math.max(0, mes.diasMes - mes.dia + 1);
+  const ritmoActual =
+    hayVentas && ventas > 0 && diasCerrados > 0 ? Math.round(ventas / diasCerrados) : null;
+  const ritmoPiso =
+    piso.aplica && !piso.superado && piso.falta > 0 && diasRestantes > 0
+      ? Math.ceil(piso.falta / diasRestantes)
+      : null;
+
   return (
     <div style={{ color: TINTA }}>
       <BotonVolver onVolver={onVolver} />
@@ -244,27 +353,36 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
       {/* ------------------------------------------------------------------ */}
       {/* 1) LA PLATA                                                         */}
       {/* ------------------------------------------------------------------ */}
-      <div style={{ ...S.card, borderLeft: `4px solid ${colC}`, borderRadius: "0 13px 13px 0" }}>
-        <div style={S.lbl}>Vendido en {nombreMes}</div>
+      {/* LA TARJETA NOCHE DE ESTA PANTALLA. La cifra principal de "Mi mes" es
+          lo que lleva vendido y lo que lleva ganado: es la única que se pinta
+          en oscuro, y sobre ella el texto se invierte. */}
+      <div style={{
+        ...S.card,
+        background: NOCHE,
+        border: `1px solid ${NOCHE}`,
+        borderLeft: `4px solid ${N_APOYO}`,
+        borderRadius: "0 13px 13px 0",
+      }}>
+        <div style={{ ...S.lbl, color: N_APOYO }}>Vendido en {nombreMes}</div>
 
         {!hayVentas ? (
           // Dato inexistente: no se inventa ni un peso ni un cero.
-          <div style={{ fontSize: 13, color: APOYO, fontWeight: 600, lineHeight: 1.55 }}>
-            Tus ventas de {nombreMes} todavía no están disponibles. Se sincronizan desde
-            systemlap — apenas lleguen aparecen aquí con tu comisión.
+          <div style={{ fontSize: 13, color: N_APOYO, fontWeight: 600, lineHeight: 1.55 }}>
+            Tus ventas de {nombreMes} todavía no llegan desde systemlap. Apenas lleguen
+            aparecen aquí con tu comisión.
           </div>
         ) : piso.aplica && !piso.superado ? (
           <>
-            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-.8px", color: TINTA }}>
+            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-.8px", color: N_TXT }}>
               {formatoPesos(ventas)}
             </div>
-            <div style={S.barra}>
+            <div style={{ ...S.barra, background: "rgba(var(--vk-velo-rgb),.14)" }}>
               <div
                 style={{
                   display: "block",
                   height: "100%",
                   borderRadius: 4,
-                  background: colC,
+                  background: N_VERDE,
                   width: `${Math.min(100, Math.round((ventas / piso.monto) * 100))}%`,
                 }}
               />
@@ -272,14 +390,14 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
             <div
               style={{
                 fontSize: 12.5,
-                color: APOYO,
+                color: N_APOYO,
                 fontWeight: 600,
                 marginTop: 8,
                 lineHeight: 1.55,
               }}
             >
               {ciudadTxt} tiene piso de <strong>{formatoPesos(piso.monto)}</strong>. Te faltan{" "}
-              <strong style={{ color: TINTA }}>{formatoPesos(piso.falta)}</strong> para empezar a
+              <strong style={{ color: N_TXT }}>{formatoPesos(piso.falta)}</strong> para empezar a
               ganar comisión.{" "}
               {/* El % sólo se afirma si UN solo rol explica el mes. Con cambio de
                   rol la comisión es pro-rata de dos tarifas: se dice eso, no un %. */}
@@ -296,37 +414,85 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
               {piso.comisionAlLlegar != null ? (
                 <>
                   {" "}
-                  Al tocar el piso serían{" "}
-                  <strong style={{ color: TINTA }}>{formatoPesos(piso.comisionAlLlegar)}</strong>.
+                  Cuando llegues al piso serían{" "}
+                  <strong style={{ color: N_TXT }}>{formatoPesos(piso.comisionAlLlegar)}</strong>.
                 </>
               ) : null}
             </div>
+
+            {/* ------------------------------------------------------------ */}
+            {/* RITMO — sólo aquí, o sea sólo en Medellín                     */}
+            {/* ------------------------------------------------------------ */}
+            {/* `ritmoPiso` nace de `piso.aplica && !piso.superado`, y
+                `piso.aplica` es `ciudad === "MED"` (derivar.js). En Bogotá no
+                hay piso, así que este bloque no existe ahí: no hay nada que
+                alcanzar antes de empezar a ganar. */}
+            {ritmoPiso != null && (
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: "10px 12px",
+                  background: "rgba(var(--vk-velo-rgb),.06)",
+                  border: "1px solid rgba(var(--vk-velo-rgb),.14)",
+                  borderRadius: 9,
+                  fontSize: 12.5,
+                  color: N_APOYO,
+                  fontWeight: 600,
+                  lineHeight: 1.6,
+                }}
+              >
+                <div style={{ fontWeight: 800, color: N_TXT, marginBottom: 3 }}>📊 Tu ritmo</div>
+                Quedan <strong style={{ color: N_TXT }}>{nDias(diasRestantes)}</strong> de{" "}
+                {nombreMes} contando hoy. Para llegar al piso serían{" "}
+                <strong style={{ color: N_TXT }}>{formatoPesos(ritmoPiso)}</strong> por día.
+                {ritmoActual != null ? (
+                  <div style={{ marginTop: 5 }}>
+                    En los {nDias(diasCerrados)} que ya cerraron vas en{" "}
+                    <strong style={{ color: N_TXT }}>{formatoPesos(ritmoActual)}</strong> por día —{" "}
+                    {ritmoActual > ritmoPiso ? (
+                      <strong style={{ color: N_VERDE }}>por encima de ese ritmo</strong>
+                    ) : ritmoActual === ritmoPiso ? (
+                      <strong style={{ color: N_TXT }}>justo en ese ritmo</strong>
+                    ) : (
+                      // Iba por debajo en naranja de alarma. Un ritmo que va
+                      // por debajo no es una urgencia: se dice, en neutro.
+                      <strong style={{ color: N_APOYO }}>por debajo de ese ritmo</strong>
+                    )}
+                    .
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 5, color: N_APOYO }}>
+                    Todavía no hay días cerrados este mes para sacar tu promedio diario.
+                  </div>
+                )}
+              </div>
+            )}
             <div
               style={{
                 marginTop: 10,
                 paddingTop: 10,
-                borderTop: `1px dashed ${LINEA}`,
+                borderTop: "1px dashed rgba(var(--vk-velo-rgb),.18)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "baseline",
               }}
             >
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: APOYO }}>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: N_APOYO }}>
                 Mi comisión hasta hoy
               </span>
               {/* Este $0 es REAL (calcComisionMensual devuelve 0 bajo el piso),
                   no un dato ausente. Aun así sale del motor, no hardcodeado. */}
-              <span style={{ fontSize: 19, fontWeight: 800, color: APOYO }}>
+              <span style={{ fontSize: 19, fontWeight: 800, color: N_APOYO }}>
                 {mes.comision != null ? formatoPesos(mes.comision) : "no disponible"}
               </span>
             </div>
           </>
         ) : (
           <>
-            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-.8px", color: TINTA }}>
+            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-.8px", color: N_TXT }}>
               {formatoPesos(ventas)}
             </div>
-            <div style={{ fontSize: 12, color: APOYO, fontWeight: 600, marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: N_APOYO, fontWeight: 600, marginTop: 4 }}>
               {/* `ciudadTxt` sale de la ciudad YA resuelta (arriba se hace early
                   return si no se pudo determinar), así que aquí no se le puede
                   decir "en Bogotá..." a alguien de ciudad desconocida. */}
@@ -338,16 +504,16 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
               style={{
                 marginTop: 11,
                 paddingTop: 11,
-                borderTop: `1px dashed ${LINEA}`,
+                borderTop: "1px dashed rgba(var(--vk-velo-rgb),.18)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "baseline",
               }}
             >
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: VERDE }}>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: N_VERDE }}>
                 Mi comisión hasta hoy
               </span>
-              <span style={{ fontSize: 24, fontWeight: 800, color: VERDE }}>
+              <span style={{ fontSize: 24, fontWeight: 800, color: N_TXT }}>
                 {mes.comision != null ? formatoPesos(mes.comision) : "no disponible"}
               </span>
             </div>
@@ -362,24 +528,24 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
                 tramos, sus dos porcentajes y sus días — que es la verdad. */}
             {rolMixto && cr ? (
               <>
-                <div style={{ fontSize: 12, color: VERDE, fontWeight: 700, marginTop: 3 }}>
+                <div style={{ fontSize: 12, color: N_VERDE, fontWeight: 700, marginTop: 3 }}>
                   {mes.tramoInfo ? `${mes.tramoInfo.nombre} · ` : ""}Este mes cambiaste de cargo
                 </div>
                 <div
                   style={{
                     fontSize: 12,
-                    color: APOYO,
+                    color: N_APOYO,
                     fontWeight: 600,
                     marginTop: 5,
                     lineHeight: 1.6,
                   }}
                 >
                   Tu comisión se repartió por días:{" "}
-                  <strong style={{ color: TINTA }}>
+                  <strong style={{ color: N_TXT }}>
                     {nDias(cr.desde.dias)} como {cr.desde.rolLargo} al {cr.desde.pctTexto}
                   </strong>{" "}
                   ({formatoPesos(cr.desde.comision)}) +{" "}
-                  <strong style={{ color: TINTA }}>
+                  <strong style={{ color: N_TXT }}>
                     {nDias(cr.hasta.dias)} como {cr.hasta.rolLargo} al {cr.hasta.pctTexto}
                   </strong>{" "}
                   ({formatoPesos(cr.hasta.comision)}).
@@ -391,7 +557,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
             ) : rolMixto ? (
               // Hubo cambio de rol pero no llegó el desglose: se muestra la
               // comisión SIN afirmar un porcentaje único (que sería falso).
-              <div style={{ fontSize: 12, color: APOYO, fontWeight: 600, marginTop: 3 }}>
+              <div style={{ fontSize: 12, color: N_APOYO, fontWeight: 600, marginTop: 3 }}>
                 {mes.tramoInfo ? `${mes.tramoInfo.nombre} · ` : ""}Este mes cambiaste de cargo, así
                 que tu comisión se calculó por días con dos porcentajes distintos.
                 {mes.pctEfectivoTexto ? (
@@ -400,12 +566,12 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
               </div>
             ) : mes.comisionTexto ? (
               // Mes de un solo rol: `comisionTexto` ya es "2% sobre todo lo vendido".
-              <div style={{ fontSize: 12, color: VERDE, fontWeight: 600, marginTop: 3 }}>
+              <div style={{ fontSize: 12, color: N_VERDE, fontWeight: 600, marginTop: 3 }}>
                 {mes.tramoInfo ? `${mes.tramoInfo.nombre} · ` : ""}
                 {mes.comisionTexto}, por ser {rolTxt}
               </div>
             ) : mes.tramoInfo ? (
-              <div style={{ fontSize: 12, color: VERDE, fontWeight: 600, marginTop: 3 }}>
+              <div style={{ fontSize: 12, color: N_VERDE, fontWeight: 600, marginTop: 3 }}>
                 {mes.tramoInfo.nombre}
               </div>
             ) : null}
@@ -414,10 +580,10 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
                 style={{
                   marginTop: 10,
                   padding: "10px 12px",
-                  background: "#f0fdf9",
+                  background: "rgba(var(--vk-velo-rgb),.06)",
                   borderRadius: 9,
                   fontSize: 12.5,
-                  color: VERDE,
+                  color: N_VERDE,
                   fontWeight: 600,
                   lineHeight: 1.55,
                 }}
@@ -465,8 +631,10 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
                 key={f.id}
                 style={{
                   ...S.mini,
+                  // "TÚ" se marca con un anillo de tinta, no con un color: el
+                  // ámbar de aquí significaba "atención" en el resto de la app.
                   ...(f.esYo
-                    ? { background: "#fffbeb", boxShadow: "inset 0 0 0 1.5px #fcd34d" }
+                    ? { background: FONDO, boxShadow: "inset 0 0 0 1.5px var(--vk-titulo)" }
                     : null),
                 }}
               >
@@ -476,7 +644,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
                     textAlign: "center",
                     fontWeight: 800,
                     flexShrink: 0,
-                    color: f.medalla ? "#059669" : TENUE,
+                    color: f.medalla ? VERDE : TENUE,
                   }}
                 >
                   {f.medalla || f.n || "—"}
@@ -488,7 +656,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
                   style={{
                     fontWeight: 800,
                     whiteSpace: "nowrap",
-                    color: f.sinDato ? TENUE : TINTA,
+                    color: f.sinDato ? TENUE : CIFRA,
                   }}
                 >
                   {f.sinDato ? "no disponible" : formatoPesos(f.ventas)}
@@ -507,14 +675,14 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
                   borderTop: `1px dashed ${LINEA}`,
                 }}
               >
-                Con <strong style={{ color: TINTA }}>{formatoPesos(rk.faltaParaSubir)}</strong> más
+                Con <strong style={{ color: CIFRA }}>{formatoPesos(rk.faltaParaSubir)}</strong> más
                 pasas a {primerNombre(rk.arriba.nombre)} y subes al puesto {rk.miPosicion - 1}.
               </div>
             ) : rk.esPrimera ? (
               <div
                 style={{
                   fontSize: 12,
-                  color: "#059669",
+                  color: VERDE,
                   fontWeight: 700,
                   marginTop: 8,
                   paddingTop: 8,
@@ -557,7 +725,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
               display: "flex",
               gap: 9,
               alignItems: "flex-start",
-              background: "#f8fafc",
+              background: FONDO,
               border: `1px solid ${LINEA}`,
               borderRadius: 10,
               padding: "10px 12px",
@@ -582,7 +750,101 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
           </div>
         )}
 
-        <div style={{ borderTop: `1px dashed ${LINEA}`, marginTop: 8, paddingTop: 2 }}>
+        {/* --------------------------------------------------------------- */}
+        {/* DE DÓNDE SALE LA NOTA — las dos mitades, con su peso             */}
+        {/* --------------------------------------------------------------- */}
+        {/* Nada de esto se calcula aquí: notaComportamiento, notaVentas,
+            meta, pctMeta y bono ya vienen de calcNotaMensual. Lo único que
+            se hace es nombrarlos y ponerles su peso al lado. */}
+        <div style={{ borderTop: `1px dashed ${LINEA}`, marginTop: 10, paddingTop: 4 }}>
+          <div style={{ ...S.lbl, fontSize: 11, color: TENUE, marginBottom: 0 }}>
+            De dónde sale
+          </div>
+
+          <FilaMitad titulo="Comportamiento" peso={pesoComp} nota={notaComp}>
+            Es la mitad que manejas tú, día a día: la hora de llegada, la planilla, las
+            reseñas, la tienda y la actitud. Los cinco indicadores de abajo son esta nota.
+          </FilaMitad>
+
+          <FilaMitad titulo="Ventas" peso={pesoVent} nota={notaVent} ultima>
+            {notaVent != null && hayMeta ? (
+              <>
+                <strong style={{ color: CIFRA }}>{formatoPesos(ventasNota)}</strong> de una meta
+                de <strong style={{ color: CIFRA }}>{formatoPesos(mes.meta)}</strong>
+                {mes.pctMeta != null ? <> · {mes.pctMeta}% de la meta</> : null}
+                <div style={{ ...S.barra, marginTop: 7, height: 6 }}>
+                  <div
+                    style={{
+                      display: "block",
+                      height: "100%",
+                      borderRadius: 4,
+                      background: colC,
+                      width: `${Math.max(0, Math.min(100, Math.round((ventasNota / mes.meta) * 100)))}%`,
+                    }}
+                  />
+                </div>
+              </>
+            ) : !hayMeta ? (
+              <>Tu meta de {nombreMes} todavía no está cargada, así que esta mitad no se puede
+              calcular.</>
+            ) : (
+              <>Tus ventas de {nombreMes} todavía no llegan desde systemlap.</>
+            )}
+          </FilaMitad>
+
+          {/* La cuenta, sólo si CUADRA con la nota de arriba (ver `cuentaCuadra`). */}
+          {cuentaCuadra && (
+            <div
+              style={{
+                fontSize: 12,
+                color: APOYO,
+                fontWeight: 700,
+                paddingTop: 9,
+                borderTop: `1px dashed ${LINEA}`,
+                lineHeight: 1.6,
+              }}
+            >
+              {notaComp.toFixed(2)} × {pesoComp}% + {notaVent.toFixed(2)} × {pesoVent}%
+              {bono > 0 ? ` + ${bono.toFixed(2)} de bono` : ""} ={" "}
+              <strong style={{ color: CIFRA }}>{mes.nota.toFixed(2)}</strong>
+            </div>
+          )}
+        </div>
+
+        {/* --------------------------------------------------------------- */}
+        {/* DÓNDE ESTÁ PARADA EN EL MES                                      */}
+        {/* --------------------------------------------------------------- */}
+        {/* La meta es de MES COMPLETO: a mitad de mes la nota de ventas se ve
+            baja por diseño. MiTrimestre.jsx ya dice esto mismo en su aviso
+            azul; "Mi mes" no lo decía en ninguna parte, y es justo la pantalla
+            donde el número se ve. No promete nada: describe el calendario. */}
+        {notaVent != null && hayMeta && mesEnCurso && (
+          <div
+            style={{
+              padding: "11px 13px",
+              borderRadius: 10,
+              fontSize: 12,
+              fontWeight: 700,
+              lineHeight: 1.6,
+              marginTop: 10,
+              background: "var(--est-medio-fondo)",
+              color: "var(--est-medio)",
+              borderLeft: "3px solid var(--est-medio)",
+            }}
+          >
+            📈 <strong>La meta de {formatoPesos(mes.meta)} es del mes completo.</strong>{" "}
+            {capitalizar(nombreMes)} va en el día {mes.dia} de {mes.diasMes} — apenas el{" "}
+            {pctMes}% del mes, así que a esta altura toda nota de ventas se ve baja: todavía
+            falta mes por vender. La que cuenta es la del último día de {nombreMes}.
+          </div>
+        )}
+
+        <div style={{ borderTop: `1px dashed ${LINEA}`, marginTop: 12, paddingTop: 2 }}>
+          {(mes.indicadores || []).length > 0 && (
+            <div style={{ ...S.lbl, fontSize: 11, color: TENUE, margin: "4px 0 0" }}>
+              Mis {mes.indicadores.length} indicadores · el {pesoComp}% de comportamiento
+            </div>
+          )}
           {(mes.indicadores || []).map((ind, i, arr) => (
             <button
               key={ind.id}
@@ -599,7 +861,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
                 {ind.nombre}
               </span>
               <Badge nota={ind.nota} />
-              <span style={{ color: "#a855f7", fontWeight: 800, fontSize: 17 }}>›</span>
+              <span style={{ color: APOYO, fontWeight: 800, fontSize: 17 }}>›</span>
             </button>
           ))}
         </div>
@@ -618,8 +880,8 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
             padding: "16px 18px",
             marginTop: 12,
             lineHeight: 1.6,
-            background: "#f7f4ff",
-            border: "1px solid #ddd3f5",
+            background: FONDO,
+            border: `1px solid ${LINEA}`,
           }}
         >
           <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 5, color: LAVANDA_TXT }}>

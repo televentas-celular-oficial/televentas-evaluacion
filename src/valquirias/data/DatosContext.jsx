@@ -104,7 +104,11 @@ const DOCS_MAPA = ["registros", "metas", "snapshots", "config"];
 // hasta la siguiente corrida — y además el batch entero fallaría por reglas
 // (nadie puede escribir `efectivo` desde el cliente), tumbando la restauración
 // de los otros 5 docs.
-const DOCS_RESTAURABLES = DOCS.filter(n => n !== "efectivo");
+// `vendedoras` se suma a la exclusión: desde que las reglas se lo prohíben al
+// cliente, incluirlo en el lote hacía fallar la restauración COMPLETA — justo
+// lo que se está intentando salvar en una emergencia. Además restaurarlo no
+// sirve de nada: el worker lo reescribe desde systemlap en los 5 min siguientes.
+const DOCS_RESTAURABLES = DOCS.filter(n => n !== "efectivo" && n !== "vendedoras");
 
 // ---------------------------------------------------------------------------
 // LEER `efectivo` — la forma del doc y las 3 trampas
@@ -227,11 +231,70 @@ function leerValorFresco(snap, nombre) {
   return parsed;
 }
 
-export function DatosProvider({ modoDemo, datosMock, children }) {
+// ═══════════════════════════════════════════════════════════════════════════
+// LA SUSCRIPCIÓN CUELGA DE LA SESIÓN (bug del 19-ago-2026)
+// ═══════════════════════════════════════════════════════════════════════════
+// Antes el efecto dependía sólo de `[modoDemo]`, así que los 6 onSnapshot se
+// abrían al MONTAR el proveedor — es decir, antes de que existiera sesión.
+// `firestore.rules` exige `autenticado()` para leer, así que los 6 targets
+// morían con `permission-denied` en el arranque.
+//
+// Y no vuelven solos. En el SDK instalado, el error de un target hace
+// `e.Ea.delete(r)` y `da.removeTarget(r)` (common-*.esm.js:15577): el target
+// sale del mapa de escuchas vivas del RemoteStore. Cuando después llega la
+// credencial, `remoteStoreHandleCredentialChange` (:15756-15767) sólo tira y
+// rearma los streams y vuelve a mandar lo que QUEDÓ en `Ea`. Lo que se borró
+// no está ahí, así que nadie lo vuelve a pedir jamás.
+//
+// Resultado: `cargado` se marcaba igual (el callback de error contaba el doc
+// como "llegado" para que la UI no se colgara) y toda la app se pintaba con
+// los DEFAULTS: `vendedoras: []`. La vendedora entraba bien y caía en
+// "No encontramos tu perfil"; el dueño aterrizaba en un panel sin nadie.
+//
+// EL ARREGLO Y POR QUÉ FUNCIONA: el efecto depende del `uid` de la sesión. Sin
+// uid no se suscribe nada (no hay nada que pedir todavía). Cuando aparece el
+// uid —o cambia de persona— React limpia el efecto anterior (unsubscribe de
+// verdad) y ejecuta el cuerpo otra vez, o sea que se llama `onSnapshot` DE
+// NUEVO. Cada `onSnapshot` entra por el camino completo del SDK
+// (listen → allocateTarget → nuevo QueryView → remoteStoreListen), que vuelve
+// a INSERTAR el target en `Ea` y manda un watch request nuevo. No es un
+// reintento sobre el target muerto: es un target nuevo, pedido después de que
+// ya hay credencial. Por eso sí llega.
+//
+// Nada de esto usa el reloj: la única señal es `onAuthStateChanged`, que llega
+// desde ValquiriasApp por la prop `usuario`.
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// TRES SITUACIONES, NO DOS (`estado`)
+// ═══════════════════════════════════════════════════════════════════════════
+//   "sin-sesion" → todavía no hay a quién cargarle nada. NO es un error.
+//   "cargando"   → hay sesión y los 6 docs vienen en camino.
+//   "listo"      → los 6 docs llegaron y parsearon. `cargado` es exactamente esto.
+//   "error"      → hay sesión y la LECTURA FALLÓ. Eso hay que decirlo en
+//                  pantalla; fingir que "no hay datos" es lo que produjo el bucle.
+//
+// `cargado` sigue existiendo y ahora significa lo que su nombre dice: los datos
+// están. Ya no se pone en true cuando la lectura falla — ese era el motor del
+// desastre (pantallas vacías indistinguibles de "no eres vendedora").
+
+export function DatosProvider({ usuario, modoDemo, datosMock, children }) {
+  // La identidad de la sesión. `uid` y no el objeto `usuario`: el objeto puede
+  // cambiar de referencia al refrescarse el token sin que cambie la persona, y
+  // eso rearmaría las suscripciones sin motivo.
+  const uid = usuario?.uid ?? null;
+
   const [datos, setDatos] = useState(DEFAULTS);
-  const [cargado, setCargado] = useState(false);
   const [error, setError] = useState(null);
   const [ultimoSync, setUltimoSync] = useState(null);
+
+  // La fase va JUNTO al uid al que pertenece. Es lo que impide el parpadeo en el
+  // que `user` ya cambió pero el efecto todavía no corrió: si `carga.uid` no es
+  // el uid actual, lo que hay en `datos` es de otra sesión y la fase es mentira.
+  const [carga, setCarga] = useState({ uid: null, fase: "sin-sesion", error: null });
+
+  // Reintento EXPLÍCITO del usuario (botón), no un temporizador. Cambiar este
+  // número rearma el efecto entero → suscripciones nuevas, targets nuevos.
+  const [intento, setIntento] = useState(0);
 
   // Último valor confirmado por el servidor, por doc. Sirve para deshacer la
   // actualización optimista cuando la transacción falla: si dejáramos el valor
@@ -245,9 +308,29 @@ export function DatosProvider({ modoDemo, datosMock, children }) {
       const mock = { ...DEFAULTS, ...(datosMock || {}) };
       servidorRef.current = mock;
       setDatos(mock);
-      setCargado(true);
+      setCarga({ uid: "demo", fase: "listo", error: null });
       return;
     }
+
+    // CAMBIO DE PERSONA (o salida): lo primero es soltar lo de la sesión
+    // anterior. El admin usa "ver como vendedora" y también cierra sesión para
+    // entrar con otro correo; si el roster o los registros del anterior se
+    // quedaran pegados, la pantalla nueva mostraría datos que no son de quien
+    // está mirando. Se vacía SIEMPRE, antes de suscribir nada.
+    servidorRef.current = { ...DEFAULTS };
+    setDatos(DEFAULTS);
+    setUltimoSync(null);
+    setError(null);
+
+    if (!uid) {
+      // Sin sesión no se abre ni una escucha: las reglas la negarían y el SDK
+      // borraría el target (ver arriba). Esto no es un error, es el estado normal
+      // de alguien que todavía no ha entrado.
+      setCarga({ uid: null, fase: "sin-sesion", error: null });
+      return;
+    }
+
+    setCarga({ uid, fase: "cargando", error: null });
 
     // `cargado` sólo puede ser true cuando los 6 docs hayan emitido su PRIMER
     // snapshot. Si se marcara por doc, la UI se pintaba con el primero que
@@ -259,21 +342,41 @@ export function DatosProvider({ modoDemo, datosMock, children }) {
     // no se cuelga si el worker aún no se ha desplegado: llega, se queda en {}
     // y `marcarLlegado` lo tacha como cualquier otro.
     //
-    // El contador vive en el closure del efecto, NO en state: con state se
-    // perderían actualizaciones porque los callbacks de onSnapshot capturan el
-    // valor viejo de la render en que se suscribieron.
+    // El contador y la fase viven en el closure del efecto, NO en state: con
+    // state se perderían actualizaciones porque los callbacks de onSnapshot
+    // capturan el valor viejo de la render en que se suscribieron.
     let cancelado = false;
+    let fase = "cargando";
     const pendientes = new Set(DOCS);
 
-    setCargado(false);
-
     const marcarLlegado = (nombre) => {
-      if (cancelado) return;
+      if (cancelado || fase !== "cargando") return;
       pendientes.delete(nombre);
-      if (pendientes.size === 0) setCargado(true);
+      if (pendientes.size === 0) {
+        fase = "listo";
+        setCarga({ uid, fase: "listo", error: null });
+      }
     };
 
-    // Suscripciones en tiempo real a los 6 docs
+    // Un doc que falla mientras cargamos deja la carga en ERROR. NO se cuenta
+    // como llegado: contarlo era exactamente lo que marcaba `cargado` con los
+    // defaults vacíos y mandaba a la vendedora a "No encontramos tu perfil".
+    //
+    // Si el error llega DESPUÉS de haber cargado (se cayó la red con la app
+    // abierta) no se borra la pantalla: se guarda en `error` y lo que ya está
+    // en pantalla sigue siendo cierto, sólo deja de actualizarse.
+    const fallo = (nombre, err) => {
+      console.error("Error onSnapshot", nombre, err);
+      if (cancelado) return;
+      setError(err);
+      if (fase !== "cargando") return;
+      fase = "error";
+      setCarga({ uid, fase: "error", error: err });
+    };
+
+    // Suscripciones en tiempo real a los 6 docs. Estas llamadas son NUEVAS en
+    // cada corrida del efecto: crean targets nuevos, no reviven los que el SDK
+    // borró al negarse la lectura sin sesión.
     const unsubs = DOCS.map(nombre =>
       onSnapshot(
         doc(db, "televentas", nombre),
@@ -292,27 +395,42 @@ export function DatosProvider({ modoDemo, datosMock, children }) {
             }
             setUltimoSync(new Date());
           } catch (e) {
-            console.error("Error parseando", nombre, e);
-            setError(e);
+            // JSON corrupto en el servidor: el doc llegó, pero no se puede leer.
+            // Es una falla de lectura como cualquier otra, no un doc vacío.
+            fallo(nombre, e);
+            return;
           }
-          // Llegó (haya parseado bien o mal): no debe bloquear a los otros 4.
           marcarLlegado(nombre);
         },
-        (err) => {
-          console.error("Error onSnapshot", nombre, err);
-          if (cancelado) return;
-          setError(err);
-          // Se cuenta como llegado igual, si no la UI queda cargando para siempre.
-          marcarLlegado(nombre);
-        }
+        (err) => fallo(nombre, err)
       )
     );
 
+    // Se limpia al desmontar Y en cada cambio de usuario: React corre esto antes
+    // de volver a ejecutar el cuerpo, así que nunca quedan escuchas huérfanas de
+    // la sesión anterior mandando datos a la nueva.
     return () => {
       cancelado = true;
       unsubs.forEach(u => u());
     };
-  }, [modoDemo]);
+  }, [modoDemo, uid, intento]);
+
+  // Rearma las 6 suscripciones desde cero. Lo dispara una persona tocando un
+  // botón, nunca un temporizador.
+  const reintentar = () => setIntento(n => n + 1);
+
+  // ── Lo que ve la UI ────────────────────────────────────────────────────────
+  // Se deriva en el render, no en el efecto, para que no exista NI UNA render en
+  // la que la sesión ya cambió y la fase/los datos sigan siendo los de antes.
+  // Si `carga.uid` no coincide con el uid actual, la respuesta honesta es
+  // "cargando" con los datos vacíos: todavía no sabemos nada de esta persona.
+  const faseEfectiva = modoDemo
+    ? (carga.fase === "listo" ? "listo" : "cargando")
+    : !uid
+      ? "sin-sesion"
+      : (carga.uid === uid ? carga.fase : "cargando");
+
+  const datosVisibles = (modoDemo || carga.uid === uid) ? datos : DEFAULTS;
 
   // ═════════════════════════════════════════════════════════════════════════
   // ESCRITURA TRANSACCIONAL — el único camino normal de guardado
@@ -404,8 +522,11 @@ export function DatosProvider({ modoDemo, datosMock, children }) {
     // Un guardado que no trae NADA ni gobierna NADA no es un guardado: escribe el
     // documento igual que estaba, la promesa resuelve y la pantalla pinta un ✅
     // sin que exista un solo registro. Pasa de verdad cuando el roster llegó
-    // vacío (`vendedoras` = [] → activas = [] → parche vacío), y `cargado` se
-    // marca aunque la lectura de Firestore haya fallado. Éxito falso: prohibido.
+    // vacío (`vendedoras` = [] → activas = [] → parche vacío): el doc se leyó
+    // bien pero el worker de systemlap todavía no sincronizó a nadie.
+    // (Ya NO pasa por una lectura fallida: desde el arreglo del 19-ago-2026 una
+    // lectura que falla deja `estado: "error"` y `cargado` en false, y la app
+    // no llega ni a pintar el formulario.) Éxito falso: prohibido.
     if (Object.keys(parche).length === 0 && gobierna.length === 0) {
       throw new Error(
         `El día ${fecha} no traía ninguna vendedora, así que NO se guardó nada. ` +
@@ -582,8 +703,24 @@ export function DatosProvider({ modoDemo, datosMock, children }) {
   }
 
   const valor = {
-    ...datos,
-    cargado,
+    ...datosVisibles,
+
+    // "sin-sesion" | "cargando" | "listo" | "error" — ver el bloque de arriba.
+    // Quien tenga que distinguir "todavía no sé" de "falló" mira esto.
+    estado: faseEfectiva,
+
+    // Los 6 docs están. Si es false NO se puede concluir nada sobre el
+    // contenido: puede que vengan en camino, puede que la lectura fallara.
+    cargado: faseEfectiva === "listo",
+
+    // El error que impidió CARGAR (distinto de `error`, que también recoge los
+    // fallos de guardado). Sólo tiene valor cuando `estado === "error"`.
+    errorCarga: faseEfectiva === "error" ? carga.error : null,
+
+    // Vuelve a suscribir los 6 docs desde cero (targets nuevos). Para el botón
+    // "Reintentar" de la pantalla de error.
+    reintentar,
+
     error,
     ultimoSync,
     modoDemo: !!modoDemo,

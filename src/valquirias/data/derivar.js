@@ -38,6 +38,9 @@ import {
   indicadoresDelMes,
 } from "../../lib/calculos.js";
 import { getIndicadores, esFormulaV2, PESOS_TRIMESTRE } from "../../lib/constantes.js";
+// El doc `televentas/efectivo` mezcla `_meta` con los días: `esDiaEfectivo` es
+// el único filtro autorizado para recorrer sus llaves (fuente única).
+import { esDiaEfectivo } from "./DatosContext.jsx";
 import {
   calcComisionMensual,
   hoyColombia,
@@ -155,17 +158,6 @@ function campoNum(obj, nombres) {
 const CAMPOS_VENTAS = ["ventas", "ventasDia", "ventas_dia", "vendido", "venta"];
 const CAMPOS_EFECTIVO = ["efectivo", "efectivoDia", "efectivo_dia"];
 const CAMPOS_TICKETS = ["tickets", "ticketsDia", "numTickets", "facturas"];
-
-// Suma un campo sobre varios registros. Devuelve null si ningún registro lo trae.
-function sumaOpcional(regs, nombres) {
-  let hay = false;
-  let total = 0;
-  for (const r of regs) {
-    const v = campoNum(r, nombres);
-    if (v !== null) { hay = true; total += v; }
-  }
-  return hay ? total : null;
-}
 
 // Todos los registros de una vendedora en un mes, ordenados por fecha.
 // Devuelve [{ fecha, reg }] — incluye los días de descanso.
@@ -296,7 +288,7 @@ export function textoDetalleIndicador(indId, detalle, extra = {}) {
     return nov ? `${plural(nov, "día", "días")} sin planilla` : "Planilla al día ✅";
   }
   if (indId === "actitud") {
-    return nov ? `${plural(nov, "día", "días")} con actitud regular o mal` : "Actitud siempre bien ✅";
+    return nov ? `${plural(nov, "día", "días")} con actitud regular o mala` : "Actitud siempre bien ✅";
   }
   if (indId === "celular") {
     return nov ? `${plural(nov, "día", "días")} con novedad de celular` : "Sin novedades de celular ✅";
@@ -332,7 +324,7 @@ export function detalleCortoIndicador(indId, detalle) {
   if (!nov) return "Sin observaciones";
   if (indId === "planilla") return `${plural(nov, "día", "días")} sin llenar`;
   if (indId === "tienda" || indId === "tienda_e") return `${plural(nov, "día", "días")} con novedad en tienda`;
-  if (indId === "actitud") return `${plural(nov, "día", "días")} con actitud regular o mal`;
+  if (indId === "actitud") return `${plural(nov, "día", "días")} con actitud regular o mala`;
   if (indId === "celular") return `${plural(nov, "día", "días")} con novedad de celular`;
   if (indId === "uniforme") return `${plural(nov, "día", "días")} sin uniforme`;
   return `${plural(nov, "día", "días")} con novedad`;
@@ -690,36 +682,66 @@ function notaIndicadorDiaSeguro(reg, año, mes) {
 // ============================================================================
 // "ESTA SEMANA" — efectivo (premio de $50k)
 // ============================================================================
+// DE DÓNDE SALE LA PLATA: del documento `televentas/efectivo`, que escribe el
+// worker (televentas-reportes/src/sync.js → syncEfectivo) leyendo la tabla
+// `ventas` de Supabase. NO sale de `registros`: el único escritor de `registros`
+// es Ingreso Diario, que guarda comportamiento (minutos, reseñas, tienda_*,
+// planilla, actitud) y NUNCA dinero. Esta función leía `registros` buscando un
+// campo `efectivo` que jamás existió, así que devolvía siempre lista vacía y el
+// sub-tab "Semana de efectivo" salía en blanco.
+//
+// Las tres trampas del doc (las mismas que documenta MiCash.jsx):
+//   1. `_meta` viaja MEZCLADA con los días → se filtra con `esDiaEfectivo()`.
+//      Sumarla daría NaN.
+//   2. Las llaves internas son el id de la ficha COMO STRING → `String(id)`.
+//   3. QUE EXISTA la llave del día = ese día ya se procesó, y quien no aparece
+//      dentro vendió $0 ese día (dato real). Que NO exista = el día todavía no
+//      llegó, y eso NO es $0: si ningún día de la semana llegó, aquí no se arma
+//      ranking (`disponible:false`, lista vacía) en vez de pintar ceros.
 export function derivarSemanaDeVendedora(datos, vendedora, fechaISO) {
   const hoy = hoyColombia();
   const fechas = fechasSemanaDe(fechaISO || hoy.iso);
-  const registros = datos?.registros || {};
+  const doc = datos?.efectivo && typeof datos.efectivo === "object" ? datos.efectivo : {};
 
-  const efectivoDe = (vid) => {
-    const regs = fechas.map(f => registros[claveRegistro(vid, f)]).filter(Boolean);
-    return sumaOpcional(regs, CAMPOS_EFECTIVO);
-  };
+  // Trampas 1 y 3: sólo los días de ESTA semana que el worker YA procesó.
+  const diasConDato = fechas.filter(
+    (f) => esDiaEfectivo(f) && doc[f] && typeof doc[f] === "object" && !Array.isArray(doc[f])
+  );
 
-  const efectivo = efectivoDe(vendedora.id);          // number | null
+  // Trampa 2: las llaves internas son el id COMO STRING.
+  const efectivoDe = (vid) =>
+    diasConDato.reduce((t, f) => t + (Number(doc[f]?.[String(vid)]) || 0), 0);
+
+  // Ranking de la ciudad — sólo activas (R1). La semana no tiene snapshot:
+  // siempre es roster VIVO. Sin un solo día procesado no hay ranking.
+  const conDato = (diasConDato.length
+    ? rosterParticipa(datos, "semanal", { ciudad: vendedora.ciudad })
+    : [])
+    .map(v => ({ id: v.id, nombre: v.nombre, ciudad: v.ciudad, valor: efectivoDe(v.id) }))
+    .sort((a, b) => b.valor - a.valor || String(a.nombre).localeCompare(String(b.nombre)));
+
+  // Ella puede no estar en el ranking (eventual / inactiva): ahí su efectivo es
+  // null — "no compite", no "$0".
+  const yo = conDato.find(f => String(f.id) === String(vendedora.id)) || null;
+  const efectivo = yo ? yo.valor : null;              // number | null
   const disponible = efectivo !== null;
 
-  // Ranking de la ciudad — sólo activas (R1) y sólo con quienes tengan el dato.
-  // La semana no tiene snapshot: siempre es roster VIVO.
-  const conDato = rosterParticipa(datos, "semanal", { ciudad: vendedora.ciudad })
-    .map(v => ({ id: v.id, nombre: v.nombre, ciudad: v.ciudad, valor: efectivoDe(v.id) }))
-    .filter(f => f.valor !== null)
-    .sort((a, b) => b.valor - a.valor);
-
   const ganadoras = conDato.filter(f => f.valor >= UMBRAL_EFECTIVO_SEMANA);
+  // Con empate arriba del club el EXTRA no tiene dueña: son $50.000 reales, no
+  // se coronan por el orden en que quedó el arreglo.
+  const topClub = ganadoras[0]?.valor ?? null;
+  const empateExtra = ganadoras.filter(f => f.valor === topClub).length >= 2;
+  const lider = ganadoras.length >= 2 && !empateExtra ? ganadoras[0] : null;
 
   const rankingCiudad = conDato.map((f, i) => ({
     ...f,
     n: i + 1,
-    esYo: f.id === vendedora.id,
-    gap: i > 0 ? `-${formatoK(conDato[i - 1].valor - f.valor)}` : null,
+    esYo: String(f.id) === String(vendedora.id),
+    // Dinero completo, nunca abreviado: "$1.240.000", no "$1.24M".
+    gap: i > 0 ? `-${formatoPesos(conDato[i - 1].valor - f.valor)}` : null,
     gano50k: f.valor >= UMBRAL_EFECTIVO_SEMANA,
     // El extra sólo existe si hay 2+ ganadoras (misma regla del reporte diario)
-    extra: ganadoras.length >= 2 && ganadoras[0]?.id === f.id,
+    extra: !!lider && String(lider.id) === String(f.id),
   }));
 
   return {
@@ -730,6 +752,8 @@ export function derivarSemanaDeVendedora(datos, vendedora, fechaISO) {
     faltaExtra: disponible ? Math.max(0, UMBRAL_EFECTIVO_SEMANA - efectivo) : null,
     desde: fechas[0],
     hasta: fechas[6],
+    diasConDato,
+    empateExtra,
     top3: rankingCiudad.slice(0, 3),
     rankingCiudad,
   };
@@ -1378,8 +1402,8 @@ export function derivarFraseMotivacionalNota(posicion, total, nota, metaNota = 4
   if (nota >= metaNota) return "⚡ ¡Estás cerca del premio del trimestre! Mantén el ritmo.";
   if (nota >= metaNota - 0.5 && nota < metaNota) return `🚀 ¡A solo ${(metaNota - nota).toFixed(2)} puntos del ${metaNota.toFixed(2)}! Sigue empujando.`;
   if (nota >= 3.5) return "💪 Vas bien — un esfuerzo extra te lleva al siguiente nivel.";
-  if (nota >= 2.5) return "✨ Cada día es una nueva oportunidad. ¡Tú puedes!";
-  return "💖 Mañana es otra oportunidad. ¡Cuentas con nosotros!";
+  if (nota >= 2.5) return `📌 Vas en ${nota.toFixed(2)}. Los días que quedan del mes son los que mueven esta nota.`;
+  return `📌 Vas en ${nota.toFixed(2)}. Mira tus indicadores para ver dónde se está yendo la nota.`;
 }
 
 // ============================================================================
@@ -1496,119 +1520,20 @@ export function derivarBoletinMes(datos, vendedora, año, mes) {
 // ############################################################################
 
 // ============================================================================
-// 1) MI CASH SEMANAL — ranking de efectivo de SU ciudad
+// 1) MI CASH SEMANAL — vive en vendedora/MiCash.jsx, NO aquí
 // ============================================================================
-// ⚠️⚠️ DATO QUE HOY NO EXISTE EN FIRESTORE ⚠️⚠️
+// Aquí vivían `derivarSemanaEfectivo()` y `estadoEfectivoSemanal()`. Buscaban el
+// efectivo en un campo (`efectivo` | `efectivoDia` | `efectivo_dia`) DENTRO de
+// los registros diarios de Ingreso Diario. Ese campo nunca existió: Ingreso
+// Diario sólo guarda comportamiento, y el worker escribe la plata en el
+// documento aparte `televentas/efectivo`. Devolvían siempre `null`, y por eso el
+// Home decía "Sin dato todavía" con el efectivo ya cargado en Firestore.
 //
-// El efectivo por vendedora NO se sincroniza a Firestore. Estado real hoy:
-//   · systemlap (Supabase) SÍ lo tiene: tabla `ventas`, campos `tipo`
-//     ("efectivo" / "Mixto-Efectivo") y `total`.
-//   · El Worker televentas-reportes lo calcula al vuelo para el correo diario
-//     (src/index.js → efectivoPorVendedora), pero NO lo escribe en ningún lado.
-//   · El sync a esta app (televentas-reportes/src/sync.js) sólo escribe
-//     `vendedoras` y `metas[YYYY_MM].vendidas` (ventas NETAS del MES).
-//     No escribe nada diario ni nada de efectivo.
-//   · El único escritor de `registros` es la pantalla de Ingreso Diario, que
-//     guarda indicadores de comportamiento (minutos, resenas, tienda_*,
-//     planilla, actitud) — nunca dinero.
-//
-// PARA QUE ESTA FUNCIÓN DEVUELVA DATOS hay que sincronizar, por vendedora y
-// por día, el efectivo acumulado en un campo del registro diario
-// (`efectivo` | `efectivoDia` | `efectivo_dia` — cualquiera de los tres sirve).
-// El día que ese campo aparezca, esta función empieza a funcionar sola: no
-// hay que tocar nada más.
-//
-// Mientras tanto devuelve `null` — NUNCA ceros. Un $0 aquí le diría a la
-// vendedora "no vendiste nada en efectivo", que es mentira.
-// Para pintar el estado "no disponible" con el rango de fechas correcto, la
-// pantalla usa `estadoEfectivoSemanal()`.
-export function derivarSemanaEfectivo(datos, vendedora, isoLunes) {
-  const hoy = hoyColombia();
-  const vend = vendedoraDe(datos, vendedora);
-  const fechas = fechasSemanaDe(isoLunes || hoy.iso);
-  const registros = datos?.registros || {};
-
-  const efectivoDe = (vid) => {
-    const regs = fechas.map(f => registros[claveRegistro(vid, f)]).filter(Boolean);
-    return sumaOpcional(regs, CAMPOS_EFECTIVO);
-  };
-
-  // Sólo activas (R1). El premio semanal de efectivo es un ranking en vivo.
-  const conDato = rosterParticipa(datos, "semanal", { ciudad: vend.ciudad })
-    .map(v => ({
-      id: v.id,
-      nombre: v.nombre,
-      nombreCorto: primerNombre(v.nombre),
-      ciudad: v.ciudad,
-      efectivo: efectivoDe(v.id),
-    }))
-    .filter(f => f.efectivo !== null);
-
-  // Nadie de la ciudad tiene el dato → el dato no existe. null, no ceros.
-  if (!conDato.length) return null;
-
-  conDato.sort((a, b) => b.efectivo - a.efectivo);
-
-  const club = conDato.filter(f => f.efectivo >= UMBRAL_EFECTIVO_SEMANA);
-  const lider = club[0] || null;
-
-  const filas = conDato.map((f, i) => ({
-    ...f,
-    n: i + 1,
-    esYo: f.id === vend.id,
-    gano: f.efectivo >= UMBRAL_EFECTIVO_SEMANA,
-    // El EXTRA sólo existe si 2+ llegaron al umbral (misma regla del reporte diario)
-    extra: club.length >= 2 && lider?.id === f.id,
-    falta: Math.max(0, UMBRAL_EFECTIVO_SEMANA - f.efectivo),
-    medalla: ["🥇", "🥈", "🥉"][i] || null,
-  }));
-
-  const yo = filas.find(f => f.esYo) || null;
-  const arriba = yo && yo.n > 1 ? filas[yo.n - 2] : null;
-
-  return {
-    disponible: true,
-    ciudad: vend.ciudad,
-    desde: fechas[0],
-    hasta: fechas[6],
-    fechas,
-    umbral: UMBRAL_EFECTIVO_SEMANA,
-    premio: PREMIO_EFECTIVO_SEMANA,
-    filas,
-    // Mi situación
-    miEfectivo: yo ? yo.efectivo : null,
-    miPosicion: yo ? yo.n : null,
-    total: filas.length,
-    gane: !!yo?.gano,
-    soyLider: !!yo?.extra,
-    faltaParaPremio: yo ? yo.falta : null,
-    arriba,
-    faltaParaSubir: arriba && yo ? Math.max(0, arriba.efectivo - yo.efectivo) : null,
-    // Quiénes ya pasaron los $2.500.000
-    club,
-    clubCount: club.length,
-    lider,
-    hayExtra: club.length >= 2,
-  };
-}
-
-// Estado del dato semanal, para que la pantalla pueda decir "no disponible"
-// con el rango de fechas correcto sin inventar cifras.
-export function estadoEfectivoSemanal(datos, vendedora, isoLunes) {
-  const hoy = hoyColombia();
-  const fechas = fechasSemanaDe(isoLunes || hoy.iso);
-  const r = derivarSemanaEfectivo(datos, vendedora, isoLunes);
-  return {
-    disponible: r !== null,
-    desde: fechas[0],
-    hasta: fechas[6],
-    umbral: UMBRAL_EFECTIVO_SEMANA,
-    premio: PREMIO_EFECTIVO_SEMANA,
-    motivo: r !== null
-      ? null
-      : "El efectivo de la semana todavía no se sincroniza desde systemlap, por eso no se puede armar el ranking.",
-  };
-}
+// NO LAS VUELVAS A CABLEAR. La única fuente del cash semanal es el doc
+// `televentas/efectivo` (`datos.efectivo`), y quien lo lee es:
+//   · `armarSemana()` / `ganadorasDe()`  → vendedora/MiCash.jsx (pantalla y Home)
+//   · `derivarSemanaDeVendedora()`       → arriba en este archivo (Tab Ranking)
+// ============================================================================
 
 // ============================================================================
 // 4) MIS INDICADORES DEL MES — nota, detalle concreto y día por día
@@ -2053,7 +1978,7 @@ export function derivarFocoDelDia({ mes, ciudad, semana }) {
     const diasQueQuedan = Math.max(1, (mes?.diasMes || 30) - (mes?.dia || 1));
     const perDia = Math.ceil(faltaPiso / diasQueQuedan);
     return {
-      msg: `Con ${formatoK(perDia)} más al día llegas al piso en ${diasQueQuedan} días 💪`,
+      msg: `Con ${formatoPesos(perDia)} más al día llegas al piso en ${diasQueQuedan} días 💪`,
       tipo: "piso",
     };
   }
@@ -2061,12 +1986,12 @@ export function derivarFocoDelDia({ mes, ciudad, semana }) {
   // Sólo hablamos de efectivo semanal si el dato REALMENTE existe
   if (semana?.disponible) {
     if (semana.gano50k && semana.top3?.[0]?.esYo) {
-      return { msg: "Vas #1 del EXTRA de $50k. ¡Manténlo! 🔥", tipo: "normal" };
+      return { msg: "Vas #1 del EXTRA de $50.000. ¡Manténlo! 🔥", tipo: "normal" };
     }
     if (!semana.gano50k) {
       const falta = Math.max(0, UMBRAL_EFECTIVO_SEMANA - (semana.efectivo || 0));
       return {
-        msg: `Con ${formatoK(falta)} más en efectivo entras al club de los $50k semanales 💪`,
+        msg: `Con ${formatoPesos(falta)} más en efectivo entras al club de los $50.000 semanales 💪`,
         tipo: "normal",
       };
     }
@@ -2077,7 +2002,7 @@ export function derivarFocoDelDia({ mes, ciudad, semana }) {
     const falta = Math.max(0, mes.meta - mes.ventas);
     const diasQueQuedan = Math.max(1, (mes.diasMes || 30) - (mes.dia || 1));
     return {
-      msg: `Vas al ${mes.pctMeta}% de la meta · con ${formatoK(Math.ceil(falta / diasQueQuedan))} al día la cierras 💪`,
+      msg: `Vas al ${mes.pctMeta}% de la meta · con ${formatoPesos(Math.ceil(falta / diasQueQuedan))} al día la cierras 💪`,
       tipo: "normal",
     };
   }
@@ -2115,14 +2040,15 @@ export function derivarDatosVendedora(datos, vendedora) {
     proyeccion: añoData.proyeccion,     // null a propósito (no se inventa)
     desgloseAño: añoData.desglose,
     mesesCerrados: añoData.mesesCerrados,
-    // La semana cerrada necesita efectivo histórico que hoy no está en Firestore
+    // La semana cerrada necesita efectivo histórico: el doc `televentas/efectivo`
+    // sólo guarda 14 días (semana en curso + la anterior), así que aquí no se
+    // ofrece historia. La semana pasada la arma `ganadorasDe()` en MiCash.jsx.
     semanaCerrada: null,
 
     // --- Pantallas del prototipo aprobado ---
-    // null mientras el efectivo no se sincronice desde systemlap (ver
-    // derivarSemanaEfectivo). `estadoSemanaEfectivo` trae el "por qué".
-    semanaEfectivo: derivarSemanaEfectivo(datos, vendedora),
-    estadoSemanaEfectivo: estadoEfectivoSemanal(datos, vendedora),
+    // El cash semanal NO se deriva aquí: lo lee `armarSemana()` (MiCash.jsx)
+    // directamente del doc `televentas/efectivo`. Ver la lápida de la sección
+    // "1) MI CASH SEMANAL" más arriba.
     trimestreVivo: derivarTrimestreEnVivo(datos, vendedora, hoy.año, q),
     rankingMesCiudad: derivarRankingMesCiudad(datos, vendedora, hoy.año, hoy.mes),
     rankingTrimCiudad: derivarRankingTrimestreCiudad(datos, vendedora, hoy.año, q),

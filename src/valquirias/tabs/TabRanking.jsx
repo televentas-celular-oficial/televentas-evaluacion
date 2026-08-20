@@ -21,7 +21,7 @@ import {
   derivarTrimestreDeVendedora,
   derivarSemanaDeVendedora,
 } from "../data/derivar.js";
-import { formatoK, primerNombre, hoyColombia } from "../lib/helpers.js";
+import { formatoK, formatoPesos, primerNombre, hoyColombia } from "../lib/helpers.js";
 import TabRankingIndicadores from "./TabRankingIndicadores.jsx";
 import PodioTop3 from "../common/PodioTop3.jsx";
 
@@ -186,19 +186,34 @@ export default function TabRanking({
   }, [datos, vendedoraVista, vendedora, añoVista, qVista, rolPorId]);
 
   // ---- SEMANA DE EFECTIVO -------------------------------------------------
+  // La plata sale del doc `televentas/efectivo` (el que escribe el worker), no
+  // de los registros diarios: ver la nota de `derivarSemanaDeVendedora`. Este
+  // sub-tab salía vacío porque leía un campo de Ingreso Diario que no existe.
+  // Sin ciudad NO se arma: el premio de $50.000 se pelea por ciudad y MED y BOG
+  // nunca se mezclan. Con "Todas" saldría una lista MED+BOG que no corresponde a
+  // ningún concurso real, y coronaría un EXTRA cruzando empresas.
+  const semanaData = useMemo(
+    () => (vendedoraVista && semanaVista && ciudadFiltro
+      ? derivarSemanaDeVendedora(datos, vendedoraVista, semanaVista.iso)
+      : null),
+    [datos, vendedoraVista, semanaVista, ciudadFiltro]
+  );
+
   const filasSem = useMemo(() => {
-    if (!vendedoraVista || !semanaVista) return [];
-    const s = derivarSemanaDeVendedora(datos, vendedoraVista, semanaVista.iso);
-    return (s.rankingCiudad || []).map(v => ({
+    return (semanaData?.rankingCiudad || []).map(v => ({
       key: v.id,
-      esYo: v.id === vendedora.id,
+      esYo: String(v.id) === String(vendedora?.id),
       nombre: v.nombre,
       valor: v.valor,
-      rolLabel: v.gano50k ? "✅ ganó $50k" : "sin premio esta semana",
-      detalle: v.extra ? "+ $50k EXTRA (top 1)" : "",
-      subValor: v.gano50k ? "+$50k" : (v.gap || ""),
+      rolLabel: v.gano50k ? "✅ ganó $50.000" : "sin premio esta semana",
+      // Con empate arriba del club el EXTRA queda sin dueña: no se corona a
+      // nadie por el orden del arreglo, que son $50.000 de verdad.
+      detalle: v.extra
+        ? "+ $50.000 EXTRA (top 1)"
+        : (v.gano50k && semanaData?.empateExtra ? "EXTRA en empate arriba" : ""),
+      subValor: v.gano50k ? "+$50.000" : (v.gap || ""),
     }));
-  }, [datos, vendedoraVista, vendedora, semanaVista]);
+  }, [semanaData, vendedora]);
 
   // El sub-tab "Indicador" no usa las filas de este componente: pinta
   // TabRankingIndicadores completo (tabs por indicador + su propia lista).
@@ -210,7 +225,16 @@ export default function TabRanking({
       ? `Todavía no hay ventas cargadas de ${MESES_LARGO[mesVista - 1]} ${añoVista}.`
       : subTab === "trim"
         ? `Todavía no hay notas del Q${qVista} ${añoVista}. Aparecen cuando los meses del trimestre tengan registros.`
-        : "El efectivo de esta semana todavía no queda registrado en la app, por eso no se puede armar el ranking.";
+        : !ciudadFiltro
+          ? (esAdmin
+              ? "El premio de efectivo se pelea por ciudad, y MED y BOG no se mezclan: elige 🟢 MED o 🟡 BOG para ver ese ranking."
+              : "No podemos saber en qué ciudad estás compitiendo, y el premio de efectivo se pelea por ciudad. Escríbele al administrador.")
+          // Un día que el worker no ha procesado NO es $0: se dice que no hay dato.
+          // Y el doc de efectivo sólo conserva 14 días (semana en curso + la
+          // anterior), así que de semanas más viejas no queda nada que mostrar.
+          : (semanaData?.diasConDato?.length ?? 0) === 0
+            ? `De ${semanaVista?.rango || "esa semana"} no hay ningún día de efectivo procesado. Sólo se conservan la semana en curso y la anterior: de semanas más viejas ya no queda dato.`
+            : "Todavía no hay equipo cargado para armar el ranking de efectivo de esta ciudad.";
 
   // El admin publica/despublica el ranking desde su panel (config.rankingVisible).
   // Sin publicar, la vendedora no ve puestos — pero el admin sí, para poder revisarlo antes.
@@ -271,9 +295,9 @@ export default function TabRanking({
         <div className={"v-team-header " + (ciudadEfectiva === "BOG" ? "bog" : "")}>
           <div className="v-team-h-title">
             {ciudadEfectiva === "BOG"
-              ? "🟡 Viendo como: Team Valquirias Bogotá"
+              ? "🟡 Viendo como: Team Valkyrias Bogotá"
               : ciudadEfectiva === "MED"
-                ? "🟢 Viendo como: Team Valquirias Medellín"
+                ? "🟢 Viendo como: Team Valkyrias Medellín"
                 : "🏆 Viendo Todas · MED + BOG"}
           </div>
         </div>
@@ -386,10 +410,14 @@ export default function TabRanking({
               <div className="rol">{r.rolLabel}{r.detalle ? ` · ${r.detalle}` : ""}</div>
             </div>
             <div className="valores">
-              <div className="v">
+              {/* Semana de efectivo: cifra COMPLETA ($2.500.000), nunca "$2.5M".
+                  Es la plata con la que se decide el premio de $50.000. */}
+              <div className="v" style={subTab === "sem" ? { whiteSpace: "nowrap" } : undefined}>
                 {subTab === "trim"
                   ? (typeof r.valor === "number" ? r.valor.toFixed(2) : "—")
-                  : formatoK(r.valor)}
+                  : subTab === "sem"
+                    ? formatoPesos(r.valor)
+                    : formatoK(r.valor)}
               </div>
               {r.subValor && <div className="g">{r.subValor}</div>}
             </div>

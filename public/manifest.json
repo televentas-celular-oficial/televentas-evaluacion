@@ -1,7 +1,7 @@
 {
-  "name": "Valquirias TLV",
-  "short_name": "Valquirias",
-  "description": "Indicadores TLV — dashboard motivacional del Team Valquirias",
+  "name": "Valkyrias",
+  "short_name": "Valkyrias",
+  "description": "Valkyrias — tu cash, tu mes y tu trimestre",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
