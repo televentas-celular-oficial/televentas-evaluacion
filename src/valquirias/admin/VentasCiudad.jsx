@@ -144,11 +144,13 @@ export default function VentasCiudad({ onVolver }) {
         overflow: "hidden",
         textAlign: "center",
       }}>
-        <div style={{ position: "absolute", top: "-50%", right: "-30%", width: 260, height: 260, background: "radial-gradient(circle, rgba(255,255,255,0.25), transparent 60%)", borderRadius: "50%", pointerEvents: "none" }} />
-        <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 2, opacity: 0.95, marginBottom: 4, position: "relative" }}>
-          💫 Vendido en {MES_NOMBRES[selMes.mes - 1]} {selMes.año}
+        {/* Iba aquí un velo blanco radial y una sombra de texto: los dos
+            existían porque la tarjeta era un degradado oscuro. Sobre crema
+            sobran — la sombra ensuciaba la cifra. */}
+        <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4, position: "relative", color: "var(--vk-noche-apoyo)" }}>
+          Vendido en {MES_NOMBRES[selMes.mes - 1]} {selMes.año}
         </div>
-        <div style={{ fontSize: 36, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1, position: "relative", textShadow: "0 2px 6px rgba(0,0,0,0.15)" }}>
+        <div style={{ fontSize: 36, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1, position: "relative" }}>
           {formatoPesos(totales.total)}
         </div>
         <div style={{ fontSize: 12, marginTop: 8, opacity: 0.95, fontWeight: 700, position: "relative" }}>
@@ -217,10 +219,16 @@ export default function VentasCiudad({ onVolver }) {
 function BloqueCiudad({ ciudad, meta, vendido, lista }) {
   if (!lista.length) return null;
 
-  const pct = pctDe(vendido, meta);
-  const falta = Math.max(meta - vendido, 0);
-  const excedente = Math.max(vendido - meta, 0);
-  const barra = colorPct(pct, ciudad.color);
+  // ⚠️ AQUÍ HABÍA UN NÚMERO FALSO (corregido 21-ago-2026).
+  // La cabecera hacía `pctDe(vendido, meta)`: dividía la suma de TODA la ciudad
+  // entre la meta de UNA vendedora. Con siete personas vendiendo, eso daba
+  // cifras de 300% y un "🎉 Meta cumplida" que no significaba nada.
+  //
+  // La meta es POR VENDEDORA (Luis, 21-ago-2026). El % de cumplimiento sólo
+  // tiene sentido persona por persona — y así ya se calcula en cada fila.
+  // A nivel de ciudad no se inventa una meta colectiva: se dicen los hechos
+  // (cuánto se vendió) y se cuenta cuántas llegaron.
+  const cumplieron = meta > 0 ? lista.filter(v => v.real >= meta).length : 0;
 
   return (
     <div style={{ marginBottom: 14 }}>
@@ -229,48 +237,33 @@ function BloqueCiudad({ ciudad, meta, vendido, lista }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 900, color: ciudad.tinte }}>{ciudad.titulo}</div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: 9, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>Meta</div>
+            <div style={{ fontSize: 9, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>Meta c/u</div>
             <div style={{ fontSize: 12, fontWeight: 900, color: meta > 0 ? "#1e1b4b" : "#dc2626" }}>
               {meta > 0 ? formatoPesos(meta) : "sin cargar"}
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 10, marginBottom: 5 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 10 }}>
           <span style={{ fontSize: 10, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>Vendido</span>
-          <span style={{ fontSize: 17, fontWeight: 900, color: pct >= 100 ? "#059669" : "#1e1b4b", letterSpacing: -0.5 }}>
+          <span style={{ fontSize: 17, fontWeight: 900, color: "#1e1b4b", letterSpacing: -0.5 }}>
             {formatoPesos(vendido)}
-            {meta > 0 && <span style={{ fontSize: 12, color: barra, marginLeft: 6 }}>{pct}%</span>}
           </span>
         </div>
 
-        {/* Barra de progreso */}
-        <div style={{ background: "rgba(255,255,255,0.75)", borderRadius: 6, height: 10, overflow: "hidden", boxShadow: "inset 0 1px 2px rgba(0,0,0,0.08)" }}>
-          <div style={{
-            height: "100%",
-            width: Math.min(pct, 100) + "%",
-            borderRadius: 6,
-            background: pct >= 100
-              ? "linear-gradient(90deg, #10b981, #059669)"
-              : `linear-gradient(90deg, ${barra}, ${barra}cc)`,
-            transition: "width 0.3s",
-          }} />
-        </div>
-
-        {/* Cuánto falta */}
-        <div style={{ fontSize: 11.5, fontWeight: 800, marginTop: 6, color: meta <= 0 ? "#b91c1c" : pct >= 100 ? "#047857" : ciudad.tinte }}>
+        {/* Cuántas llegaron. No es una meta de ciudad inventada: es el conteo de
+            un hecho que ya existe por persona. */}
+        <div style={{ fontSize: 11.5, fontWeight: 800, marginTop: 6, color: meta <= 0 ? "#b91c1c" : ciudad.tinte }}>
           {meta <= 0
-            ? `⚠️ Sin meta cargada para ${ciudad.id} — no se puede medir el cumplimiento`
-            : pct >= 100
-              ? `🎉 Meta cumplida · ${formatoPesos(excedente)} por encima`
-              : `Faltan ${formatoPesos(falta)} para la meta`}
+            ? `⚠️ Sin meta cargada para ${ciudad.id}`
+            : `${cumplieron} de ${lista.length} llegaron a la meta`}
         </div>
       </div>
 
       {/* Vendedoras de la ciudad, ordenadas por ventas */}
       <div style={{ fontSize: 9.5, fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, padding: "2px 12px 5px", display: "flex", justifyContent: "space-between" }}>
         <span>Vendedora</span>
-        <span>Vendido · % de la meta ciudad</span>
+        <span>Vendido · % de su meta</span>
       </div>
 
       {lista.map((v, i) => (
