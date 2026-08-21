@@ -110,12 +110,92 @@ function Vacio({ onVolver, mensaje }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// UNA FILA QUE SE DESPLIEGA
+// ---------------------------------------------------------------------------
+// La usan Ventas y CADA indicador, con la misma pieza a propósito: se ve el
+// nombre y la nota, y al tocarla salen los tres meses con su barra y su nota.
+// Regla del dueño (21-ago-2026): todo se comporta igual, sin excepciones.
+//
+// La barra significa cosas distintas según la fila, y por eso viene calculada
+// de afuera: en Ventas es lo vendido contra la meta de ese mes; en un indicador
+// es la nota sobre la escala 1.00–5.00.
+function FilaDesplegable({ emoji, nombre, nota, abierta, onToggle, meses, ultima }) {
+  const sinBorde = ultima && !abierta;
+  return (
+    <>
+      <button
+        style={{ ...S.indBoton, ...(sinBorde ? { borderBottom: "none" } : null) }}
+        onClick={onToggle}
+        aria-expanded={abierta}
+      >
+        <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{emoji}</span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: TINTA }}>
+          {nombre}
+        </span>
+        <Badge nota={nota} />
+        <span style={{
+          color: APOYO, fontWeight: 800, fontSize: 17, display: "inline-block",
+          transform: abierta ? "rotate(90deg)" : "none",
+        }}>›</span>
+      </button>
+
+      {abierta && (
+        <div style={{
+          padding: "2px 0 9px 24px",
+          borderBottom: ultima ? "none" : `1px solid ${LINEA}`,
+        }}>
+          {meses.map((f, i, arr) => {
+            const hay = f.nota !== null && f.nota !== undefined;
+            return (
+              <div key={f.mes} style={{
+                display: "flex", alignItems: "center", gap: 9, padding: "7px 0",
+                borderBottom: i === arr.length - 1 ? "none" : `1px dashed ${LINEA}`,
+              }}>
+                <span style={{
+                  fontSize: 11.5, fontWeight: 800, width: 68, flexShrink: 0,
+                  color: hay ? TINTA : APOYO,
+                }}>{f.nombre}</span>
+
+                <span style={{ flex: 1, minWidth: 28 }}>
+                  <span style={{
+                    display: "block", height: 6, borderRadius: 3, background: NEUTRO,
+                    overflow: "hidden",
+                    ...(hay ? null : { outline: "1.5px dashed var(--est-sin-dato)", outlineOffset: "-1.5px" }),
+                  }}>
+                    {hay && (
+                      <span style={{
+                        display: "block", height: "100%", width: `${Math.max(0, Math.min(100, f.pct))}%`,
+                        borderRadius: 3, background: VERDE,
+                      }} />
+                    )}
+                  </span>
+                </span>
+
+                {f.valor && (
+                  <span style={{
+                    fontSize: 10.5, fontWeight: 800, color: APOYO,
+                    whiteSpace: "nowrap", flexShrink: 0,
+                  }}>{f.valor}</span>
+                )}
+
+                <Badge nota={f.nota} extra={{ fontSize: 11.5, minWidth: 42 }} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
-  // La fila de Ventas arranca cerrada, igual que un indicador: se ve el nombre
-  // y la nota, y el mes a mes se despliega al tocarla.
-  const [ventasAbierto, setVentasAbierto] = useState(false);
+  // Qué fila está desplegada. Una sola a la vez: con dos columnas, varias
+  // abiertas descuadran la rejilla y la pantalla salta.
+  const [abierta, setAbierta] = useState(null);
+  const alternar = (id) => setAbierta(a => (a === id ? null : id));
 
   const datos = useDatos();
   const hoy = hoyColombia();
@@ -403,6 +483,37 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
       </div>
 
       {/* ------------------------------------------------------------------ */}
+      {/* 2b) VENTAS                                                          */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Las ventas son el 60% de cada nota mensual — la mitad más pesada de la
+          nota del trimestre — y la pantalla sólo mostraba los cinco indicadores
+          de comportamiento, que son el 40% restante.
+          Va en tarjeta aparte, no dentro de la lista de indicadores: no es un
+          indicador más, pesa más que los cinco juntos.
+          Y va aquí, pegada a "Tu nota", porque las dos son cortas: en el
+          computador comparten renglón sin dejar un hueco al lado. */}
+      {trim.ventas && trim.ventas.promedio !== null && (
+        <div style={{ ...S.card, paddingTop: 12, paddingBottom: 6 }}>
+          <FilaDesplegable
+            emoji="💰"
+            nombre="Ventas"
+            nota={trim.ventas.promedio}
+            abierta={abierta === "ventas"}
+            onToggle={() => alternar("ventas")}
+            ultima
+            meses={trim.ventas.meses.map(f => ({
+              mes: f.mes,
+              nombre: f.nombre,
+              nota: f.nota,
+              // Lo vendido contra la meta DE ESE MES.
+              pct: f.pct === null || f.pct === undefined ? 0 : f.pct,
+              valor: f.real !== null && f.real !== undefined ? formatoPesos(f.real) : null,
+            }))}
+          />
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
       {/* 3) MES A MES                                                        */}
       {/* ------------------------------------------------------------------ */}
       {/* Las filas NO llevan porcentaje. La regla va una sola vez al pie, con
@@ -463,82 +574,6 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* 3b) VENTAS — se ve como un indicador y se despliega al tocarla      */}
-      {/* ------------------------------------------------------------------ */}
-      {/* Las ventas son el 60% de cada nota mensual, o sea la mitad más pesada
-          de la nota del trimestre, y la pantalla no las mostraba: sólo se veían
-          los cinco indicadores de comportamiento, que son el 40% restante.
-          Va aparte de ellos, no dentro de la lista, porque no es un indicador
-          más: pesa más que los cinco juntos. */}
-      {trim.ventas && trim.ventas.promedio !== null && (
-        <div style={{ ...S.card, paddingTop: 12, paddingBottom: 6 }}>
-          <button
-            style={{ ...S.indBoton, borderBottom: ventasAbierto ? `1px solid ${LINEA}` : "none" }}
-            onClick={() => setVentasAbierto(v => !v)}
-            aria-expanded={ventasAbierto}
-          >
-            <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>💰</span>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: TINTA }}>
-              Ventas
-            </span>
-            <Badge nota={trim.ventas.promedio} />
-            <span style={{
-              color: APOYO, fontWeight: 800, fontSize: 17,
-              display: "inline-block",
-              transform: ventasAbierto ? "rotate(90deg)" : "none",
-            }}>›</span>
-          </button>
-
-          {ventasAbierto && (
-            <div style={{ paddingTop: 4, paddingBottom: 6 }}>
-              {trim.ventas.meses.map((f, i, arr) => {
-                const hay = f.nota !== null && f.nota !== undefined;
-                return (
-                  <div
-                    key={f.mes}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      padding: "9px 0",
-                      borderBottom: i === arr.length - 1 ? "none" : `1px dashed ${LINEA}`,
-                    }}
-                  >
-                    <span style={{
-                      fontSize: 12, fontWeight: 800, width: 74, flexShrink: 0,
-                      color: hay ? TINTA : APOYO,
-                    }}>{f.nombre}</span>
-
-                    {/* Lo vendido contra la meta DE ESE MES */}
-                    <span style={{ flex: 1, minWidth: 34 }}>
-                      <span style={{
-                        display: "block", height: 6, borderRadius: 3, background: NEUTRO,
-                        overflow: "hidden",
-                        ...(hay ? null : { outline: "1.5px dashed var(--est-sin-dato)", outlineOffset: "-1.5px" }),
-                      }}>
-                        {hay && f.pct !== null && (
-                          <span style={{
-                            display: "block", height: "100%", width: `${Math.min(100, f.pct)}%`,
-                            borderRadius: 3, background: VERDE,
-                          }} />
-                        )}
-                      </span>
-                    </span>
-
-                    <span style={{
-                      fontSize: 11, fontWeight: 800, color: APOYO,
-                      whiteSpace: "nowrap", flexShrink: 0,
-                    }}>
-                      {f.real !== null ? formatoPesos(f.real) : "—"}
-                    </span>
-
-                    <Badge nota={f.nota} extra={{ fontSize: 12, minWidth: 44 }} />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ------------------------------------------------------------------ */}
       {/* 4) LOS INDICADORES DEL TRIMESTRE                                    */}
@@ -552,24 +587,29 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
             Tus indicadores del trimestre no están disponibles todavía.
           </div>
         ) : (
+          // Cada indicador se despliega igual que Ventas: la MISMA pieza.
+          // Antes esto navegaba a la pantalla de detalle; ahora el mes a mes
+          // sale aquí mismo, que es lo que se quería ver.
           indTrim.indicadores.map((ind, i, arr) => (
-            <button
+            <FilaDesplegable
               key={ind.id}
-              style={{
-                ...S.indBoton,
-                ...(i === arr.length - 1 ? { borderBottom: "none" } : null),
-              }}
-              onClick={() => onIndicador && onIndicador(ind.id)}
-            >
-              <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>
-                {ind.emoji}
-              </span>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: TINTA }}>
-                {ind.nombre}
-              </span>
-              <Badge nota={ind.promedio} />
-              <span style={{ color: APOYO, fontWeight: 800, fontSize: 17 }}>›</span>
-            </button>
+              emoji={ind.emoji}
+              nombre={ind.nombre}
+              nota={ind.promedio}
+              abierta={abierta === ind.id}
+              onToggle={() => alternar(ind.id)}
+              ultima={i === arr.length - 1}
+              meses={(indTrim.meses || []).map((mm, j) => ({
+                mes: mm.mes,
+                nombre: mm.nombre,
+                nota: ind.notasMes[j] ?? null,
+                // En un indicador la barra es la nota sobre la escala 1.00–5.00
+                // (la misma que usa la barra grande de "Tu nota"), no un
+                // porcentaje de meta: aquí no hay meta que perseguir.
+                pct: pctNota(ind.notasMes[j] ?? null),
+                valor: null,
+              }))}
+            />
           ))
         )}
       </div>
@@ -579,8 +619,11 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
       {/* ------------------------------------------------------------------ */}
       {/* Sólo si ELLA está en él. Si no participa, mostrarle esta tabla sería
           enseñarle una lista de la que fue excluida — no se hace. */}
+      {/* `v-full`: el ranking ocupa el ancho completo. Es una lista de trece
+          renglones — embutida en media pantalla dejaba un hueco enorme al lado
+          y se leía apretada. En el celular la clase no hace nada. */}
       {participa ? (
-        <div style={S.card}>
+        <div className="v-full" style={S.card}>
           <div style={S.lbl}>Mi puesto · {ciudadLarga}</div>
           {!rank || (!rank.filas.length && !rank.sinNota.length) ? (
             <div style={{ fontSize: 12.5, color: APOYO, lineHeight: 1.6 }}>
@@ -646,7 +689,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
           )}
         </div>
       ) : (
-        <div style={S.card}>
+        <div className="v-full" style={S.card}>
           <div style={S.lbl}>Mi puesto · {ciudadLarga}</div>
           <div style={{ fontSize: 12.5, color: APOYO, lineHeight: 1.65 }}>
             {motivo === "entroTarde" ? (

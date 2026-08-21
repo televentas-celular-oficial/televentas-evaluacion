@@ -171,6 +171,10 @@ body {
     column-gap: 12px;
     align-items: start;   /* que una tarjeta corta no estire a su vecina */
   }
+  /* Las listas largas (un ranking de 13) no se parten en dos: ocupan el ancho
+     completo. Sin esto quedaban embutidas en media pantalla con un hueco
+     enorme al lado. */
+  .v-cols > .v-full { grid-column: 1 / -1; }
 }
 
 /* Todos los hijos directos ocupan el mismo ancho consistente */
