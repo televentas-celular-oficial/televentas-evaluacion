@@ -64,6 +64,10 @@ export default function NominaComisiones({ onVolver }) {
           rol,
           ventasMes: ventas,
           datosCambioRol,
+          // El mes decide si el piso de MED ya regía (rige desde ago-2026).
+          // Sin esto, junio y julio se liquidaban con un piso que no existía.
+          año: selMes.año,
+          mes: selMes.mes,
         });
         return {
           v: { ...v, rolTienda: rol },

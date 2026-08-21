@@ -129,9 +129,12 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
   if (!semana) return null;
 
   const { club = [], clubCount = 0, hayExtra, empateExtra, lider,
-    gane, premio, umbral, desde, hasta } = semana;
+    ganadorasExtra = [], gane, premio, umbral, desde, hasta } = semana;
   const idLider = lider ? String(lider.id) : null;
   const soyLiderDelClub = !!(idLider && idLider === String(vendedora?.id));
+  // Con doble empate no hay `lider`, pero sí varias que se llevan el EXTRA.
+  const estoyEnElExtra = ganadorasExtra.some(g => String(g.id) === String(vendedora?.id));
+  const nombresExtra = ganadorasExtra.map(g => primerNombre(g.nombre)).join(" y ");
 
   if (!clubCount) {
     return (
@@ -195,14 +198,17 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
       })}
 
       <div style={{ ...estiloNota, borderTopColor: lineaNota }}>
-        {hayExtra
-          ? (soyLiderDelClub
-              ? "Fuiste la que más efectivo vendió, así que sumaste el EXTRA. "
-              : `👑 ${primerNombre(lider.nombre)} sumó el EXTRA por ser la que más efectivo vendió. `)
-          : empateExtra
-            // Dos o más quedaron iguales arriba: el EXTRA no se lo lleva nadie
-            // por el orden de una lista. Se dice lo que pasó.
-            ? `Arriba quedaron empatadas, así que el EXTRA de ${peso(premio)} quedó sin dueña. `
+        {/* El orden importa: `empateExtra` va PRIMERO porque ahora implica que
+            sí hubo EXTRA (lo ganan todas las empatadas) y en ese caso `lider`
+            viene en null — leer `lider.nombre` ahí rompía la tarjeta. */}
+        {empateExtra
+          ? (estoyEnElExtra
+              ? `Quedaste empatada arriba en efectivo y en ventas del mes, así que el EXTRA de ${peso(premio)} fue para las dos. `
+              : `👑 ${nombresExtra} quedaron empatadas hasta en ventas del mes, así que el EXTRA de ${peso(premio)} fue para ambas. `)
+          : hayExtra
+            ? (soyLiderDelClub
+                ? "Fuiste la que más efectivo vendió, así que sumaste el EXTRA. "
+                : `👑 ${primerNombre(lider.nombre)} sumó el EXTRA por ser la que más efectivo vendió. `)
             : `El EXTRA de ${peso(premio)} solo se reparte cuando llegan dos o más, así que esta vez no hubo. `}
         Hoy arranca semana nueva — todas en ceros.
       </div>
@@ -296,9 +302,10 @@ export default function Home({ vendedora, onIr }) {
           vendedoras: datos.vendedoras,
           vendedora,
           fechas: fechasEstaSemana,
+          metas: datos.metas,
         })
       : null),
-    [datos.efectivo, datos.vendedoras, vendedora, fechasEstaSemana]
+    [datos.efectivo, datos.vendedoras, datos.metas, vendedora, fechasEstaSemana]
   );
 
   // Ganadoras de la semana que cerró el domingo, sólo los lunes.
@@ -311,26 +318,31 @@ export default function Home({ vendedora, onIr }) {
       vendedoras: datos.vendedoras,
       ciudad: vendedora.ciudad,
       fechas: fechasSemanaPasadaDe(hoyISO),
+      metas: datos.metas,
     });
     // null = esa semana no tiene ni un día procesado (o no hay equipo de su
     // ciudad). No se pinta tarjeta: no hay nada verdadero que contar.
     if (!r) return null;
 
     const club = r.ganadoras || [];
+    // `extra` es la ganadora única del EXTRA; viene en null sólo cuando hubo
+    // DOBLE empate (mismo efectivo y mismas ventas del mes) — y ahí `extras`
+    // trae a todas las que se lo llevan, porque ganan todas.
+    const extras = r.extras || [];
     return {
       club,
       clubCount: club.length,
-      // `extra` ya viene en null si hubo empate arriba: ahí el EXTRA no tuvo dueña.
       lider: r.extra || null,
-      hayExtra: !!r.extra,
-      empateExtra: club.length >= 2 && !r.extra,
+      hayExtra: extras.length > 0,
+      empateExtra: extras.length >= 2,
+      ganadorasExtra: extras,
       gane: club.some((g) => String(g.id) === String(vendedora.id)),
       premio: PREMIO_EFECTIVO_SEMANA,
       umbral: UMBRAL_EFECTIVO_SEMANA,
       desde: r.desde,
       hasta: r.hasta,
     };
-  }, [datos.efectivo, datos.vendedoras, vendedora, esLunes, hoyISO]);
+  }, [datos.efectivo, datos.vendedoras, datos.metas, vendedora, esLunes, hoyISO]);
 
   const mes = useMemo(
     () => (vendedora ? derivarMesDeVendedora(datos, vendedora, hoy.año, hoy.mes) : null),

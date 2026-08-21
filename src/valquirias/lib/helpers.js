@@ -101,6 +101,85 @@ export const TRAMOS_2026 = [
 
 export const PISO_MED = 15_000_000;
 
+// ---------------------------------------------------------------------------
+// EL PISO DE MEDELLÍN TIENE FECHA DE ARRANQUE
+// ---------------------------------------------------------------------------
+// Rige desde el 1-ago-2026. **Junio y julio de 2026 se pagaron SIN piso**, y
+// Bogotá nunca ha tenido. Sin esta condición, abrir un mes viejo en la nómina
+// le aplica una regla que entonces no existía: junio mostraba $1.108.957 cuando
+// se pagaron $1.887.476, y 9 vendedora-mes salían en $0 sin deberlo. Nadie
+// cobró de menos — esos meses ya se pagaron bien — pero la pantalla reescribía
+// el pasado, que es justo lo que no puede hacer.
+//
+// Es el mismo patrón que ya protege al rol (`rolDeMes` + `fechaAscensoAdmin`):
+// un mes cerrado se lee con las reglas que regían ESE mes, no con las de hoy.
+//
+// Se compara con año y mes numéricos a propósito: en este código conviven
+// `"2026_08"` (llave de Firestore) y `{año, mes}`, y una comparación de strings
+// entre los dos formatos falla en silencio.
+export const PISO_MED_DESDE = { año: 2026, mes: 8 };
+
+// ¿Aplica el piso de $15.000.000 a esta vendedora en ESE mes?
+// Sin año/mes se asume que sí (comportamiento de siempre, que es el correcto
+// para el mes en curso). Todo llamador que sepa el mes debe pasarlo.
+export function pisoAplica(ciudad, año = null, mes = null) {
+  if (ciudad !== "MED") return false;
+  if (!año || !mes) return true;
+  return año > PISO_MED_DESDE.año || (año === PISO_MED_DESDE.año && mes >= PISO_MED_DESDE.mes);
+}
+
+// ---------------------------------------------------------------------------
+// DESEMPATE DEL BONUS SEMANAL — regla de Luis, 21-ago-2026
+// ---------------------------------------------------------------------------
+// El EXTRA de $50.000 sólo existe cuando hay 2 o más en el club (2+ pasaron los
+// $2.500.000 en efectivo). Si dos o más empatan AL PESO arriba del club:
+//
+//   gana la que más lleve vendido en el MES en curso, todas las formas de pago.
+//   El mes es el del DOMINGO que cierra la semana (la semana lun–dom puede
+//   cruzar de mes). Si también empatan ahí, GANAN TODAS.
+//
+// Antes de esta regla la app no coronaba a nadie con empate — el extra quedaba
+// sin dueña. Ahora sí hay ganadora salvo en el doble empate.
+//
+// Por qué NO se usó otra métrica (para que nadie las reproponga):
+//   · Por nota mensual → el comportamiento se carga los LUNES; el domingo la
+//     nota todavía no refleja la semana. Luis lo descartó.
+//   · Por total vendido de esa misma semana → sería lo más coherente, pero ese
+//     dato NO llega: el sync manda el efectivo por día y el total por mes.
+//
+// `efectivoDe` y `ventasMesDe` son accesores porque cada pantalla nombra el
+// campo distinto (`valor` en derivar.js, `efectivo` en MiCash.jsx). El orden de
+// `club` no importa: el tope se saca con Math.max, no con club[0].
+export function resolverExtraSemanal(club, efectivoDe, ventasMesDe) {
+  const vacio = { ganadorasExtra: [], lider: null, empateExtra: false };
+  if (!Array.isArray(club) || club.length < 2) return vacio;
+
+  const tope = Math.max(...club.map(efectivoDe));
+  const empatadas = club.filter(f => efectivoDe(f) === tope);
+
+  // Una sola arriba: no hay nada que desempatar.
+  if (empatadas.length === 1) {
+    return { ganadorasExtra: empatadas, lider: empatadas[0], empateExtra: false };
+  }
+
+  // Empate al peso → decide lo vendido en el mes del domingo.
+  const topeVentas = Math.max(...empatadas.map(ventasMesDe));
+  const ganan = empatadas.filter(f => ventasMesDe(f) === topeVentas);
+  return {
+    ganadorasExtra: ganan,
+    lider: ganan.length === 1 ? ganan[0] : null,
+    // true = empataron TAMBIÉN en ventas del mes, así que ganan todas ellas.
+    empateExtra: ganan.length >= 2,
+  };
+}
+
+// "2026-08-23" → "2026_08". La llave de mes de Firestore (`metas`) a partir de
+// una fecha ISO. Se usa con el DOMINGO de la semana, que es el que manda.
+export function claveMesDeFecha(iso) {
+  const s = String(iso || "");
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s.slice(0, 4)}_${s.slice(5, 7)}` : null;
+}
+
 // Devuelve el tramo aplicable según ventas totales del mes
 export function tramoParaVentas(ventasMes) {
   return TRAMOS_2026.find(t => ventasMes >= t.min && ventasMes <= t.max) || TRAMOS_2026[0];
@@ -112,9 +191,11 @@ export function tramoParaVentas(ventasMes) {
 // - ventasMes: número (ya viene neto de devoluciones/cambios de systemlap)
 // - datosCambioRol: opcional { desde: "asesora", hasta: "admin", diaCambio: 15, diasMes: 31 }
 //                   → si viene, aplica pro-rata
+// - año, mes: el mes que se está liquidando. Decide si el piso de MED ya regía
+//             (ver PISO_MED_DESDE). Omitirlos = tratarlo como mes vigente.
 // Devuelve: { comision, tramo, aplicaPiso, aplicoPiso, detalle, proRata? }
-export function calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol = null }) {
-  const aplicaPiso = ciudad === "MED";
+export function calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol = null, año = null, mes = null }) {
+  const aplicaPiso = pisoAplica(ciudad, año, mes);
   const pasoPiso = ventasMes >= PISO_MED;
 
   // Si es MED y no pasó el piso → gana $0

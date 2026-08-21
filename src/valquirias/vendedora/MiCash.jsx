@@ -80,7 +80,12 @@ import { useMemo } from "react";
 import { useDatos, esDiaEfectivo } from "../data/DatosContext.jsx";
 import { UMBRAL_EFECTIVO_SEMANA, PREMIO_EFECTIVO_SEMANA } from "../data/derivar.js";
 import { participantes } from "../../lib/calculos.js";
-import { formatoPesos, primerNombre, textoActualizado } from "../lib/helpers.js";
+import {
+  formatoPesos, primerNombre, textoActualizado,
+  // Desempate del EXTRA semanal: fuente única en helpers.js para que esta
+  // pantalla y derivar.js no vuelvan a divergir (fue un bug real).
+  resolverExtraSemanal, claveMesDeFecha,
+} from "../lib/helpers.js";
 
 // Los papeles de color viven en valquirias.css (:root). Aquí sólo se nombran.
 const TITULO = "var(--vk-titulo)";        // Tinta — títulos y nombres
@@ -178,7 +183,7 @@ function listaDias(fechas) {
 // ARMAR LA SEMANA — la única función que lee dinero
 // ---------------------------------------------------------------------------
 // Devuelve { ok: true, … } o { ok: false, motivo } — nunca ceros de relleno.
-export function armarSemana({ efectivoDoc, vendedoras, vendedora, fechas }) {
+export function armarSemana({ efectivoDoc, vendedoras, vendedora, fechas, metas = null }) {
   const ciudad = vendedora?.ciudad || null;
 
   // Sin ciudad no hay ranking posible. Adivinarla sería inventar el concurso.
@@ -242,19 +247,26 @@ export function armarSemana({ efectivoDoc, vendedoras, vendedora, fechas }) {
   const club = filas.filter((f) => f.efectivo >= UMBRAL_EFECTIVO_SEMANA);
   const hayExtra = club.length >= 2;
 
-  // Empate arriba del club: con dinero de por medio no se corona a nadie por
-  // el orden en que quedó el arreglo. Se dice que van empatadas.
-  const topClub = club[0]?.efectivo ?? null;
-  const empatadasArriba = club.filter((f) => f.efectivo === topClub);
-  const empateExtra = hayExtra && empatadasArriba.length >= 2;
-  const lider = empateExtra ? null : (club[0] || null);
+  // Desempate del EXTRA: con empate al peso arriba del club manda lo vendido en
+  // el MES DEL DOMINGO que cierra la semana (fechas[6]) — la semana lun–dom
+  // puede cruzar de mes. Misma métrica del premio mensual (`metas.vendidas`) y
+  // misma función que usa derivar.js, para que las dos pantallas no divergan.
+  const vendidasMes = metas?.[claveMesDeFecha(fechas[6])]?.vendidas || {};
+  const { ganadorasExtra, lider, empateExtra } = resolverExtraSemanal(
+    club,
+    (f) => f.efectivo,
+    (f) => Number(vendidasMes[String(f.id)]) || 0
+  );
+  const idsExtra = new Set(ganadorasExtra.map((f) => String(f.id)));
 
   const conPosicion = filas.map((f, i) => ({
     ...f,
     n: i + 1,
     medalla: ["🥇", "🥈", "🥉"][i] || null,
     gano: f.efectivo >= UMBRAL_EFECTIVO_SEMANA,
-    extra: hayExtra && f.efectivo === topClub,
+    // Con doble empate (efectivo Y ventas del mes) el extra lo ganan todas las
+    // empatadas — por eso es un conjunto y no "la que quedó de primera".
+    extra: idsExtra.has(String(f.id)),
     falta: Math.max(0, UMBRAL_EFECTIVO_SEMANA - f.efectivo),
   }));
 
@@ -273,6 +285,7 @@ export function armarSemana({ efectivoDoc, vendedoras, vendedora, fechas }) {
     clubCount: club.length,
     hayExtra,
     empateExtra,
+    ganadorasExtra,
     lider,
     // Mi situación (yo === null si no estoy compitiendo esta semana)
     yo,
@@ -286,7 +299,7 @@ export function armarSemana({ efectivoDoc, vendedoras, vendedora, fechas }) {
 // Ganadoras de una semana ya cerrada — para la tarjeta del lunes.
 // Devuelve null si esa semana no tiene ni un día procesado (que es lo que pasa
 // hoy con la semana pasada si el worker apenas se desplegó).
-export function ganadorasDe({ efectivoDoc, vendedoras, ciudad, fechas }) {
+export function ganadorasDe({ efectivoDoc, vendedoras, ciudad, fechas, metas = null }) {
   const doc = efectivoDoc && typeof efectivoDoc === "object" ? efectivoDoc : {};
   const dias = fechas.filter((f) => doc[f] && typeof doc[f] === "object");
   if (dias.length === 0 || !ciudad) return null;
@@ -305,11 +318,20 @@ export function ganadorasDe({ efectivoDoc, vendedoras, ciudad, fechas }) {
 
   if (filas.length === 0) return { ganadoras: [], extra: null, desde: fechas[0], hasta: fechas[6] };
 
-  const top = filas[0].efectivo;
-  const empate = filas.filter((f) => f.efectivo === top).length > 1;
+  // Esta es la semana YA CERRADA — la tarjeta del lunes que corona de verdad.
+  // Mismo desempate que la semana en curso: con empate al peso manda lo vendido
+  // en el mes del domingo. Sin `metas` no se puede desempatar, y entonces no se
+  // corona a nadie antes que coronar a la equivocada.
+  const vendidasMes = metas?.[claveMesDeFecha(fechas[6])]?.vendidas || {};
+  const { ganadorasExtra, lider } = resolverExtraSemanal(
+    filas,
+    (f) => f.efectivo,
+    (f) => Number(vendidasMes[String(f.id)]) || 0
+  );
   return {
     ganadoras: filas,
-    extra: filas.length >= 2 && !empate ? filas[0] : null,
+    extra: lider,                    // una sola, o null si empataron también en ventas
+    extras: ganadorasExtra,          // todas las que se llevan el EXTRA (1, o varias en doble empate)
     desde: fechas[0],
     hasta: fechas[6],
   };
@@ -367,13 +389,17 @@ function mensajeMotivacional(semana, semanaArranca) {
     };
   }
 
-  // ── Ya ganó, y arriba hay empate (incluida ella) ──
+  // ── Ya ganó, y arriba hay DOBLE empate (efectivo y ventas del mes) ──
+  // Antes acá se decía "el EXTRA está sin dueña". Ya no: con la regla del
+  // 21-ago-2026 el empate al peso lo desempata lo vendido en el mes, y sólo si
+  // TAMBIÉN empatan ahí ganan todas. Así que si ella cae en esta rama, el EXTRA
+  // hoy sí es suyo — compartido con la otra, no en el aire.
   if (gane && empateExtra && yo.extra) {
     return {
       ...VERDE_S,
-      titulo: `Ya son tuyos ${peso(premio)}`,
-      mensaje: `Vas empatada arriba en ${peso(miEfectivo)}, así que el EXTRA de ${peso(premio)} ` +
-        "está sin dueña. La que sume primero se lo lleva.",
+      titulo: "Vas por los dos premios",
+      mensaje: `Vas empatada arriba en ${peso(miEfectivo)} y también en lo vendido del mes, ` +
+        `así que hoy el EXTRA de ${peso(premio)} es de las dos. Una sola venta lo desempata.`,
     };
   }
 
@@ -540,7 +566,8 @@ function SinDato({ motivo, subtitulo, tarjetaLunes, onVolver }) {
 // ---------------------------------------------------------------------------
 export default function MiCash({ vendedora, onVolver }) {
   const datos = useDatos();
-  const { efectivo, vendedoras, cargado } = datos;
+  // `metas` entra para desempatar el EXTRA cuando dos quedan iguales al peso.
+  const { efectivo, vendedoras, metas, cargado } = datos;
 
   // Fecha colombiana explícita (ver el bloque de zona horaria arriba).
   const hoyISO = useMemo(() => hoyISOColombia(), []);
@@ -548,8 +575,8 @@ export default function MiCash({ vendedora, onVolver }) {
   const esLunes = diaSemanaDe(hoyISO) === 1;
 
   const semana = useMemo(
-    () => (vendedora ? armarSemana({ efectivoDoc: efectivo, vendedoras, vendedora, fechas }) : null),
-    [efectivo, vendedoras, vendedora, fechas]
+    () => (vendedora ? armarSemana({ efectivoDoc: efectivo, vendedoras, vendedora, fechas, metas }) : null),
+    [efectivo, vendedoras, vendedora, fechas, metas]
   );
 
   // La tarjeta del lunes sólo se calcula los lunes. Martes: ni se intenta.
@@ -557,9 +584,9 @@ export default function MiCash({ vendedora, onVolver }) {
     if (!esLunes || !vendedora?.ciudad) return null;
     const anterior = fechasSemana(isoDe(msDe(fechas[0]) - 7 * DIA_MS));
     return ganadorasDe({
-      efectivoDoc: efectivo, vendedoras, ciudad: vendedora.ciudad, fechas: anterior,
+      efectivoDoc: efectivo, vendedoras, ciudad: vendedora.ciudad, fechas: anterior, metas,
     });
-  }, [esLunes, efectivo, vendedoras, vendedora, fechas]);
+  }, [esLunes, efectivo, vendedoras, vendedora, fechas, metas]);
 
   const tarjetaLunes = resumenPasada
     ? <TarjetaLunesPasado resumen={resumenPasada} premio={PREMIO_EFECTIVO_SEMANA} />
@@ -657,7 +684,7 @@ export default function MiCash({ vendedora, onVolver }) {
               {f.gano ? `✅ ganó ${peso(semana.premio)}` : `faltan ${peso(f.falta)}`}
               {f.extra
                 ? (semana.empateExtra
-                  ? ` · 👑 EXTRA ${peso(semana.premio)} en empate`
+                  ? ` · 👑 EXTRA ${peso(semana.premio)} (empatadas)`
                   : ` · 👑 EXTRA ${peso(semana.premio)}`)
                 : ""}
             </div>

@@ -53,6 +53,9 @@ import {
   tramoParaVentas,
   TRAMOS_2026,
   PISO_MED,
+  pisoAplica,
+  resolverExtraSemanal,
+  claveMesDeFecha,
   // Rol histórico: vive en helpers.js (fuente única), no duplicado aquí.
   rolDeMes,
   ROL_LARGO,
@@ -474,7 +477,7 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
   //     si el ascenso cayó dentro del mes, la pro-rata día a día)
   const calc = ciudadDesconocida
     ? { comision: null, detalle: "Ciudad no disponible — comisión no calculable" }
-    : calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol });
+    : calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol, año, mes });
 
   // --- Cómo se EXPLICA esa comisión en una línea -----------------------------
   // En un mes con cambio de rol, decir "4% sobre todo lo vendido" es falso: la
@@ -521,7 +524,10 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
 
   // --- Piso Medellín: BOG no tiene piso, gana desde el primer peso.
   //     Sin ciudad no hay piso que afirmar ni negar → null.
-  const aplicaPiso = ciudad === "MED";
+  // Mismo criterio que `calcComisionMensual`: el piso es de MED **y** del mes
+  // en que ya regía. Este bloque lo calculaba aparte y se quedó por fuera del
+  // arreglo del rol; ahora los dos leen la misma función.
+  const aplicaPiso = pisoAplica(ciudad, año, mes);
   const superoPiso = !aplicaPiso || ventasMes >= PISO_MED;
   const pctPrimerTramo = rol === "admin" ? TRAMOS_2026[0].pctAdmin : TRAMOS_2026[0].pctAsesora;
   const piso = ciudadDesconocida ? null : {
@@ -532,7 +538,7 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
     pct: aplicaPiso ? pctPrimerTramo : null,
     // Lo que ganaría el día que toque el piso justo (sirve para el "ahí ganas X%")
     comisionAlLlegar: aplicaPiso
-      ? calcComisionMensual({ ciudad, rol, ventasMes: PISO_MED, datosCambioRol }).comision
+      ? calcComisionMensual({ ciudad, rol, ventasMes: PISO_MED, datosCambioRol, año, mes }).comision
       : null,
   };
 
@@ -551,7 +557,7 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
         // Comisión en el instante exacto en que cruza el tramo (sobre TODO lo vendido)
         comisionAlLlegar: ciudadDesconocida
           ? null
-          : calcComisionMensual({ ciudad, rol, ventasMes: sig.minVentas, datosCambioRol }).comision,
+          : calcComisionMensual({ ciudad, rol, ventasMes: sig.minVentas, datosCambioRol, año, mes }).comision,
       }
     : null;
 
@@ -727,11 +733,18 @@ export function derivarSemanaDeVendedora(datos, vendedora, fechaISO) {
   const disponible = efectivo !== null;
 
   const ganadoras = conDato.filter(f => f.valor >= UMBRAL_EFECTIVO_SEMANA);
-  // Con empate arriba del club el EXTRA no tiene dueña: son $50.000 reales, no
-  // se coronan por el orden en que quedó el arreglo.
-  const topClub = ganadoras[0]?.valor ?? null;
-  const empateExtra = ganadoras.filter(f => f.valor === topClub).length >= 2;
-  const lider = ganadoras.length >= 2 && !empateExtra ? ganadoras[0] : null;
+
+  // Desempate del EXTRA: con empate al peso manda lo vendido en el MES DEL
+  // DOMINGO que cierra la semana (fechas[6]) — la semana lun–dom puede cruzar
+  // de mes. La métrica es `metas[clave].vendidas`, la misma del premio mensual.
+  // Regla completa y por qué, en `resolverExtraSemanal` (lib/helpers.js).
+  const vendidasMes = datos?.metas?.[claveMesDeFecha(fechas[6])]?.vendidas || {};
+  const { ganadorasExtra, lider, empateExtra } = resolverExtraSemanal(
+    ganadoras,
+    f => f.valor,
+    f => Number(vendidasMes[String(f.id)]) || 0
+  );
+  const idsExtra = new Set(ganadorasExtra.map(f => String(f.id)));
 
   const rankingCiudad = conDato.map((f, i) => ({
     ...f,
@@ -740,8 +753,10 @@ export function derivarSemanaDeVendedora(datos, vendedora, fechaISO) {
     // Dinero completo, nunca abreviado: "$1.240.000", no "$1.24M".
     gap: i > 0 ? `-${formatoPesos(conDato[i - 1].valor - f.valor)}` : null,
     gano50k: f.valor >= UMBRAL_EFECTIVO_SEMANA,
-    // El extra sólo existe si hay 2+ ganadoras (misma regla del reporte diario)
-    extra: !!lider && String(lider.id) === String(f.id),
+    // El extra sólo existe si hay 2+ ganadoras (misma regla del reporte diario).
+    // Con doble empate (efectivo Y ventas del mes) lo ganan todas las empatadas,
+    // así que esto es un conjunto, no una sola.
+    extra: idsExtra.has(String(f.id)),
   }));
 
   return {
@@ -754,6 +769,8 @@ export function derivarSemanaDeVendedora(datos, vendedora, fechaISO) {
     hasta: fechas[6],
     diasConDato,
     empateExtra,
+    ganadorasExtra,
+    lider,
     top3: rankingCiudad.slice(0, 3),
     rankingCiudad,
   };
@@ -1100,7 +1117,9 @@ export function derivarTotalAñoDeVendedora(datos, vendedora, año) {
     const { rol, datosCambioRol, historico: rolHistorico } = rolDeMes(vendedora, a, m);
     const calcMesCom = (ciudadDesconocida || ventasMes <= 0)
       ? null
-      : calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol });
+      // `a`/`m` son el año y el mes de ESTA vuelta del bucle: el piso de MED se
+      // aplica sólo a los meses en que ya regía (ago-2026 en adelante).
+      : calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol, año: a, mes: m });
     const comision = ciudadDesconocida ? null : (calcMesCom ? calcMesCom.comision : 0);
     if (comision !== null) premiosMensuales += comision;
 

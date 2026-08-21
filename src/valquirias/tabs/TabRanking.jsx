@@ -206,11 +206,12 @@ export default function TabRanking({
       nombre: v.nombre,
       valor: v.valor,
       rolLabel: v.gano50k ? "✅ ganó $50.000" : "sin premio esta semana",
-      // Con empate arriba del club el EXTRA queda sin dueña: no se corona a
-      // nadie por el orden del arreglo, que son $50.000 de verdad.
+      // `v.extra` ya viene resuelto con el desempate por ventas del mes: es
+      // true para la ganadora única, o para todas si empataron también ahí.
+      // Quien ganó los $50.000 pero no el EXTRA no lleva detalle.
       detalle: v.extra
-        ? "+ $50.000 EXTRA (top 1)"
-        : (v.gano50k && semanaData?.empateExtra ? "EXTRA en empate arriba" : ""),
+        ? (semanaData?.empateExtra ? "+ $50.000 EXTRA (empatadas)" : "+ $50.000 EXTRA (top 1)")
+        : "",
       subValor: v.gano50k ? "+$50.000" : (v.gap || ""),
     }));
   }, [semanaData, vendedora]);
