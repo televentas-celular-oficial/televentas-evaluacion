@@ -1720,6 +1720,45 @@ export function derivarTrimestreEnVivo(datos, vendedora, año, q) {
     completo: t.completo,                   // los 3 meses tienen nota
     cerradoCompleto,                        // los 3 meses tienen SNAPSHOT
     meses: mesesTrim,
+    // ------------------------------------------------------------------
+    // VENTAS DEL TRIMESTRE — la mitad más pesada de la nota, que la pantalla
+    // no estaba mostrando (regla del dueño, 21-ago-2026).
+    // ------------------------------------------------------------------
+    // No es un cálculo nuevo: es EXACTAMENTE el mismo promedio ponderado que
+    // `derivarIndicadoresTrimestre` ya hace con cada indicador de
+    // comportamiento — suma(nota_mes × peso) / suma(pesos con dato). Y la nota
+    // de ventas de cada mes ya viene calculada en `datosMes[i].notaVentas`
+    // (calcNotaMensual: `1 + (vendido/meta) × 4`, topada en 5.00).
+    //
+    // La barra de cada mes es lo vendido contra la meta DE ESE MES: las metas
+    // cambian mes a mes, así que una sola barra del trimestre tendría que
+    // escoger una meta y ninguna sería la correcta.
+    ventas: (() => {
+      const filas = mesesTrim.map((mm, i) => {
+        const d = t.datosMes?.[i] || null;
+        const nota = d?.notaVentas ?? null;
+        const real = d?.real ?? null;
+        const metaMes = d?.meta ?? null;
+        return {
+          mes: mm.mes,
+          nombre: mm.nombre,
+          nota,
+          real,
+          meta: metaMes,
+          // pct real (puede pasar de 100). La barra lo topa al pintar.
+          pct: (metaMes > 0 && real !== null) ? Math.round((real / metaMes) * 100) : null,
+          cerrado: mm.cerrado,
+        };
+      });
+      let suma = 0, pesos = 0;
+      filas.forEach((f, i) => {
+        if (f.nota !== null && f.nota !== undefined) {
+          suma += f.nota * PESOS_TRIMESTRE[i];
+          pesos += PESOS_TRIMESTRE[i];
+        }
+      });
+      return { promedio: pesos ? dosDec(suma / pesos) : null, meses: filas };
+    })(),
     notasMes: t.notasMes,
     // "agosto va en el día 5 de 31"
     enCurso,                                // fila del mes en curso | null

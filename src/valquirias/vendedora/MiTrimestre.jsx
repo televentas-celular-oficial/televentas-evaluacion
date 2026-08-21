@@ -37,7 +37,7 @@
 // en el trimestre perseguir a la de arriba no da plata si ninguna de las dos
 // llega al 4.50. Dice lo que le falta PARA LA VARA.
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDatos } from "../data/DatosContext.jsx";
 import {
   derivarTrimestreEnVivo,
@@ -112,6 +112,10 @@ function Vacio({ onVolver, mensaje }) {
 
 export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  // La fila de Ventas arranca cerrada, igual que un indicador: se ve el nombre
+  // y la nota, y el mes a mes se despliega al tocarla.
+  const [ventasAbierto, setVentasAbierto] = useState(false);
 
   const datos = useDatos();
   const hoy = hoyColombia();
@@ -458,6 +462,83 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
           )}
         </div>
       </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 3b) VENTAS — se ve como un indicador y se despliega al tocarla      */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Las ventas son el 60% de cada nota mensual, o sea la mitad más pesada
+          de la nota del trimestre, y la pantalla no las mostraba: sólo se veían
+          los cinco indicadores de comportamiento, que son el 40% restante.
+          Va aparte de ellos, no dentro de la lista, porque no es un indicador
+          más: pesa más que los cinco juntos. */}
+      {trim.ventas && trim.ventas.promedio !== null && (
+        <div style={{ ...S.card, paddingTop: 12, paddingBottom: 6 }}>
+          <button
+            style={{ ...S.indBoton, borderBottom: ventasAbierto ? `1px solid ${LINEA}` : "none" }}
+            onClick={() => setVentasAbierto(v => !v)}
+            aria-expanded={ventasAbierto}
+          >
+            <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>💰</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: TINTA }}>
+              Ventas
+            </span>
+            <Badge nota={trim.ventas.promedio} />
+            <span style={{
+              color: APOYO, fontWeight: 800, fontSize: 17,
+              display: "inline-block",
+              transform: ventasAbierto ? "rotate(90deg)" : "none",
+            }}>›</span>
+          </button>
+
+          {ventasAbierto && (
+            <div style={{ paddingTop: 4, paddingBottom: 6 }}>
+              {trim.ventas.meses.map((f, i, arr) => {
+                const hay = f.nota !== null && f.nota !== undefined;
+                return (
+                  <div
+                    key={f.mes}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "9px 0",
+                      borderBottom: i === arr.length - 1 ? "none" : `1px dashed ${LINEA}`,
+                    }}
+                  >
+                    <span style={{
+                      fontSize: 12, fontWeight: 800, width: 74, flexShrink: 0,
+                      color: hay ? TINTA : APOYO,
+                    }}>{f.nombre}</span>
+
+                    {/* Lo vendido contra la meta DE ESE MES */}
+                    <span style={{ flex: 1, minWidth: 34 }}>
+                      <span style={{
+                        display: "block", height: 6, borderRadius: 3, background: NEUTRO,
+                        overflow: "hidden",
+                        ...(hay ? null : { outline: "1.5px dashed var(--est-sin-dato)", outlineOffset: "-1.5px" }),
+                      }}>
+                        {hay && f.pct !== null && (
+                          <span style={{
+                            display: "block", height: "100%", width: `${Math.min(100, f.pct)}%`,
+                            borderRadius: 3, background: VERDE,
+                          }} />
+                        )}
+                      </span>
+                    </span>
+
+                    <span style={{
+                      fontSize: 11, fontWeight: 800, color: APOYO,
+                      whiteSpace: "nowrap", flexShrink: 0,
+                    }}>
+                      {f.real !== null ? formatoPesos(f.real) : "—"}
+                    </span>
+
+                    <Badge nota={f.nota} extra={{ fontSize: 12, minWidth: 44 }} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ------------------------------------------------------------------ */}
       {/* 4) LOS INDICADORES DEL TRIMESTRE                                    */}
