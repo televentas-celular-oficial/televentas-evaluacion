@@ -339,6 +339,11 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
         )}
       </div>
 
+      {/* De aquí abajo las tarjetas se acomodan de a dos en un computador
+          (`.v-cols`), en el mismo orden. "En juego" se queda a lo ancho: es
+          la primera cosa que tiene que ver, y compartir renglón la achica. */}
+      <div className="v-cols">
+
       {/* ------------------------------------------------------------------ */}
       {/* 2) TU NOTA                                                          */}
       {/* ------------------------------------------------------------------ */}
@@ -584,6 +589,8 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
           </div>
         </div>
       )}
+
+      </div>{/* /.v-cols */}
     </div>
   );
 }

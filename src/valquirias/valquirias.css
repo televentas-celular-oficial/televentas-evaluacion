@@ -9,10 +9,13 @@
    Los valores son EXACTAMENTE los que ya estaban pintados a mano.
    =========================================================================== */
 :root {
-  /* --- El lienzo (el degradado pastel del original) ----------------------- */
-  /* Arriba durazno, abajo lavanda rosada. Es el "fondo rosado pálido".       */
-  --vk-lienzo-a: #FEF7F0;         /* orig valquirias.css:14 (0%)              */
-  --vk-lienzo-b: #FDF4FF;         /* orig valquirias.css:14 (100%)            */
+  /* --- El lienzo: AVENA (elegido por Luis el 21-ago-2026) ----------------- */
+  /* Antes era durazno → lavanda. Ese lila era el último morado que quedaba en
+     la app, y encima ensuciaba el oro: sobre un fondo frío el dorado del podio
+     se ve apagado. Sobre avena, el crema y el filo de oro NACEN del fondo en
+     vez de pelear con él — que es de donde salen "elegancia" y "dinero".     */
+  --vk-lienzo-a: #FBF7F1;         /* avena claro, arriba                      */
+  --vk-lienzo-b: #F1EADE;         /* avena tostado, abajo                     */
 
   /* --- Superficies ------------------------------------------------------- */
   --vk-fondo: #F8FAFC;            /* hueco dentro de la tarjeta y filas suaves*/
@@ -151,6 +154,23 @@ body {
 }
 @media (min-width: 900px) {
   .v-app.v-ancho { padding-left: 28px; padding-right: 28px; }
+}
+
+/* LA VISTA DE LA VENDEDORA EN UN COMPUTADOR.
+   No se estira: una línea de texto de 1200px no se lee. Crece a un ancho
+   cómodo y las tarjetas se acomodan de a dos con `.v-cols`. En el celular
+   —el 90% del uso— no cambia nada: una sola columna, en el mismo orden. */
+@media (min-width: 900px) {
+  .v-app:not(.v-ancho) { max-width: 880px; }
+}
+
+.v-cols { display: grid; }
+@media (min-width: 900px) {
+  .v-cols {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+    align-items: start;   /* que una tarjeta corta no estire a su vecina */
+  }
 }
 
 /* Todos los hijos directos ocupan el mismo ancho consistente */

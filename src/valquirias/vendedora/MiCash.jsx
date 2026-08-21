@@ -671,8 +671,8 @@ export default function MiCash({ vendedora, onVolver }) {
           key={f.id}
           style={{
             display: "flex", alignItems: "center", gap: 10,
-            background: f.esYo ? "#FFFBEB" : PAPEL,
-            border: `1px solid ${f.esYo ? "#FCD34D" : LINEA}`,
+            background: f.esYo ? "var(--vk-noche)" : PAPEL,
+            border: `1px solid ${f.esYo ? "var(--vk-metal)" : LINEA}`,
             borderRadius: 11, padding: "11px 13px", marginBottom: 5,
           }}
         >

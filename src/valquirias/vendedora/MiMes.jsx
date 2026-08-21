@@ -566,6 +566,14 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
         />
       </div>
 
+      {/* De aquí abajo, en un computador las tarjetas se acomodan de a dos
+          (`.v-cols`). El orden del DOM NO cambia: la rejilla llena de
+          izquierda a derecha, así que se leen en la misma secuencia que en el
+          celular. En pantalla angosta la clase no hace nada. Las dos tarjetas
+          de arriba se quedan a lo ancho: la barra de ventas necesita el ancho
+          completo para que las marcas del piso y del tramo no se apelmacen. */}
+      <div className="v-cols">
+
       {/* ------------------------------------------------------------------ */}
       {/* 3) MI PUESTO EN VENTAS                                              */}
       {/* ------------------------------------------------------------------ */}
@@ -760,6 +768,8 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
           ))}
         </div>
       )}
+
+      </div>{/* /.v-cols */}
     </div>
   );
 }
