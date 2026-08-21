@@ -96,10 +96,8 @@ export default function CargarMetas({ onVolver }) {
         }}>{msg.txt}</div>
       )}
 
-      {/* Info */}
-      <div style={{ padding: "10px 12px", background: "rgba(249, 115, 22, 0.08)", borderLeft: "3px solid #f97316", borderRadius: 10, fontSize: 11, color: "#9a3412", fontWeight: 700, marginBottom: 10, lineHeight: 1.5 }}>
-        💡 Cada ciudad tiene su propia meta (<strong>2 empresas separadas</strong>). Carga aquí Medellín y Bogotá por mes. La meta se usa para calcular el % de cumplimiento y la nota mensual de cada vendedora.
-      </div>
+      {/* Bloque explicativo retirado el 21-ago-2026 (regla del dueño: en el
+          panel no van subtítulos ni explicaciones de lo que hace cada cosa). */}
 
       {/* Selector año/mes */}
       <div className="v-card">

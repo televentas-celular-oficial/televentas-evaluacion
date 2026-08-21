@@ -65,20 +65,20 @@ const GRUPOS = [
   {
     titulo: "El día a día",
     tiles: [
-      { id: "ingreso",  icono: "📝", titulo: "Ingreso diario", desc: "Corregir días pasados" },
-      { id: "rankings", icono: "🏅", titulo: "Rankings",       desc: "Mes · trimestre · indicador" },
+      { id: "ingreso",  icono: "📝", titulo: "Ingreso diario", },
+      { id: "rankings", icono: "🏅", titulo: "Rankings", },
     ],
   },
   {
     titulo: "El mes",
     tiles: [
-      { id: "metas",  icono: "🎯", titulo: "Metas del mes", desc: "Cargar MED y BOG" },
-      { id: "cerrar", icono: "🔒", titulo: "Cerrar mes",    desc: "Fijar notas para siempre" },
+      { id: "metas",  icono: "🎯", titulo: "Metas del mes", },
+      { id: "cerrar", icono: "🔒", titulo: "Cerrar mes", },
       // La pantalla existía COMPLETA desde hace tiempo (NominaComisiones.jsx)
       // pero no estaba importada en ninguna parte: no había forma de abrirla.
       // Va en "El mes" y de última porque ese es el orden real del trabajo:
       // se carga la meta, se cierra el mes, y entonces se paga.
-      { id: "nomina", icono: "💵", titulo: "Comisiones",    desc: "Cuánto pagarle a cada una" },
+      { id: "nomina", icono: "💵", titulo: "Comisiones", },
     ],
   },
   {
@@ -90,8 +90,8 @@ const GRUPOS = [
       // TrimestreAdmin.jsx:16 ya mandaba aquí al lector ("se leen de Admin >
       // Config Premios"), pero el tile no existía: el dueño no tenía forma de
       // cambiar el valor de un premio desde la app.
-      { id: "premios", icono: "💎", titulo: "Premios",          desc: "Quién ganó y cuánto entregar" },
-      { id: "montos",  icono: "💰", titulo: "Montos del premio", desc: "Cuánto vale cada trimestre" },
+      { id: "premios", icono: "💎", titulo: "Premios", },
+      { id: "montos",  icono: "💰", titulo: "Montos del premio", },
     ],
   },
   {
@@ -99,16 +99,16 @@ const GRUPOS = [
     // con trimestres: respalda TODO y se hace cuando uno quiera.
     titulo: "Respaldo",
     tiles: [
-      { id: "backup",  icono: "💾", titulo: "Backup",            desc: "Descargar todo en JSON" },
+      { id: "backup",  icono: "💾", titulo: "Backup", },
     ],
   },
 ];
 
 // Los tres rankings que agrupa el tile "Rankings".
 const RANKINGS = [
-  { id: "rank-mes",  icono: "📊", titulo: "Del mes",       desc: "Notas e indicadores de todas" },
-  { id: "rank-trim", icono: "📈", titulo: "Del trimestre", desc: "Avance del Q y premios" },
-  { id: "rank-ind",  icono: "🏅", titulo: "Por indicador",  desc: "Quién va mejor en cada uno" },
+  { id: "rank-mes",  icono: "📊", titulo: "Del mes", },
+  { id: "rank-trim", icono: "📈", titulo: "Del trimestre", },
+  { id: "rank-ind",  icono: "🏅", titulo: "Por indicador", },
 ];
 
 const S = {
@@ -231,9 +231,6 @@ function SelectorVerComo({ activas, onVolver, onElegir }) {
     <div className="v-app v-ancho">
       <button style={S.volver} onClick={onVolver}>‹ Volver al panel</button>
       <div style={{ ...S.titulo, fontSize: 19 }}>👁️ Ver como vendedora</div>
-      <div style={{ fontSize: 12, color: APOYO, margin: "-6px 0 14px" }}>
-        Abre su vista con sus datos reales. Vuelves con el botón de arriba.
-      </div>
 
       {med.length > 0 && (
         <>
@@ -270,10 +267,7 @@ function MenuRankings({ onVolver, onIr }) {
   return (
     <div className="v-app v-ancho">
       <button style={S.volver} onClick={onVolver}>‹ Volver al panel</button>
-      <div style={{ ...S.titulo, fontSize: 19 }}>🏅 Rankings</div>
-      <div style={{ fontSize: 12, color: APOYO, margin: "-6px 0 14px" }}>
-        El mismo mes, el mismo trimestre y los mismos indicadores que ven ellas.
-      </div>
+      <div style={{ ...S.titulo, fontSize: 19, marginBottom: 14 }}>🏅 Rankings</div>
       {RANKINGS.map(r => (
         <button
           key={r.id}
@@ -287,8 +281,7 @@ function MenuRankings({ onVolver, onIr }) {
         >
           <span style={{ fontSize: 22, flexShrink: 0 }}>{r.icono}</span>
           <span style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: TINTA }}>{r.titulo}</div>
-            <div style={{ fontSize: 11.5, color: APOYO, marginTop: 2 }}>{r.desc}</div>
+            <div style={{ fontSize: 15.5, fontWeight: 800, color: TINTA }}>{r.titulo}</div>
           </span>
           <span style={{ fontSize: 19, fontWeight: 800, color: APOYO, opacity: 0.45 }}>›</span>
         </button>
@@ -456,11 +449,6 @@ export default function AdminHome({ user = null, onVerComo }) {
           <div style={{ fontSize: 13.5, fontWeight: 800, color: accesoOn ? VERDE_TXT : GRIS_TXT }}>
             {accesoOn ? "App abierta para las vendedoras" : "App cerrada"}
           </div>
-          <div style={{ fontSize: 11.5, fontWeight: 600, color: accesoOn ? VERDE_TXT : GRIS_TXT, marginTop: 2 }}>
-            {accesoOn
-              ? `Las ${activas.length} pueden entrar con su correo`
-              : "Nadie puede entrar aunque tenga el link"}
-          </div>
         </div>
         <button
           onClick={toggleAcceso}
@@ -531,11 +519,6 @@ export default function AdminHome({ user = null, onVerComo }) {
             <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: "-.2px", color: LILA_TXT }}>
               Ver la app como vendedora
             </div>
-            <div style={{ fontSize: 12, color: LILA_TXT, fontWeight: 600, marginTop: 2 }}>
-              {activas.length > 0
-                ? `Elige a cuál de las ${activas.length}`
-                : "Todavía no hay vendedoras activas"}
-            </div>
           </div>
           <span style={{ fontSize: 20, fontWeight: 800, opacity: 0.45, color: LILA_TXT }}>›</span>
         </div>
@@ -556,9 +539,10 @@ export default function AdminHome({ user = null, onVerComo }) {
                   style={solaEnSuFila ? { ...S.tile, gridColumn: "1 / -1" } : S.tile}
                   onClick={() => setSeccion(t.id)}
                 >
+                  {/* Sin subtítulo: los botones dicen lo que hacen. La letra
+                      del título crece porque ya no compite con nada. */}
                   <div style={{ fontSize: 26, lineHeight: 1 }}>{t.icono}</div>
-                  <div style={{ fontSize: 13, fontWeight: 800, marginTop: 6, color: TINTA }}>{t.titulo}</div>
-                  <div style={{ fontSize: 11, color: APOYO, marginTop: 3, lineHeight: 1.35 }}>{t.desc}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, marginTop: 8, color: TINTA }}>{t.titulo}</div>
                 </button>
               );
             })}
@@ -566,16 +550,9 @@ export default function AdminHome({ user = null, onVerComo }) {
         </div>
       ))}
 
-      {/* Dónde se administra a las vendedoras (y dónde NO) */}
-      <div style={{
-        marginTop: 18, padding: "11px 13px", borderRadius: 10,
-        background: "#eff6ff", color: "#1e40af", borderLeft: "3px solid #3b82f6",
-        fontSize: 12, fontWeight: 700, lineHeight: 1.65,
-      }}>
-        💡 <strong>Aquí no se crea ni se edita nada de vendedoras.</strong> Entran, salen, cambian
-        de ciudad o de rol en systemlap, y esta app lo recibe sola. Los únicos datos que se
-        escriben acá son los que llena Carolina cada día.
-      </div>
+      {/* Iba aquí el recordatorio de que las vendedoras se administran en
+          systemlap y no aquí. Fuera el 21-ago-2026: el dueño ya lo sabe y era
+          el bloque de color más grande de la pantalla. */}
     </div>
   );
 }

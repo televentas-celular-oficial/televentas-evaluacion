@@ -234,7 +234,7 @@ export default function NominaComisiones({ onVolver }) {
           {/* Sección MED */}
           <SeccionCiudad
             titulo="🟢 Medellín"
-            subtitulo={pisoAplica("MED", selMes.año, selMes.mes) ? `Piso ${formatoPesos(PISO_MED)}` : null}
+            subtitulo={null}
             color="green"
             filas={filasMed}
             total={totalMed}

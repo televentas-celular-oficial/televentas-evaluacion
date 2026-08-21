@@ -113,9 +113,9 @@ export default function ConfigPremios({ onVolver }) {
         }}>{msg.txt}</div>
       )}
 
-      <div style={{ padding: "10px 12px", background: "rgba(234, 179, 8, 0.08)", borderLeft: "3px solid #eab308", borderRadius: 10, fontSize: 11, color: "#78350f", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
-        💡 Cada trimestre puede tener diferentes premios. El <strong>monto base</strong> lo gana cada vendedora con nota ≥4.50. El <strong>extra</strong> lo gana la mejor de la ciudad si hay 2+ con nota ≥4.50.
-      </div>
+      {/* Bloque explicativo retirado el 21-ago-2026 (regla del dueño: sin
+          subtítulos ni explicaciones en el panel). Los rótulos de los dos
+          campos ya dicen a quién le toca cada monto. */}
 
       {/* Selector año/trimestre */}
       <div className="v-card">

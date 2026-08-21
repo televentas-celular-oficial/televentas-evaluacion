@@ -272,10 +272,9 @@ export default function VistaTodas({ onVolver }) {
         Incluir inactivas (histórico)
       </label>
 
-      {/* Ayuda de uso */}
-      <div style={{ padding: "8px 12px", background: "rgba(168, 85, 247, 0.08)", borderLeft: "3px solid #a855f7", borderRadius: 10, fontSize: 11, color: "#5b21b6", fontWeight: 700, marginBottom: 8, lineHeight: 1.5 }}>
-        💡 Toca un <strong>encabezado</strong> para ordenar por esa columna · toca una <strong>fila</strong> para ver el detalle del mes · desliza la tabla → para ver todos los indicadores.
-      </div>
+      {/* Ayuda de uso retirada el 21-ago-2026 (regla del dueño: sin subtítulos
+          ni explicaciones en el panel). Era además el último morado grande de
+          esta pantalla. */}
 
       {roster.length === 0 && (
         <div style={{ padding: "18px 16px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid #ef4444", borderRadius: 10, fontSize: 12, color: "#991b1b", fontWeight: 700, textAlign: "center", lineHeight: 1.55 }}>
