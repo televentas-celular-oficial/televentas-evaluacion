@@ -92,14 +92,6 @@ function listaMeses(meses) {
   return `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
 }
 
-// 0.4 → "40%" · 0.2857… → "28,6%". Un decimal sólo cuando hace falta, para que
-// los pesos mostrados sigan sumando 100 y la cuenta se pueda rehacer a mano.
-function pctPeso(x) {
-  if (x === null || x === undefined) return null;
-  const v = Math.round(x * 1000) / 10;
-  return `${String(v).replace(".", ",")}%`;
-}
-
 function Vacio({ onVolver, mensaje }) {
   return (
     <div>
@@ -226,17 +218,22 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
   const motivo = trim.motivoNoCompite;
 
   // --------------------------------------------------------------------------
-  // CUÁNTO PESA CADA MES **HOY**
+  // LOS PESOS QUE SE LE NOMBRAN SON LOS NOMINALES: 20/30/50
   // --------------------------------------------------------------------------
-  // Los pesos del trimestre son 20/30/50, pero la nota en vivo se saca sólo con
-  // los meses que YA tienen nota y RENORMALIZA: calcTrimestre hace
-  // `suma(nota_i × peso_i) / suma(peso_i con dato)` (lib/calculos.js). Sin
-  // septiembre eso significa que julio no pesa 20% sino 20/50 = 40%, y agosto
-  // 30/50 = 60%. Se nombra el peso que la fórmula ESTÁ usando: con 20/30/50 la
-  // nota del trimestre no se podría reconstruir y parecería inventada.
-  const pesosConDato = trim.pesosConDato || 0;
-  const pesoHoy = (m) =>
-    m.nota === null || m.nota === undefined || !pesosConDato ? null : m.peso / pesosConDato;
+  // Por dentro, mientras falte un mes, calcTrimestre RENORMALIZA: reparte el
+  // peso del mes sin nota entre los que sí la tienen (`suma(nota_i × peso_i) /
+  // suma(peso_i con dato)`, lib/calculos.js). Eso hace que hoy julio pese 40% y
+  // agosto 60% — que es la MISMA proporción 20:30, sólo repartida entre dos.
+  //
+  // Ese 40/60 NO se muestra. A ella se le dijo 20/30/50 y eso es lo que ve: un
+  // porcentaje distinto le diría que le cambiaron la regla, y encima cambiaría
+  // solo cuando entre septiembre. El costo es que la nota no le cierra con una
+  // cuenta a mano — se prefiere eso antes que mostrarle un número que no es el
+  // suyo. Los pesos nominales vienen ya calculados en `m.pesoPct`.
+  const faltanMeses = trim.meses.some(m => m.nota === null || m.nota === undefined);
+  const reglaPesos = trim.meses
+    .map(m => `${m.pesoPct}% ${m.nombre.toLowerCase()}`)
+    .join(" · ");
 
   // --------------------------------------------------------------------------
   // EL PIE DEL RANKING — lo que le falta PARA EL PREMIO, no para un puesto
@@ -397,14 +394,13 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 3) CUÁNTO PESA CADA MES                                             */}
+      {/* 3) MES A MES                                                        */}
       {/* ------------------------------------------------------------------ */}
-      {/* Los pesos son los de HOY (renormalizados). Nada se calcula aquí: se
-          nombra lo que calcTrimestre ya está usando. */}
+      {/* Las filas NO llevan porcentaje. La regla va una sola vez al pie, con
+          los pesos nominales — los mismos que ella ya conoce. */}
       <div style={{ ...S.card, paddingTop: 12, paddingBottom: 6 }}>
-        <div style={S.lbl}>Cuánto pesa cada mes</div>
+        <div style={S.lbl}>Mes a mes</div>
         {trim.meses.map((m, i) => {
-          const ph = pesoHoy(m);
           const hay = m.nota !== null && m.nota !== undefined;
           return (
             <div
@@ -434,14 +430,28 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
                 </span>
               </span>
               <Badge nota={m.nota} extra={{ fontSize: 13, minWidth: 46 }} />
-              {ph !== null && (
-                <span style={{ fontSize: 12, fontWeight: 700, color: APOYO, whiteSpace: "nowrap" }}>
-                  · {pctPeso(ph)}
+              {/* Un mes cerrado ya no se mueve. Sin este sello, julio y agosto
+                  se ven idénticos y puede creer que alcanza a recuperar julio. */}
+              {m.cerrado && (
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: TENUE, whiteSpace: "nowrap" }}>
+                  cerrado
                 </span>
               )}
             </div>
           );
         })}
+
+        {/* La regla, tal como ella la conoce. Y el aviso de que lo de hoy es
+            parcial — sólo mientras de verdad falte un mes. */}
+        <div style={{
+          fontSize: 12, color: APOYO, fontWeight: 600, lineHeight: 1.6,
+          marginTop: 4, paddingTop: 9, paddingBottom: 6, borderTop: `1px dashed ${LINEA}`,
+        }}>
+          El trimestre es {reglaPesos}.
+          {faltanMeses && (
+            <><br />Esta nota es parcial. La definitiva sale con los tres meses.</>
+          )}
+        </div>
       </div>
 
       {/* ------------------------------------------------------------------ */}
