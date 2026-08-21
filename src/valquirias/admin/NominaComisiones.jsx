@@ -260,9 +260,15 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total }) {
             </div>
             <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginTop: 2 }}>
               Vendió {formatoPesos(ventas)}
+              {/* El TRAMO se nombra siempre, no sólo cuando hubo ascenso: es lo
+                  que explica por qué le tocó ese porcentaje y no otro. Cuando
+                  no hay tramo (MED que no pasó el piso) manda `detalle`, que
+                  es el que dice "no superó el piso — comisión $0". */}
               {ascensoEnEsteMes
                 ? ` · ${calc.tramo?.label || "Tramo"} · ascendió este mes`
-                : ` · ${calc.detalle}`}
+                : calc.tramo
+                  ? ` · ${calc.tramo.label} · ${pctTexto(calc.pct)}`
+                  : ` · ${calc.detalle}`}
             </div>
 
             {/* Desglose de la pro-rata: el dueño tiene que poder auditar de
