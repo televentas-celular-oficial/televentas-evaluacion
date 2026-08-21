@@ -368,7 +368,7 @@ export default function CerrarMes({ onVolver }) {
   }
 
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <div className="v-header-detalle">
         <button className="v-back-btn" onClick={onVolver}>‹ Volver</button>
         <div className="v-header-title">🔒 Cerrar mes</div>

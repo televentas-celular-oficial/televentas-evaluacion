@@ -273,7 +273,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
   ).length;
 
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <div className="v-header">
         <div className="v-brand">Indicadores TLV</div>
         <button

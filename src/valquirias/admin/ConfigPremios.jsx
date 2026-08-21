@@ -97,7 +97,7 @@ export default function ConfigPremios({ onVolver }) {
     .reverse();
 
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <div className="v-header-detalle">
         <button className="v-back-btn" onClick={onVolver}>‹ Volver</button>
         <div className="v-header-title">💎 Premios trimestrales</div>

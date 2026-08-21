@@ -104,7 +104,15 @@ const S = {
     fontSize: 12, fontWeight: 800, color: "#334155", textTransform: "uppercase",
     letterSpacing: ".7px", margin: "16px 0 7px",
   },
-  tiles: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
+  // Rejilla que se acomoda sola: 2 columnas en el celular, 4 en el Mac.
+  // Antes era "1fr 1fr" fijo — con el panel ancho quedaban dos botones
+  // enormes de 580px cada uno. El `maxWidth` es a propósito: el panel entero
+  // mide 1180px porque las TABLAS lo necesitan, pero un menú de botones
+  // desparramado a lo ancho de la pantalla se lee peor, no mejor.
+  tiles: {
+    display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+    gap: 8, maxWidth: 640, marginLeft: "auto", marginRight: "auto",
+  },
   tile: {
     background: "#fff", border: `1px solid ${LINEA}`, borderRadius: 13,
     padding: "16px 12px", textAlign: "center", cursor: "pointer", font: "inherit",
@@ -207,7 +215,7 @@ function SelectorVerComo({ activas, onVolver, onElegir }) {
   );
 
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <button style={S.volver} onClick={onVolver}>‹ Volver al panel</button>
       <div style={{ ...S.titulo, fontSize: 19 }}>👁️ Ver como vendedora</div>
       <div style={{ fontSize: 12, color: APOYO, margin: "-6px 0 14px" }}>
@@ -247,7 +255,7 @@ function SelectorVerComo({ activas, onVolver, onElegir }) {
 function MenuRankings({ onVolver, onIr }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <button style={S.volver} onClick={onVolver}>‹ Volver al panel</button>
       <div style={{ ...S.titulo, fontSize: 19 }}>🏅 Rankings</div>
       <div style={{ fontSize: 12, color: APOYO, margin: "-6px 0 14px" }}>
@@ -387,7 +395,7 @@ export default function AdminHome({ user = null, onVerComo }) {
     : (ventas.MED || 0) + (ventas.BOG || 0);
 
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <div className="v-header">
         <div className="v-brand">⚡ Valkyrias</div>
         <button

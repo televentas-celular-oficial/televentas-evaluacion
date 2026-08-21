@@ -237,7 +237,7 @@ export default function TrimestreAdmin({ onVolver }) {
   const tituloCiudad = filtroCiudad === "TODAS" ? "" : ` · ${CIUDAD_NOMBRE[filtroCiudad]}`;
 
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <div className="v-header-detalle">
         <button className="v-back-btn" onClick={onVolver}>‹ Volver</button>
         <div className="v-header-title">📈 Trimestre{tituloCiudad}</div>

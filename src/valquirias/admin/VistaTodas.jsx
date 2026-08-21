@@ -167,7 +167,7 @@ export default function VistaTodas({ onVolver }) {
   const version = filasBase[0]?.mes?.version || null;
 
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <div className="v-header-detalle">
         <button className="v-back-btn" onClick={onVolver}>‹ Volver</button>
         <div className="v-header-title">📊 Todas las vendedoras</div>
@@ -505,7 +505,7 @@ function DetalleVendedoraMes({ datos, vendedora, año, mes, onVolver }) {
   const [verTodosLosDias, setVerTodosLosDias] = useState(false);
 
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <div className="v-header-detalle">
         <button className="v-back-btn" onClick={onVolver}>‹ Volver</button>
         <div className="v-header-title">{vendedora.nombre}</div>

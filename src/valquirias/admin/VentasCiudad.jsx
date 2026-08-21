@@ -97,7 +97,7 @@ export default function VentasCiudad({ onVolver }) {
   const mesesDisponibles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter(m => m <= hoy.mes);
 
   return (
-    <div className="v-app">
+    <div className="v-app v-ancho">
       <div className="v-header-detalle">
         <button className="v-back-btn" onClick={onVolver}>‹ Volver</button>
         <div className="v-header-title">💰 Ventas por ciudad</div>
