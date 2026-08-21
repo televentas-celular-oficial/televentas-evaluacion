@@ -244,8 +244,14 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
   // Todo sale de `rank`, que ya viene calculado. Aquí sólo se elige la frase que
   // es verdad en su situación de hoy (ver la regla verificada arriba).
   const hayExtra = !!rank?.hayExtra;             // 2+ llegaron al 4.50 en su ciudad
-  const arriba = rank?.arriba || null;
-  const faltaParaSubir = rank?.faltaParaSubir;
+  // El extra NO se gana pasando a la de arriba: se gana quedando de PRIMERA
+  // (calculos.js — el extra va a `ordenado[0]`). Si ella va cuarta, pasar a la
+  // tercera no le da nada. Por eso la distancia que se nombra es la distancia
+  // a la PRIMERA, no a la de arriba. Es una resta entre dos notas ya
+  // calculadas; no se calcula ninguna nota aquí.
+  const primera = rank?.filas?.[0] || null;
+  const faltaParaPrimera =
+    primera && hayNota ? Math.round((primera.nota - nota) * 100) / 100 : null;
   const pieRanking = !hayNota
     ? null
     : !pasoLaVara
@@ -254,8 +260,8 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
     ? <>Hoy vas por encima del {meta.toFixed(2)}. El extra de {formatoPesos(montoExtra)} sólo existe si otra llega al {meta.toFixed(2)}.</>
     : rank?.esPrimera
     ? <>Hoy vas de primera de {ciudadLarga}, y el extra de {formatoPesos(montoExtra)} es para la primera. 🏆</>
-    : arriba && faltaParaSubir !== null && faltaParaSubir !== undefined
-    ? <>Con <strong style={{ color: CIFRA }}>{fmtN(faltaParaSubir)}</strong> más pasas a {arriba.nombreCorto} y al extra de {formatoPesos(montoExtra)}.</>
+    : primera && faltaParaPrimera !== null
+    ? <>Ya vas por los {formatoPesos(montoBase)}. El extra de {formatoPesos(montoExtra)} es para la primera de {ciudadLarga}: hoy te faltan <strong style={{ color: CIFRA }}>{fmtN(faltaParaPrimera)}</strong> para alcanzar a {primera.nombreCorto}.</>
     : null;
 
   return (
@@ -359,6 +365,11 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
           marcas={[{ clave: "premio", pct: pctNota(meta), fila: 0, texto: `${meta.toFixed(2)} premio` }]}
         />
 
+        {/* La distancia a la vara SÓLO se le nombra a quien puede cobrarla. A
+            quien entró con el trimestre andando se le mostraría "te faltan
+            1.23" para un premio que este trimestre no puede ganar. Su nota sí
+            se le muestra: es suya y es real. */}
+        {(hayNota && !participa) ? null : (
         <div
           style={{
             fontSize: 12.5, color: hayNota ? TINTA : APOYO, fontWeight: 700,
@@ -382,6 +393,7 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
             <>Cerraste por encima del {meta.toFixed(2)}. ✓</>
           )}
         </div>
+        )}
       </div>
 
       {/* ------------------------------------------------------------------ */}
@@ -519,10 +531,17 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
 
               {/* El pie del ranking: lo que le falta PARA EL PREMIO. En el
                   trimestre el premio es una vara, no un puesto. */}
-              {(pieRanking || rank.clubCount > 0) && (
+              {(pieRanking || rank.filas.length > 0) && (
                 <div style={S.pieCard}>
-                  {rank.clubCount > 0 && (
-                    <>💰 = hoy va en {meta.toFixed(2)} o más · van {rank.clubCount} en {ciudadLarga}.<br /></>
+                  {/* El caso CERO también se dice: que hoy nadie llegue al 4.50
+                      es justamente el dato que le avisa que el extra todavía no
+                      está en disputa. Callarlo la deja creyendo que sí. */}
+                  {rank.filas.length > 0 && (
+                    rank.clubCount > 0 ? (
+                      <>💰 = hoy va en {meta.toFixed(2)} o más · van {rank.clubCount} en {ciudadLarga}.<br /></>
+                    ) : (
+                      <>Hoy todavía nadie llega al {meta.toFixed(2)} en {ciudadLarga}.<br /></>
+                    )
                   )}
                   {pieRanking}
                 </div>
