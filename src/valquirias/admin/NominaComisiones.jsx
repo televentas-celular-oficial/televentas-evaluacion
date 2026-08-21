@@ -22,12 +22,55 @@ import {
   ROL_LARGO,
   ROL_CORTO,
   pctTexto,
+  TRAMOS_2026,
+  pisoAplica,
 } from "../lib/helpers.js";
 import { useDatos } from "../data/DatosContext.jsx";
 
 const MES_NOMBRES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
 const plural = (n, sing, plu) => `${n} ${n === 1 ? sing : plu}`;
+
+// ---------------------------------------------------------------------------
+// LA BARRA DE CADA VENDEDORA
+// ---------------------------------------------------------------------------
+// Es la MISMA barra que la vendedora ve en "Mi mes": escala fija de $0 hasta
+// donde arranca el tramo 3, con marcas doradas en los saltos. Fija a propósito
+// —no relativa a cada una— porque así las 14 barras se comparan entre sí de un
+// vistazo: quién va lejos, quién está a punto de saltar de tramo, y en Medellín
+// quién todavía no cruza el piso y por tanto va en $0.
+//
+// Sin un solo texto: las marcas son rayas. Los números ya están en la fila.
+const ESCALA = TRAMOS_2026[2].min;        // $39.309.158 — arranque del tramo 3
+const MARCA_T2 = TRAMOS_2026[1].min;      // $19.278.643 — arranque del tramo 2
+
+function BarraTramos({ ventas, ciudad, año, mes, gana }) {
+  const pct = Math.max(0, Math.min(100, (ventas / ESCALA) * 100));
+  const marcas = [];
+  // El piso sólo se dibuja donde y cuando de verdad rige.
+  if (pisoAplica(ciudad, año, mes)) marcas.push((PISO_MED / ESCALA) * 100);
+  marcas.push((MARCA_T2 / ESCALA) * 100);
+
+  return (
+    <div style={{ position: "relative", height: 7, marginTop: 7 }}>
+      <div style={{
+        position: "absolute", inset: 0, background: "var(--vk-neutro)",
+        borderRadius: 4, overflow: "hidden",
+      }}>
+        <div style={{
+          height: "100%", width: `${pct}%`, borderRadius: 4,
+          background: gana ? "var(--vk-bien)" : "var(--vk-tenue)",
+        }} />
+      </div>
+      {marcas.map((m) => (
+        <span key={m} style={{
+          position: "absolute", left: `${m}%`, top: -2, marginLeft: -1,
+          width: 2, height: 11, borderRadius: 1, background: "var(--vk-metal-borde)",
+        }} />
+      ))}
+    </div>
+  );
+}
 
 export default function NominaComisiones({ onVolver }) {
   const datos = useDatos();
@@ -161,12 +204,11 @@ export default function NominaComisiones({ onVolver }) {
         </div>
       </div>
 
-      {/* Info importante */}
-      <div style={{ padding: "10px 12px", background: "var(--vk-noche)", borderLeft: "3px solid var(--vk-metal)", borderRadius: 10, fontSize: 11, color: "var(--vk-noche-apoyo)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
-        💡 Solo comisiones por ventas del mes. <strong>No incluye</strong> premios semanales ($50.000) ni trimestrales ($1.000.000) ni reconocimientos. Ventas ya vienen netas de devoluciones y cambios.
-        <br />El % es el del <strong>rol que tenía ese mes</strong>, no el cargo de hoy. Si ascendió a mitad de mes, la fila muestra la pro-rata día a día.
-        <br />Aparecen también las que <strong>ya no trabajan aquí</strong> si vendieron en este mes — se les debe igual.
-      </div>
+      {/* El bloque de "info importante" que iba aquí se quitó el 21-ago-2026:
+          el dueño ya sabe qué hace esta pantalla y venía a ver números. Lo que
+          decía sigue siendo cierto y sigue estando VISIBLE en la fila misma —
+          el badge del rol de ese mes, el desglose de la pro-rata y el sello
+          "Ya no trabaja aquí". No se perdió información, se perdió el párrafo. */}
 
       {filasSinCiudad.length > 0 && (
         <div style={{ padding: "12px 14px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid #ef4444", borderRadius: 10, fontSize: 11.5, color: "#991b1b", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
@@ -191,32 +233,33 @@ export default function NominaComisiones({ onVolver }) {
         <>
           {/* Sección MED */}
           <SeccionCiudad
-            titulo="🟢 Team Valkyrias Medellín"
-            subtitulo={`Piso ${formatoPesos(PISO_MED)} · sin llegar al piso → $0`}
+            titulo="🟢 Medellín"
+            subtitulo={pisoAplica("MED", selMes.año, selMes.mes) ? `Piso ${formatoPesos(PISO_MED)}` : null}
             color="green"
             filas={filasMed}
             total={totalMed}
+            año={selMes.año}
+            mes={selMes.mes}
           />
 
           {/* Sección BOG */}
           <SeccionCiudad
-            titulo="🟡 Team Valkyrias Bogotá"
-            subtitulo="Sin piso · gana desde la primera venta"
+            titulo="🟡 Bogotá"
+            subtitulo={null}
             color="amber"
             filas={filasBog}
             total={totalBog}
+            año={selMes.año}
+            mes={selMes.mes}
           />
         </>
       )}
 
-      <div style={{ marginTop: 14, textAlign: "center", fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>
-        📸 Toma pantallazo para pasar a nómina · cálculo generado el {hoy.iso}
-      </div>
     </div>
   );
 }
 
-function SeccionCiudad({ titulo, subtitulo, color, filas, total }) {
+function SeccionCiudad({ titulo, subtitulo, color, filas, total, año, mes }) {
   const bg = color === "green" ? "linear-gradient(135deg, #ecfdf5, #d1fae5)" : "linear-gradient(135deg, #fef3c7, #fde68a)";
   const borde = color === "green" ? "#10b981" : "#f59e0b";
   const tint = color === "green" ? "#047857" : "#92400e";
@@ -225,7 +268,9 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total }) {
     <div style={{ marginBottom: 14 }}>
       <div style={{ background: bg, borderLeft: `4px solid ${borde}`, padding: "10px 12px", borderRadius: 12, marginBottom: 6, border: `1px solid ${borde}20` }}>
         <div style={{ fontSize: 13, fontWeight: 900, color: tint }}>{titulo}</div>
-        <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginTop: 2 }}>{subtitulo}</div>
+        {subtitulo && (
+          <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginTop: 2 }}>{subtitulo}</div>
+        )}
       </div>
 
       {filas.map(({ v, ventas, calc, rolMes, ascensoEnEsteMes, yaNoTrabaja }) => {
@@ -270,6 +315,14 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total }) {
                   ? ` · ${calc.tramo.label} · ${pctTexto(calc.pct)}`
                   : ` · ${calc.detalle}`}
             </div>
+
+            <BarraTramos
+              ventas={ventas}
+              ciudad={v.ciudad}
+              año={año}
+              mes={mes}
+              gana={calc.comision > 0}
+            />
 
             {/* Desglose de la pro-rata: el dueño tiene que poder auditar de
                 dónde sale la cifra que va a pagar, no confiar a ciegas. */}
