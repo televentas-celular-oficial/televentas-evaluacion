@@ -37,6 +37,7 @@ import Backup from "./Backup.jsx";
 import VistaTodas from "./VistaTodas.jsx";
 import TrimestreAdmin from "./TrimestreAdmin.jsx";
 import ConfigPremios from "./ConfigPremios.jsx";
+import NominaComisiones from "./NominaComisiones.jsx";
 import IngresoDiario from "../oficina/IngresoDiario.jsx";
 import TabRankingIndicadores from "../tabs/TabRankingIndicadores.jsx";
 
@@ -73,6 +74,11 @@ const GRUPOS = [
     tiles: [
       { id: "metas",  icono: "🎯", titulo: "Metas del mes", desc: "Cargar MED y BOG" },
       { id: "cerrar", icono: "🔒", titulo: "Cerrar mes",    desc: "Fijar notas para siempre" },
+      // La pantalla existía COMPLETA desde hace tiempo (NominaComisiones.jsx)
+      // pero no estaba importada en ninguna parte: no había forma de abrirla.
+      // Va en "El mes" y de última porque ese es el orden real del trabajo:
+      // se carga la meta, se cierra el mes, y entonces se paga.
+      { id: "nomina", icono: "💵", titulo: "Comisiones",    desc: "Cuánto pagarle a cada una" },
     ],
   },
   {
@@ -86,6 +92,13 @@ const GRUPOS = [
       // cambiar el valor de un premio desde la app.
       { id: "premios", icono: "💎", titulo: "Premios",          desc: "Quién ganó y cuánto entregar" },
       { id: "montos",  icono: "💰", titulo: "Montos del premio", desc: "Cuánto vale cada trimestre" },
+    ],
+  },
+  {
+    // Backup estaba colgado dentro de "El trimestre" y no tiene nada que ver
+    // con trimestres: respalda TODO y se hace cuando uno quiera.
+    titulo: "Respaldo",
+    tiles: [
       { id: "backup",  icono: "💾", titulo: "Backup",            desc: "Descargar todo en JSON" },
     ],
   },
@@ -351,6 +364,7 @@ export default function AdminHome({ user = null, onVerComo }) {
   if (seccion === "cerrar")  return <CerrarMes onVolver={() => setSeccion(null)} />;
   if (seccion === "premios") return <TrimestreAdmin onVolver={() => setSeccion(null)} />;
   if (seccion === "montos")  return <ConfigPremios onVolver={() => setSeccion(null)} />;
+  if (seccion === "nomina")  return <NominaComisiones onVolver={() => setSeccion(null)} />;
   if (seccion === "backup")  return <Backup onVolver={() => setSeccion(null)} />;
 
   if (seccion === "vercomo") {
