@@ -84,7 +84,7 @@ import {
   formatoPesos, primerNombre, textoActualizado,
   // Desempate del EXTRA semanal: fuente única en helpers.js para que esta
   // pantalla y derivar.js no vuelvan a divergir (fue un bug real).
-  resolverExtraSemanal, claveMesDeFecha,
+  resolverExtraSemanal, claveMesDeFecha, explicacionDesempate,
 } from "../lib/helpers.js";
 
 // Los papeles de color viven en valquirias.css (:root). Aquí sólo se nombran.
@@ -252,12 +252,19 @@ export function armarSemana({ efectivoDoc, vendedoras, vendedora, fechas, metas 
   // puede cruzar de mes. Misma métrica del premio mensual (`metas.vendidas`) y
   // misma función que usa derivar.js, para que las dos pantallas no divergan.
   const vendidasMes = metas?.[claveMesDeFecha(fechas[6])]?.vendidas || {};
-  const { ganadorasExtra, lider, empateExtra } = resolverExtraSemanal(
+  const extra = resolverExtraSemanal(
     club,
     (f) => f.efectivo,
     (f) => Number(vendidasMes[String(f.id)]) || 0
   );
+  const { ganadorasExtra, lider, empateExtra } = extra;
   const idsExtra = new Set(ganadorasExtra.map((f) => String(f.id)));
+
+  // Sólo existe si HUBO empate de verdad. En una semana normal es null y la
+  // pantalla no menciona el tema (regla del dueño: nada de empates salvo que pase).
+  const notaDesempate = explicacionDesempate(
+    extra, PREMIO_EFECTIVO_SEMANA, (f) => primerNombre(f.nombre)
+  );
 
   const conPosicion = filas.map((f, i) => ({
     ...f,
@@ -286,12 +293,15 @@ export function armarSemana({ efectivoDoc, vendedoras, vendedora, fechas, metas 
     hayExtra,
     empateExtra,
     ganadorasExtra,
+    notaDesempate,
     lider,
     // Mi situación (yo === null si no estoy compitiendo esta semana)
     yo,
     miEfectivo: yo ? yo.efectivo : null,
     gane: !!yo?.gano,
-    voyPrimeraDelClub: !!(yo?.gano && lider && String(lider.id) === String(yo.id)),
+    // Con doble empate no hay `lider` pero ella SÍ se lleva el EXTRA, así que
+    // esto se mide por `yo.extra` y no por quién quedó de primera en la lista.
+    voyPrimeraDelClub: !!yo?.extra,
     faltaParaPremio: yo ? yo.falta : null,
   };
 }
@@ -323,15 +333,19 @@ export function ganadorasDe({ efectivoDoc, vendedoras, ciudad, fechas, metas = n
   // en el mes del domingo. Sin `metas` no se puede desempatar, y entonces no se
   // corona a nadie antes que coronar a la equivocada.
   const vendidasMes = metas?.[claveMesDeFecha(fechas[6])]?.vendidas || {};
-  const { ganadorasExtra, lider } = resolverExtraSemanal(
+  const res = resolverExtraSemanal(
     filas,
     (f) => f.efectivo,
     (f) => Number(vendidasMes[String(f.id)]) || 0
   );
   return {
     ganadoras: filas,
-    extra: lider,                    // una sola, o null si empataron también en ventas
-    extras: ganadorasExtra,          // todas las que se llevan el EXTRA (1, o varias en doble empate)
+    extra: res.lider,                // una sola, o null si empataron también en ventas
+    extras: res.ganadorasExtra,      // todas las que se llevan el EXTRA
+    // null en la semana normal: sin empate no se menciona el tema.
+    notaDesempate: explicacionDesempate(
+      res, PREMIO_EFECTIVO_SEMANA, (f) => primerNombre(f.nombre)
+    ),
     desde: fechas[0],
     hasta: fechas[6],
   };
@@ -377,31 +391,29 @@ function mensajeMotivacional(semana, semanaArranca) {
   // ── Va de primera entre las que ya ganaron ──
   if (voyPrimeraDelClub) {
     const seg = club.find((f) => String(f.id) !== String(yo.id));
+    // La distancia puede ser $0 (van iguales). Decir "está a $0 de pasarte" se
+    // lee raro y además nombra un empate que todavía no decide nada: mientras
+    // la semana esté abierta no se habla del tema.
+    const dist = seg ? Math.max(0, miEfectivo - seg.efectivo) : null;
     return {
       ...VERDE_S,
       titulo: hayExtra ? "Vas por los dos premios" : `Ya son tuyos ${peso(premio)}`,
       mensaje: seg
-        ? `Tienes tus ${peso(premio)} asegurados y vas de primera por el EXTRA. ` +
-          `${primerNombre(seg.nombre)} está a ${peso(Math.max(0, miEfectivo - seg.efectivo))} ` +
-          "de pasarte — la semana no ha cerrado."
+        ? (dist > 0
+            ? `Tienes tus ${peso(premio)} asegurados y vas de primera por el EXTRA. ` +
+              `${primerNombre(seg.nombre)} está a ${peso(dist)} de pasarte — la semana no ha cerrado.`
+            : `Tienes tus ${peso(premio)} asegurados y vas de primera por el EXTRA. ` +
+              `${primerNombre(seg.nombre)} viene pisándote los talones — la semana no ha cerrado.`)
         : `Tienes tus ${peso(premio)}. El EXTRA de ${peso(premio)} sólo se activa cuando ` +
           "llegue otra al umbral, y por ahora vas de primera.",
     };
   }
 
-  // ── Ya ganó, y arriba hay DOBLE empate (efectivo y ventas del mes) ──
-  // Antes acá se decía "el EXTRA está sin dueña". Ya no: con la regla del
-  // 21-ago-2026 el empate al peso lo desempata lo vendido en el mes, y sólo si
-  // TAMBIÉN empatan ahí ganan todas. Así que si ella cae en esta rama, el EXTRA
-  // hoy sí es suyo — compartido con la otra, no en el aire.
-  if (gane && empateExtra && yo.extra) {
-    return {
-      ...VERDE_S,
-      titulo: "Vas por los dos premios",
-      mensaje: `Vas empatada arriba en ${peso(miEfectivo)} y también en lo vendido del mes, ` +
-        `así que hoy el EXTRA de ${peso(premio)} es de las dos. Una sola venta lo desempata.`,
-    };
-  }
+  // (Antes había aquí una rama que le hablaba del empate y decía que el EXTRA
+  // "estaba sin dueña". Se eliminó: quien se lleva el EXTRA cae arriba, en
+  // `voyPrimeraDelClub`, que ahora se mide por `yo.extra`. Y el porqué, cuando
+  // hubo empate de verdad, lo dice `notaDesempate` al pie del ranking — una
+  // sola vez y sólo si pasó.)
 
   // ── Ya ganó, pero no es la #1 ──
   if (gane) {
@@ -682,11 +694,7 @@ export default function MiCash({ vendedora, onVolver }) {
             </div>
             <div style={{ fontSize: 11, color: APOYO, marginTop: 2 }}>
               {f.gano ? `✅ ganó ${peso(semana.premio)}` : `faltan ${peso(f.falta)}`}
-              {f.extra
-                ? (semana.empateExtra
-                  ? ` · 👑 EXTRA ${peso(semana.premio)} (empatadas)`
-                  : ` · 👑 EXTRA ${peso(semana.premio)}`)
-                : ""}
+              {f.extra ? ` · 👑 EXTRA ${peso(semana.premio)}` : ""}
             </div>
           </div>
           <span style={{
@@ -697,6 +705,19 @@ export default function MiCash({ vendedora, onVolver }) {
           </span>
         </div>
       ))}
+
+      {/* Sólo aparece si HUBO empate en efectivo. En una semana normal es null
+          y aquí no se pinta nada: la app no habla de empates que no pasaron.
+          Cuando pasa, dice quién ganó el EXTRA y con qué criterio, para que las
+          empatadas no se queden preguntando. */}
+      {semana.notaDesempate && (
+        <div style={{
+          fontSize: 11.5, color: APOYO, fontWeight: 600, lineHeight: 1.55,
+          marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${LINEA}`,
+        }}>
+          {semana.notaDesempate}
+        </div>
+      )}
 
       <div
         style={{

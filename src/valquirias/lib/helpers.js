@@ -151,15 +151,18 @@ export function pisoAplica(ciudad, año = null, mes = null) {
 // campo distinto (`valor` en derivar.js, `efectivo` en MiCash.jsx). El orden de
 // `club` no importa: el tope se saca con Math.max, no con club[0].
 export function resolverExtraSemanal(club, efectivoDe, ventasMesDe) {
-  const vacio = { ganadorasExtra: [], lider: null, empateExtra: false };
+  const vacio = { ganadorasExtra: [], lider: null, empateExtra: false, huboEmpate: false, empatadas: [] };
   if (!Array.isArray(club) || club.length < 2) return vacio;
 
   const tope = Math.max(...club.map(efectivoDe));
   const empatadas = club.filter(f => efectivoDe(f) === tope);
 
-  // Una sola arriba: no hay nada que desempatar.
+  // Una sola arriba: no hay nada que desempatar, y no se habla de empates.
   if (empatadas.length === 1) {
-    return { ganadorasExtra: empatadas, lider: empatadas[0], empateExtra: false };
+    return {
+      ganadorasExtra: empatadas, lider: empatadas[0],
+      empateExtra: false, huboEmpate: false, empatadas: [],
+    };
   }
 
   // Empate al peso → decide lo vendido en el mes del domingo.
@@ -170,7 +173,35 @@ export function resolverExtraSemanal(club, efectivoDe, ventasMesDe) {
     lider: ganan.length === 1 ? ganan[0] : null,
     // true = empataron TAMBIÉN en ventas del mes, así que ganan todas ellas.
     empateExtra: ganan.length >= 2,
+    // true = hubo empate al peso en efectivo. Es lo ÚNICO que autoriza a la app
+    // a hablar de empates: si es false, no se nombra el tema en ninguna parte.
+    huboEmpate: true,
+    empatadas,
   };
+}
+
+// La frase que explica el desempate — o null, que es el caso normal.
+//
+// REGLA DEL DUEÑO (21-ago-2026): en la app NO se habla de empates. Ni de que
+// podrían pasar, ni de qué pasaría si pasaran. **Sólo cuando uno ocurre de
+// verdad** aparece esta línea, y entonces tiene que decir POR QUÉ ganó la que
+// ganó, para que las empatadas sepan cuál fue el criterio y no quede en el aire.
+export function explicacionDesempate(res, premio, nombreDe = (f) => f.nombre) {
+  if (!res?.huboEmpate) return null;
+  const nombres = (res.empatadas || []).map(nombreDe);
+  const lista = nombres.length > 2
+    ? `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}`
+    : nombres.join(" y ");
+
+  if (res.empateExtra) {
+    const cuantas = nombres.length === 2 ? "de las dos"
+      : nombres.length === 3 ? "de las tres"
+      : "de todas";
+    return `${lista} vendieron el mismo efectivo y llevan lo mismo vendido en el mes, ` +
+      `así que el EXTRA de ${formatoPesos(premio)} es ${cuantas}.`;
+  }
+  return `${lista} vendieron el mismo efectivo. El EXTRA de ${formatoPesos(premio)} es de ` +
+    `${nombreDe(res.lider)} por llevar más vendido en el mes.`;
 }
 
 // "2026-08-23" → "2026_08". La llave de mes de Firestore (`metas`) a partir de

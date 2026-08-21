@@ -128,11 +128,10 @@ const CSS = `
 function TarjetaLunes({ semana, vendedora, onCerrar }) {
   if (!semana) return null;
 
-  const { club = [], clubCount = 0, hayExtra, empateExtra, lider,
-    ganadorasExtra = [], gane, premio, umbral, desde, hasta } = semana;
-  const idLider = lider ? String(lider.id) : null;
-  const soyLiderDelClub = !!(idLider && idLider === String(vendedora?.id));
-  // Con doble empate no hay `lider`, pero sí varias que se llevan el EXTRA.
+  const { club = [], clubCount = 0, hayExtra, lider, ganadorasExtra = [],
+    notaDesempate, gane, premio, umbral, desde, hasta } = semana;
+  // Con doble empate no hay `lider` único, pero sí varias que se llevan el
+  // EXTRA — por eso esto se mide contra el conjunto y no contra `lider`.
   const estoyEnElExtra = ganadorasExtra.some(g => String(g.id) === String(vendedora?.id));
   const nombresExtra = ganadorasExtra.map(g => primerNombre(g.nombre)).join(" y ");
 
@@ -198,19 +197,17 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
       })}
 
       <div style={{ ...estiloNota, borderTopColor: lineaNota }}>
-        {/* El orden importa: `empateExtra` va PRIMERO porque ahora implica que
-            sí hubo EXTRA (lo ganan todas las empatadas) y en ese caso `lider`
-            viene en null — leer `lider.nombre` ahí rompía la tarjeta. */}
-        {empateExtra
+        {/* Se anuncia quién ganó, sin nombrar empates. Si hubo uno de verdad,
+            `notaDesempate` lo explica abajo — y sólo entonces. */}
+        {hayExtra
           ? (estoyEnElExtra
-              ? `Quedaste empatada arriba en efectivo y en ventas del mes, así que el EXTRA de ${peso(premio)} fue para las dos. `
-              : `👑 ${nombresExtra} quedaron empatadas hasta en ventas del mes, así que el EXTRA de ${peso(premio)} fue para ambas. `)
-          : hayExtra
-            ? (soyLiderDelClub
-                ? "Fuiste la que más efectivo vendió, así que sumaste el EXTRA. "
-                : `👑 ${primerNombre(lider.nombre)} sumó el EXTRA por ser la que más efectivo vendió. `)
-            : `El EXTRA de ${peso(premio)} solo se reparte cuando llegan dos o más, así que esta vez no hubo. `}
+              ? "Sumaste el EXTRA. "
+              : `👑 ${nombresExtra} ${ganadorasExtra.length > 1 ? "sumaron" : "sumó"} el EXTRA. `)
+          : `El EXTRA de ${peso(premio)} solo se reparte cuando llegan dos o más, así que esta vez no hubo. `}
         Hoy arranca semana nueva — todas en ceros.
+        {notaDesempate && (
+          <div style={{ marginTop: 6, fontSize: 11.5, opacity: 0.9 }}>{notaDesempate}</div>
+        )}
       </div>
     </div>
   );
@@ -336,6 +333,7 @@ export default function Home({ vendedora, onIr }) {
       hayExtra: extras.length > 0,
       empateExtra: extras.length >= 2,
       ganadorasExtra: extras,
+      notaDesempate: r.notaDesempate || null,
       gane: club.some((g) => String(g.id) === String(vendedora.id)),
       premio: PREMIO_EFECTIVO_SEMANA,
       umbral: UMBRAL_EFECTIVO_SEMANA,

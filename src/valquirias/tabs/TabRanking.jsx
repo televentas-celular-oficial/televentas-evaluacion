@@ -208,10 +208,8 @@ export default function TabRanking({
       rolLabel: v.gano50k ? "✅ ganó $50.000" : "sin premio esta semana",
       // `v.extra` ya viene resuelto con el desempate por ventas del mes: es
       // true para la ganadora única, o para todas si empataron también ahí.
-      // Quien ganó los $50.000 pero no el EXTRA no lleva detalle.
-      detalle: v.extra
-        ? (semanaData?.empateExtra ? "+ $50.000 EXTRA (empatadas)" : "+ $50.000 EXTRA (top 1)")
-        : "",
+      // Sin mención al empate — si lo hubo, lo explica `notaDesempate` aparte.
+      detalle: v.extra ? "+ $50.000 EXTRA" : "",
       subValor: v.gano50k ? "+$50.000" : (v.gap || ""),
     }));
   }, [semanaData, vendedora]);
