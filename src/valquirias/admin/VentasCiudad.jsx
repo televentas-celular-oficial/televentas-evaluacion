@@ -116,8 +116,8 @@ export default function VentasCiudad({ onVolver }) {
                 padding: "6px 12px",
                 fontSize: 11,
                 fontWeight: 800,
-                background: activo ? "linear-gradient(135deg, #7c3aed, #ec4899)" : "#fff",
-                color: activo ? "#fff" : "#7c3aed",
+                background: activo ? "var(--vk-titulo)" : "var(--vk-tarjeta)",
+                color: activo ? "var(--vk-sobre-tinta)" : "var(--vk-secundario)",
                 border: "1.5px solid " + (activo ? "transparent" : "#e2e8f0"),
                 borderRadius: 8,
                 cursor: "pointer",
@@ -130,14 +130,16 @@ export default function VentasCiudad({ onVolver }) {
         })}
       </div>
 
-      {/* HERO total del mes */}
+      {/* HERO total del mes — crema con filo de oro, la tarjeta destacada del
+          sistema. Antes era un degradado rosado→morado a pantalla completa. */}
       <div style={{
-        background: "linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #7c3aed 100%)",
-        color: "#fff",
+        background: "var(--vk-noche)",
+        border: "1px solid var(--vk-metal)",
+        color: "var(--vk-noche-texto)",
         padding: "22px 20px",
         borderRadius: 20,
         marginBottom: 10,
-        boxShadow: "0 15px 35px rgba(168, 85, 247, 0.35)",
+        boxShadow: "0 2px 10px rgba(var(--vk-metal-rgb), 0.25)",
         position: "relative",
         overflow: "hidden",
         textAlign: "center",
@@ -292,7 +294,7 @@ function BloqueCiudad({ ciudad, meta, vendido, lista }) {
             <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {v.nombre}
               {v.rolTienda === "admin" && (
-                <span style={{ marginLeft: 6, fontSize: 9, background: "#faf5ff", color: "#7c3aed", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>Admin</span>
+                <span style={{ marginLeft: 6, fontSize: 9, background: "var(--vk-noche)", color: "var(--vk-noche-apoyo)", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>Admin</span>
               )}
               {!v.activa && (
                 <span style={{ marginLeft: 6, fontSize: 9, background: "#f1f5f9", color: "#64748b", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>Inactiva</span>

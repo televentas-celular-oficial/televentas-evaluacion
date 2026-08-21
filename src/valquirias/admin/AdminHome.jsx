@@ -38,6 +38,7 @@ import VistaTodas from "./VistaTodas.jsx";
 import TrimestreAdmin from "./TrimestreAdmin.jsx";
 import ConfigPremios from "./ConfigPremios.jsx";
 import NominaComisiones from "./NominaComisiones.jsx";
+import VentasCiudad from "./VentasCiudad.jsx";
 import IngresoDiario from "../oficina/IngresoDiario.jsx";
 import TabRankingIndicadores from "../tabs/TabRankingIndicadores.jsx";
 
@@ -73,6 +74,11 @@ const GRUPOS = [
     titulo: "El mes",
     tiles: [
       { id: "metas",  icono: "🎯", titulo: "Metas del mes", },
+      // Estaba escrita (318 líneas) y sin conectar: meta, vendido, % de
+      // cumplimiento con barra y cuánto falta, por ciudad. Es la única vista de
+      // "cómo vamos" del mes, y el orden de los cuatro tiles cuenta el mes
+      // entero: se carga la meta, se mira el avance, se cierra, se paga.
+      { id: "ventas", icono: "📈", titulo: "Cómo vamos", },
       { id: "cerrar", icono: "🔒", titulo: "Cerrar mes", },
       // La pantalla existía COMPLETA desde hace tiempo (NominaComisiones.jsx)
       // pero no estaba importada en ninguna parte: no había forma de abrirla.
@@ -358,6 +364,7 @@ export default function AdminHome({ user = null, onVerComo }) {
   if (seccion === "premios") return <TrimestreAdmin onVolver={() => setSeccion(null)} />;
   if (seccion === "montos")  return <ConfigPremios onVolver={() => setSeccion(null)} />;
   if (seccion === "nomina")  return <NominaComisiones onVolver={() => setSeccion(null)} />;
+  if (seccion === "ventas")  return <VentasCiudad onVolver={() => setSeccion(null)} />;
   if (seccion === "backup")  return <Backup onVolver={() => setSeccion(null)} />;
 
   if (seccion === "vercomo") {
