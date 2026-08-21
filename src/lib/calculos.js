@@ -9,8 +9,10 @@ import { INDICADORES_V1, INDICADORES_V2, esFormulaV2, getIndicadores, PESOS_TRIM
 // ============================================================
 
 export const fmtN = n => n === null || n === undefined ? "—" : Number(n).toFixed(2);
-export const colorN = n => n === null ? "var(--vk-tenue)" : n >= 4.5 ? "var(--vk-bien-texto)" : n >= 3.5 ? "var(--est-atencion)" : n >= 2.5 ? "var(--est-medio)" : "var(--vk-medio)";
-export const bgN = n => n === null ? "var(--vk-tarjeta)" : n >= 4.5 ? "var(--vk-bien-fondo)" : n >= 3.5 ? "var(--vk-tarjeta)" : n >= 2.5 ? "var(--est-medio-fondo)" : "var(--vk-neutro)";
+// Escala de nota del ADMIN y del INGRESO DIARIO (no de la vendedora: ella tiene
+// la suya, sin rojo, en cada una de sus pantallas). Aquí el rojo sí es alarma.
+export const colorN = n => n === null ? "var(--vk-secundario)" : n >= 4.5 ? "var(--vk-bien-texto)" : n >= 3.5 ? "var(--est-atencion)" : n >= 2.5 ? "var(--est-medio)" : "var(--est-alarma)";
+export const bgN = n => n === null ? "var(--vk-fondo-hueco)" : n >= 4.5 ? "var(--vk-bien-fondo)" : n >= 3.5 ? "var(--est-atencion-fondo)" : n >= 2.5 ? "var(--est-medio-fondo)" : "var(--est-alarma-fondo)";
 export const hoyStr = () => {
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");

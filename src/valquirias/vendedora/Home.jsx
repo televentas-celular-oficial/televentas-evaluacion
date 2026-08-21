@@ -66,10 +66,12 @@ const COLOR_CIUDAD = { MED: TINTA, BOG: TINTA };
 const NOMBRE_CIUDAD = { MED: "Medellín", BOG: "Bogotá" };
 const PUNTO_CIUDAD = { MED: "🟢", BOG: "🟡" };
 
+// Cada botón tiene SU color: menta, durazno y lavanda. Es lo que hace que los
+// tres se distingan de un vistazo. Los valores viven en valquirias.css (:root).
 const BOTONES = {
-  cash: { emoji: "💵", rotulo: "Mi cash semanal", fondo: V.tarjeta, borde: V.borde, texto: V.secundario, globo: V.neutro },
-  mes:  { emoji: "📅", rotulo: "Mi mes",          fondo: V.tarjeta, borde: V.borde, texto: V.secundario, globo: V.neutro },
-  trim: { emoji: "💎", rotulo: "Mi trimestre",    fondo: V.tarjeta, borde: V.borde, texto: V.secundario, globo: V.neutro },
+  cash: { emoji: "💵", rotulo: "Mi cash semanal", fondo: "var(--vk-btn-cash-fondo)", borde: "var(--vk-btn-cash-borde)", texto: "var(--vk-btn-cash-texto)", globo: "var(--vk-btn-cash-globo)" },
+  mes:  { emoji: "📅", rotulo: "Mi mes",          fondo: "var(--vk-btn-mes-fondo)",  borde: "var(--vk-btn-mes-borde)",  texto: "var(--vk-btn-mes-texto)",  globo: "var(--vk-btn-mes-globo)" },
+  trim: { emoji: "💎", rotulo: "Mi trimestre",    fondo: "var(--vk-btn-trim-fondo)", borde: "var(--vk-btn-trim-borde)", texto: "var(--vk-btn-trim-texto)", globo: "var(--vk-btn-trim-globo)" },
 };
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio",

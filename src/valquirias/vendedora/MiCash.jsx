@@ -531,8 +531,6 @@ function SinDato({ motivo, subtitulo, tarjetaLunes, onVolver }) {
         </div>
         <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.6 }}>{motivo}</div>
       </div>
-
-      <ComoSeGana />
     </>
   );
 }
@@ -569,7 +567,7 @@ export default function MiCash({ vendedora, onVolver }) {
 
   const rango = rangoSemana(fechas[0], fechas[6]);
   const ciudadTxt = vendedora?.ciudad ? (NOMBRE_CIUDAD[vendedora.ciudad] || vendedora.ciudad) : null;
-  const subtitulo = [rango, ciudadTxt].filter(Boolean).join(" · ");
+  const subtitulo = rango;   // sin ciudad: ella ya sabe dónde trabaja
 
   if (!vendedora) {
     return (
@@ -615,10 +613,9 @@ export default function MiCash({ vendedora, onVolver }) {
 
   const meta = efectivo?._meta || null;
   const frescura = meta?.actualizado ? textoActualizado(meta.actualizado) : null;
-  const nota = [
-    `Suma ${listaDias(semana.diasConDato)}`,
-    frescura,
-  ].filter(Boolean).join(" · ");
+  // La línea "Suma lunes 17, martes 18…· actualizado hace X" se quitó: ella ya
+  // sabe qué semana es y esa nota sólo recargaba la vista.
+  const nota = null;
 
   return (
     <>
@@ -635,26 +632,28 @@ export default function MiCash({ vendedora, onVolver }) {
           key={f.id}
           style={{
             display: "flex", alignItems: "center", gap: 10,
-            background: f.esYo ? NOCHE : PAPEL,
-            border: `1px solid ${f.esYo ? NOCHE : LINEA}`,
+            background: f.esYo ? "#FFFBEB" : PAPEL,
+            border: `1px solid ${f.esYo ? "#FCD34D" : LINEA}`,
             borderRadius: 11, padding: "11px 13px", marginBottom: 5,
           }}
         >
           <span
             style={{
-              fontSize: 15, fontWeight: 800, width: 26, textAlign: "center", flexShrink: 0,
-              color: f.esYo ? (f.gano ? ORO : NOCHE_APOYO) : (f.gano ? VERDE : TENUE),
+              fontSize: f.medalla ? 13 : 15, fontWeight: 800, width: 26, minWidth: 26,
+              textAlign: "center", flexShrink: 0, overflow: "hidden",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              color: f.gano ? VERDE : TENUE,
             }}
           >
             {f.medalla || f.n}
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: f.esYo ? NOCHE_TXT : TITULO }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: TITULO }}>
               {f.esYo
                 ? `TÚ · ${primerNombre(vendedora.nombre)}`
                 : String(f.nombre || "").split(" ").slice(0, 2).join(" ")}
             </div>
-            <div style={{ fontSize: 11, color: f.esYo ? NOCHE_APOYO : APOYO, marginTop: 2 }}>
+            <div style={{ fontSize: 11, color: APOYO, marginTop: 2 }}>
               {f.gano ? `✅ ganó ${peso(semana.premio)}` : `faltan ${peso(f.falta)}`}
               {f.extra
                 ? (semana.empateExtra
@@ -665,7 +664,7 @@ export default function MiCash({ vendedora, onVolver }) {
           </div>
           <span style={{
             fontWeight: 800, fontSize: 14, whiteSpace: "nowrap",
-            color: f.esYo ? (f.gano ? ORO : NOCHE_TXT) : (f.gano ? VERDE : CIFRA),
+            color: f.gano ? VERDE : CIFRA,
           }}>
             {peso(f.efectivo)}
           </span>
@@ -681,8 +680,6 @@ export default function MiCash({ vendedora, onVolver }) {
         <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 5, color: tinta }}>{titulo}</div>
         <div style={{ fontSize: 13.5, fontWeight: 600, color: tinta }}>{mensaje}</div>
       </div>
-
-      <ComoSeGana umbral={semana.umbral} premio={semana.premio} />
     </>
   );
 }

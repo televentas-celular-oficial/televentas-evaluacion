@@ -20,8 +20,9 @@ import {
   derivarIndicadoresMes,
   derivarIndicadoresTrimestre,
   derivarTrimestreEnVivo,
+  derivarRankingPorIndicador,
 } from "../data/derivar.js";
-import { hoyColombia } from "../lib/helpers.js";
+import { hoyColombia, primerNombre } from "../lib/helpers.js";
 import { fmtN } from "../../lib/calculos.js";
 
 // Paleta Valkyrias — sólo colores. `colorN`/`bgN` de lib/calculos.js siguen
@@ -33,9 +34,21 @@ const APOYO = "var(--vk-secundario)";   // Niebla
 const TENUE = "var(--vk-tenue)";        // Sin dato
 const TINTA = "var(--vk-titulo)";       // Tinta
 const PAPEL = "var(--vk-tarjeta)";      // Papel
-const LILA_BG = "var(--vk-fondo)";      // Lienzo
-const LILA_BORDE = "var(--vk-borde)";   // Borde
-const LILA_TXT = "var(--vk-titulo)";    // Tinta (toda nota va en tinta)
+const LILA_BG = "var(--vk-lavanda-fondo)";    // Lavanda — la tarjeta que explica
+const LILA_BORDE = "var(--vk-lavanda-borde)"; // su borde
+const LILA_TXT = "var(--vk-lavanda-texto)";   // su tinta
+const NEUTRO = "var(--vk-neutro)";            // gris de resalte — riel de la barra
+const VERDE = "var(--vk-bien)";               // "verde de lo ganado y de las barras"
+
+// La tarjeta destacada: crema con borde dorado (los mismos papeles que MiMes).
+const CREMA = "var(--vk-noche)";              // #FFFBEB — crema
+const ORO = "var(--vk-metal)";                // #FCD34D — el dorado del borde
+const ORO_FILO = "var(--vk-metal-borde)";     // #B45309 — el filo del oro
+const C_TXT = "var(--vk-noche-texto)";        // tinta sobre la crema
+const C_APOYO = "var(--vk-noche-apoyo)";      // secundario sobre la crema
+
+// Nota → % de la barra de 1.00 a 5.00 (el rango real de una nota).
+const pctNota = (n) => Math.max(0, Math.min(100, ((n - 1) / 4) * 100));
 
 // Escala de notas: el canal principal es lleno contra hueco, no el tono.
 const colorNota = (n) =>
@@ -69,6 +82,15 @@ const S = {
     background: PAPEL, border: `1px solid ${LINEA}`, borderRadius: 13,
     padding: 16, marginBottom: 10,
   },
+  // La destacada: crema con borde dorado.
+  cardOro: {
+    background: CREMA, border: `1px solid ${ORO}`, borderLeft: `4px solid ${ORO_FILO}`,
+    borderRadius: "0 13px 13px 0", padding: 16, marginBottom: 10,
+  },
+  mini: {
+    display: "flex", alignItems: "center", gap: 9, padding: "7px 10px",
+    borderRadius: 9, marginBottom: 3, fontSize: 12.5,
+  },
   lbl: {
     fontSize: 12, fontWeight: 800, color: APOYO, textTransform: "uppercase",
     letterSpacing: ".7px", marginBottom: 4, display: "block",
@@ -101,6 +123,40 @@ function badge(nota, extra = {}) {
     ...(hay ? null : { outline: "1.5px dashed var(--est-sin-dato)", outlineOffset: "-1.5px" }),
     ...extra,
   };
+}
+
+// La barra de la nota: escala 1.00 → 5.00, con el 4.50 del premio marcado.
+// No calcula nada: sólo coloca la nota que ya vino del motor sobre su escala.
+function BarraNota({ nota }) {
+  const marca = pctNota(4.5);
+  return (
+    <div>
+      <div style={{ position: "relative", height: 10, marginTop: 12 }}>
+        <div style={{
+          position: "absolute", inset: 0, background: NEUTRO,
+          borderRadius: 5, overflow: "hidden",
+        }}>
+          <span style={{
+            display: "block", height: "100%", borderRadius: 5, background: VERDE,
+            width: `${nota == null ? 0 : pctNota(nota)}%`,
+          }} />
+        </div>
+        <span style={{
+          position: "absolute", left: `${marca}%`, top: -3, marginLeft: -1,
+          width: 2, height: 16, borderRadius: 1, background: ORO_FILO,
+        }} />
+      </div>
+      <div style={{ position: "relative", height: 15, marginTop: 6 }}>
+        <span style={{
+          position: "absolute", left: `${marca}%`, transform: "translateX(-50%)",
+          whiteSpace: "nowrap", fontSize: 10, fontWeight: 700,
+          letterSpacing: ".2px", color: C_APOYO,
+        }}>
+          4.50 premio
+        </span>
+      </div>
+    </div>
+  );
 }
 
 // Lleno cuando el día salió bien; HUECO con borde cuando hubo novedad. Aquí no
@@ -159,6 +215,21 @@ export default function DetalleIndicador({
     [datos, vendedora, esTrim, a, qNum]
   );
 
+  // ── Mi puesto en ESTE indicador, dentro de MI ciudad ──────────────────────
+  // Ranking del motor (derivarRankingPorIndicador → calcRanking): ya existía y
+  // ya lo usa el admin. Aquí sólo se lee, filtrado por la ciudad de ella.
+  // Sin ciudad no hay ranking que mostrar: MED y BOG son dos empresas separadas
+  // y mezclarlas sería inventar un puesto. No hay ciudad por defecto.
+  const ciudadV =
+    vendedora?.ciudad === "MED" || vendedora?.ciudad === "BOG" ? vendedora.ciudad : null;
+  const rkInd = useMemo(
+    () =>
+      vendedora && !esTrim && ciudadV
+        ? derivarRankingPorIndicador(datos, indicadorId, ciudadV, a, m, vendedora.id)
+        : null,
+    [datos, vendedora, esTrim, ciudadV, indicadorId, a, m]
+  );
+
   if (!vendedora) {
     return (
       <Marco onVolver={onVolver} etiquetaVolver={etiquetaVolver}>
@@ -191,6 +262,20 @@ export default function DetalleIndicador({
 
   const nota = esTrim ? ind.promedio : ind.nota;
   const resumen = esTrim ? "En el trimestre" : ind.detalle;
+
+  // ── Mi puesto en este indicador ───────────────────────────────────────────
+  // `rkInd` ya viene ordenado y numerado por el motor. Aquí sólo se busca su
+  // fila y la de arriba. La distancia es la RESTA de dos notas que están las dos
+  // a la vista en la misma lista — no una fórmula nueva.
+  const filasInd = rkInd || [];
+  const miIdx = filasInd.findIndex(f => f.esYo);
+  const yoInd = miIdx >= 0 ? filasInd[miIdx] : null;
+  const arribaInd = miIdx > 0 ? filasInd[miIdx - 1] : null;
+  const difInd =
+    arribaInd && yoInd && arribaInd.nota != null && yoInd.nota != null
+      ? Math.abs(arribaInd.nota - yoInd.nota).toFixed(2)
+      : null;
+  const ciudadTxt = ciudadV === "BOG" ? "Bogotá" : ciudadV === "MED" ? "Medellín" : null;
 
   // Etiqueta de estado de cada mes: la del motor (cerrado / en curso · día X de Y /
   // sin cerrar / aún no empieza). Nunca se inventa un estado.
@@ -228,19 +313,85 @@ export default function DetalleIndicador({
 
   return (
     <Marco onVolver={onVolver} etiquetaVolver={etiquetaVolver}>
-      {/* ── Cabecera: emoji grande, nombre, resumen y nota ──────────────────── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-        <span style={{ fontSize: 34 }}>{ind.emoji}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 19, fontWeight: 800, color: TINTA }}>{ind.nombre}</div>
-          <div style={{ fontSize: 12.5, color: APOYO, fontWeight: 600, marginTop: 2 }}>
+      {/* ── 1) TU NOTA — tarjeta crema, nota grande, barra 1.00–5.00 ────────── */}
+      <div style={S.cardOro}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
+          <span style={{ fontSize: 24 }}>{ind.emoji}</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: C_TXT }}>{ind.nombre}</span>
+        </div>
+        <div style={{
+          fontSize: 34, fontWeight: 800, letterSpacing: "-1px", textAlign: "center",
+          color: nota == null ? TENUE : C_TXT,
+        }}>
+          {fmtN(nota)}
+        </div>
+        <BarraNota nota={nota} />
+        {resumen ? (
+          <div style={{
+            fontSize: 12.5, color: C_APOYO, fontWeight: 600,
+            marginTop: 8, textAlign: "center", lineHeight: 1.5,
+          }}>
             {resumen}
           </div>
-        </div>
-        <span style={badge(nota, { fontSize: 23, minWidth: 72, padding: "8px 13px" })}>
-          {fmtN(nota)}
-        </span>
+        ) : null}
       </div>
+
+      {/* ── 2) MI PUESTO EN ESTE INDICADOR · SU CIUDAD ──────────────────────── */}
+      {/* Sólo en el detalle del MES: el ranking por indicador del motor es
+          mensual. En el trimestre no existe, y no se inventa. */}
+      {!esTrim && ciudadTxt && (
+        <div style={S.card}>
+          <div style={S.lbl}>Mi puesto · {ciudadTxt}</div>
+          {!filasInd.length || !yoInd ? (
+            <div style={{ fontSize: 12.5, color: APOYO, fontWeight: 600, lineHeight: 1.55 }}>
+              El puesto de este indicador todavía no está disponible.
+            </div>
+          ) : (
+            <>
+              {filasInd.map(f => (
+                <div
+                  key={f.id}
+                  style={{
+                    ...S.mini,
+                    ...(f.esYo
+                      ? { background: CREMA, boxShadow: `inset 0 0 0 1.5px ${ORO}` }
+                      : null),
+                  }}
+                >
+                  <span style={{
+                    width: 20, textAlign: "center", fontWeight: 800, flexShrink: 0,
+                    color: f.n <= 3 ? VERDE : TENUE,
+                  }}>
+                    {["🥇", "🥈", "🥉"][f.n - 1] || f.n}
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0, fontWeight: 700, color: TINTA }}>
+                    {f.esYo ? `TÚ · ${primerNombre(f.nombre)}` : primerNombre(f.nombre)}
+                  </span>
+                  <span style={badge(f.nota, { fontSize: 13, minWidth: 42, padding: "3px 10px" })}>
+                    {fmtN(f.nota)}
+                  </span>
+                </div>
+              ))}
+              {arribaInd && difInd != null ? (
+                <div style={{
+                  fontSize: 12, color: APOYO, fontWeight: 600, marginTop: 8,
+                  paddingTop: 8, borderTop: `1px dashed ${LINEA}`,
+                }}>
+                  {primerNombre(arribaInd.nombre)} está a{" "}
+                  <strong style={{ color: TINTA }}>{difInd}</strong> de ti.
+                </div>
+              ) : miIdx === 0 ? (
+                <div style={{
+                  fontSize: 12, color: VERDE, fontWeight: 700, marginTop: 8,
+                  paddingTop: 8, borderTop: `1px dashed ${LINEA}`,
+                }}>
+                  🏆 Vas de primera en tu ciudad.
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+      )}
 
       {esTrim ? (
         /* ── Modo trimestre: mes a mes ─────────────────────────────────────── */

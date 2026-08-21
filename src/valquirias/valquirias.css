@@ -9,49 +9,93 @@
    Los valores son EXACTAMENTE los que ya estaban pintados a mano.
    =========================================================================== */
 :root {
+  /* --- El lienzo (el degradado pastel del original) ----------------------- */
+  /* Arriba durazno, abajo lavanda rosada. Es el "fondo rosado pálido".       */
+  --vk-lienzo-a: #FEF7F0;         /* orig valquirias.css:14 (0%)              */
+  --vk-lienzo-b: #FDF4FF;         /* orig valquirias.css:14 (100%)            */
+
   /* --- Superficies ------------------------------------------------------- */
-  --vk-fondo: #F7F6F3;            /* lienzo de la app y filas suaves          */
+  --vk-fondo: #F8FAFC;            /* hueco dentro de la tarjeta y filas suaves*/
   --vk-tarjeta: #FFFFFF;          /* papel: toda tarjeta y todo badge hueco   */
-  --vk-neutro: #EBEDEF;           /* gris de resalte: globos, rieles, fila TÚ */
-  --vk-borde: #E4E7EA;            /* todo borde y todo separador              */
-  --vk-noche: #0F1420;            /* la única tarjeta oscura por pantalla     */
+  --vk-neutro: #F4F4F5;           /* gris de resalte: globos, rieles, fila TÚ */
+  --vk-borde: #E2E8F0;            /* todo borde y todo separador              */
+  --vk-noche: #FFFBEB;            /* la única tarjeta oscura por pantalla     */
 
   /* --- Sobre la tarjeta noche -------------------------------------------- */
-  --vk-noche-texto: #FFFFFF;      /* cifras y palabras fuertes en lo oscuro   */
-  --vk-noche-apoyo: #B6BDC7;      /* secundario en lo oscuro                  */
+  --vk-noche-texto: #0F172A;      /* cifras y palabras fuertes en lo oscuro   */
+  --vk-noche-apoyo: #92400E;      /* secundario en lo oscuro                  */
 
   /* --- Texto ------------------------------------------------------------- */
-  --vk-titulo: #12161C;           /* títulos, texto fuerte y tinta sólida     */
-  --vk-cifra: #12161C;            /* toda cifra de dinero y toda nota         */
-  --vk-secundario: #5B6472;       /* niebla: rótulos y texto de apoyo         */
-  --vk-tenue: #7A828C;            /* sin dato y letra chica                   */
-  --vk-medio: #2F3841;            /* texto sobre gris y acentos de borde      */
+  --vk-titulo: #0F172A;           /* títulos, texto fuerte y tinta sólida     */
+  --vk-cifra: #0F172A;            /* toda cifra de dinero y toda nota         */
+  --vk-secundario: #475569;       /* niebla: rótulos y texto de apoyo         */
+  --vk-tenue: #94A3B8;            /* sin dato y letra chica                   */
+  --vk-medio: #3F3F46;            /* texto sobre gris y acentos de borde      */
 
   /* --- Bien / plata ganada ----------------------------------------------- */
-  --vk-bien: #0B5E2E;             /* verde de lo ganado y de las barras       */
-  --vk-bien-texto: #0F6B4F;       /* verde de la nota alta (4.5+)             */
-  --vk-bien-fondo: #EAF4EF;       /* verde claro de fondo                     */
+  --vk-bien: #046C4E;             /* verde de lo ganado y de las barras       */
+  --vk-bien-texto: #059669;       /* verde de la nota alta (4.5+)             */
+  --vk-bien-fondo: #D1FAE5;       /* verde claro de fondo                     */
 
   /* --- Estados ----------------------------------------------------------- */
-  --est-atencion: #8A5A0B;        /* ámbar de atención (texto)                */
-  --est-atencion-borde: #D9A441;  /* ámbar vivo: anillos, bordes y rellenos   */
-  --est-grave: #B8860B;           /* ámbar oscuro: día grave y estrella       */
-  --est-medio: #46557A;           /* azul-gris: nota 2.5–3.5 y aviso 📈       */
-  --est-medio-fondo: #EFF2F7;     /* fondo de ese mismo azul-gris             */
-  --est-sin-dato: #C7CBD1;        /* el punteado de "todavía no hay dato"     */
-  --est-descanso: #F0EFF6;        /* fondo del día de descanso                */
-  --est-descanso-texto: #5A5578;  /* texto del día de descanso                */
+  --est-atencion: #D97706;        /* ámbar de atención (texto)                */
+  --est-atencion-borde: #F59E0B;  /* ámbar vivo: anillos, bordes y rellenos   */
+  --est-grave: #8A5A08;           /* ámbar oscuro: día grave y estrella       */
+  --est-medio: #EA580C;           /* naranja: nota 2.5–3.5                    */
+  --est-medio-fondo: #FFEDD5;     /* fondo de ese mismo naranja               */
+  --est-atencion-fondo: #FEF3C7;  /* fondo ámbar de la nota 3.5–4.5 (admin)   */
+  --est-sin-dato: #CBD5E1;        /* el punteado de "todavía no hay dato"     */
+  --vk-fondo-hueco: #F1F5F9;      /* casilla sin nota en las tablas del admin */
+
+  /* El rojo SÓLO existe en el admin y en el ingreso diario, donde una nota
+     baja todavía se puede corregir. En la vista de la vendedora no aparece
+     nunca: sus pantallas tienen su propia escala, sin alarmas.               */
+  --est-alarma: #DC2626;          /* nota bajo 2.5 (admin / ingreso diario)   */
+  --est-alarma-fondo: #FEE2E2;    /* su fondo                                 */
+  --est-descanso: #F1F5F9;        /* fondo del día de descanso — NUNCA rojo   */
+  --est-descanso-texto: #64748B;  /* texto del día de descanso — NUNCA rojo   */
+
+  /* --- El aviso 📈 (era el "aviso azul" del trimestre) -------------------- */
+  --vk-aviso: #1E40AF;            /* orig MiTrimestre.jsx:296 (texto)         */
+  --vk-aviso-fondo: #EFF6FF;      /* orig MiTrimestre.jsx:296 (fondo)         */
+  --vk-aviso-borde: #3B82F6;      /* orig MiTrimestre.jsx:296 (filo)          */
 
   /* --- Metal (el oro sólo aparece sobre lo ya ganado) --------------------- */
-  --vk-metal: #E0B01C;            /* oro del podio y del badge de premio      */
-  --vk-metal-borde: #8A6708;      /* el filo del oro                          */
+  --vk-metal: #FCD34D;            /* oro del podio y del badge de premio      */
+  --vk-metal-borde: #B45309;      /* el filo del oro                          */
+
+  /* --- Los TRES botones del Home, cada uno con su color propio ------------ */
+  /* Menta, durazno y lavanda: orig Home.jsx:42, :43 y :44.                   */
+  --vk-btn-cash-fondo: #F0FDF9;   --vk-btn-cash-borde: #B6E6D5;
+  --vk-btn-cash-texto: #046C4E;   --vk-btn-cash-globo: #C7F0E0;
+
+  --vk-btn-mes-fondo: #FFF8F1;    --vk-btn-mes-borde: #F6D9BE;
+  --vk-btn-mes-texto: #9A4A12;    --vk-btn-mes-globo: #FBE3CD;
+
+  --vk-btn-trim-fondo: #F7F4FF;   --vk-btn-trim-borde: #DDD3F5;
+  --vk-btn-trim-texto: #5B2EC4;   --vk-btn-trim-globo: #E6DCFB;
+
+  /* --- Las otras dos tarjetas de color del original ----------------------- */
+  /* Ámbar: la tarjeta "🏆 Premios de este trimestre" (orig MiTrimestre.jsx:30-32)
+     y la tarjeta del lunes cuando el premio ya está ganado (orig Home.jsx:113-115). */
+  --vk-ambar-fondo: #FFFAF0;      --vk-ambar-borde: #F0D49A;
+  --vk-ambar-texto: #8A5A08;
+
+  /* Lavanda: la tarjeta que explica el indicador (orig DetalleIndicador.jsx:31-33). */
+  --vk-lavanda-fondo: #FFFBEB;    --vk-lavanda-borde: #FCD34D;
+  --vk-lavanda-texto: #78350F;
+
+  /* --- Banner "Viendo como" ---------------------------------------------- */
+  /* Era morado y no vuelve a serlo: va en el verde del equipo, el mismo del
+     botón "Mi cash semanal" (orig Home.jsx:42 / MiMes.jsx:32).               */
+  --vk-banner: #046C4E;
 
   /* --- Bases en RGB ------------------------------------------------------ */
   /* No son papeles nuevos: son los mismos colores en tripleta, para que las
      sombras y las veladuras conserven EXACTAS sus opacidades de hoy.        */
-  --vk-sombra-rgb: 18, 22, 28;         /* sombra de tarjeta (tinta)           */
-  --vk-noche-sombra-rgb: 15, 20, 32;   /* sombra bajo las tarjetas noche      */
-  --vk-metal-rgb: 224, 176, 28;        /* halo del oro                        */
+  --vk-sombra-rgb: 15, 23, 42;         /* sombra de tarjeta (tinta)           */
+  --vk-noche-sombra-rgb: 252, 211, 77;  /* sombra bajo las tarjetas noche      */
+  --vk-metal-rgb: 252, 211, 77;        /* halo del oro                        */
   --vk-velo-rgb: 255, 255, 255;        /* veladuras sobre la noche            */
   --vk-tarjeta-rgb: 255, 255, 255;     /* papel translúcido (barra inferior)  */
   --vk-sombra-texto-rgb: 0, 0, 0;      /* sombra de texto sobre la noche      */
@@ -66,10 +110,10 @@ html {
 
 .v-app {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--vk-fondo);
+  background: linear-gradient(180deg, var(--vk-lienzo-a) 0%, var(--vk-lienzo-b) 100%);
   min-height: 100vh;
   color: var(--vk-titulo);
-  padding: max(16px, env(safe-area-inset-top)) 14px 90px;
+  padding: max(16px, env(safe-area-inset-top)) 14px max(28px, env(safe-area-inset-bottom));
   max-width: 480px;
   width: 100%;
   margin: 0 auto;
@@ -920,352 +964,3 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .v-podio-base.oro { animation: none; }
 }
-
-/* ===========================================================================
-   PALETAS DE PRUEBA  ·  ?tema=salon | esmeralda | vino | grafito
-   ---------------------------------------------------------------------------
-   TODO lo que sigue está encerrado detrás del atributo `data-tema` en <html>.
-   Sin ese atributo NINGUNA de estas reglas aplica y la app se ve exactamente
-   igual que hoy: ni una sola regla de arriba fue modificada.
-
-   Los cuatro vestidos son oscuros y comparten la misma arquitectura:
-
-     · TRES NIVELES DE PROFUNDIDAD
-         --vk-fondo    lienzo de la app Y hueco dentro de la tarjeta (lo más
-                       hondo; es el mismo papel que hoy hace las dos cosas)
-         --vk-tarjeta  la tarjeta, en degradado vertical (claro arriba)
-         --vk-neutro   lo que se levanta DENTRO de la tarjeta (globos, rieles,
-                       la fila "TÚ")
-       Ninguna superficie toca a otra del mismo valor.
-
-     · LÍNEA DE LUZ. `--vk-tarjeta` arranca con 2px del tono de la tarjeta
-       aclarado un 7% — el mismo efecto que `inset 0 1px 0 rgba(255,255,255,.07)`,
-       pero metido en el degradado para que también lo tengan las tarjetas que
-       se pintan con estilo en línea (que son casi todas las de la vendedora).
-
-     · METAL CON RANGO. `--vk-metal` sigue siendo un color plano porque la app
-       lo usa como color de TEXTO (Home.jsx:166, MiCash.jsx:646). El degradado
-       diagonal con banda de brillo vive en `--vk-metal-grad` y se aplica donde
-       el metal es superficie: el escalón de oro del podio y el badge de premio.
-
-     · BLANCO CÁLIDO, NUNCA PURO, en toda cifra.
-     · CERO MORADO y CERO ROJO en la vista de la vendedora: el día de descanso
-       deja de ser lavanda y los estados se separan por LLENO contra HUECO
-       (relleno sólido vs. anillo o punteado), no sólo por tono.
-   =========================================================================== */
-
-/* --- 1 · SALÓN — noche azulada y oro ------------------------------------- */
-:root[data-tema="salon"] {
-  --vk-fondo: #080B12;
-  --vk-tarjeta: linear-gradient(180deg, #252C3A 0 2px, #151C2B 2px, #0F1420 100%);
-  --vk-neutro: #232E44;
-  --vk-borde: #242C3D;
-  --vk-noche: #203058;
-
-  --vk-noche-texto: #F5F2EA;
-  --vk-noche-apoyo: #A8B4CC;
-
-  --vk-titulo: #EDEAE2;
-  --vk-cifra: #F5F2EA;
-  --vk-secundario: #8E97AB;
-  --vk-tenue: #6B7488;
-  --vk-medio: #C2C9D6;
-
-  --vk-bien: #12A374;
-  --vk-bien-texto: #43D9A2;
-  --vk-bien-fondo: #0E3B32;
-
-  --est-atencion: #E7B45E;
-  --est-atencion-borde: #D9A441;
-  --est-grave: #C9922E;
-  --est-medio: #9CADD6;
-  --est-medio-fondo: #1A2137;
-  --est-sin-dato: #39435A;
-  --est-descanso: #171D2A;
-  --est-descanso-texto: #98A2B8;
-
-  --vk-metal: #E0B01C;
-  --vk-metal-borde: #8A6708;
-  --vk-metal-brillo: #FFE9A8;
-  --vk-metal-grad: linear-gradient(135deg, #8A6708 0%, #E0B01C 30%, #FFE9A8 48%, #E0B01C 66%, #8A6708 100%);
-  --vk-metal-tinta: #2A1D05;
-
-  --vk-solido: #233150;
-  --vk-solido-texto: #F5F2EA;
-
-  --vk-sombra-rgb: 160, 176, 204;
-  --vk-noche-sombra-rgb: 0, 0, 0;
-  --vk-metal-rgb: 224, 176, 28;
-  --vk-velo-rgb: 255, 255, 255;
-  --vk-tarjeta-rgb: 21, 28, 43;
-  --vk-sombra-texto-rgb: 0, 0, 0;
-}
-
-/* --- 2 · ESMERALDA — verde de joya, el oro sólo en la medalla ------------- */
-:root[data-tema="esmeralda"] {
-  --vk-fondo: #04140F;
-  --vk-tarjeta: linear-gradient(180deg, #1C3931 0 2px, #0B2A21 2px, #072019 100%);
-  --vk-neutro: #14402F;
-  --vk-borde: #123529;
-  --vk-noche: #0C4032;
-
-  --vk-noche-texto: #EAF6F0;
-  --vk-noche-apoyo: #8FC0AC;
-
-  --vk-titulo: #E4F2EA;
-  --vk-cifra: #EAF6F0;
-  --vk-secundario: #6E9C8B;
-  --vk-tenue: #527A6B;
-  --vk-medio: #B4D6C6;
-
-  --vk-bien: #3FD9A0;
-  --vk-bien-texto: #6FEFC0;
-  --vk-bien-fondo: #12503C;
-
-  --est-atencion: #E8C070;
-  --est-atencion-borde: #D9A441;
-  --est-grave: #C99A34;
-  --est-medio: #94BCC8;
-  --est-medio-fondo: #0D2E30;
-  --est-sin-dato: #2E5346;
-  --est-descanso: #0A241C;
-  --est-descanso-texto: #8CB4A4;
-
-  --vk-metal: #E0B01C;
-  --vk-metal-borde: #8A6708;
-  --vk-metal-brillo: #FFE9A8;
-  --vk-metal-grad: linear-gradient(135deg, #8A6708 0%, #E0B01C 30%, #FFE9A8 48%, #E0B01C 66%, #8A6708 100%);
-  --vk-metal-tinta: #2A1D05;
-
-  --vk-solido: #155845;
-  --vk-solido-texto: #EAF6F0;
-
-  --vk-sombra-rgb: 140, 200, 176;
-  --vk-noche-sombra-rgb: 0, 0, 0;
-  --vk-metal-rgb: 224, 176, 28;
-  --vk-velo-rgb: 255, 255, 255;
-  --vk-tarjeta-rgb: 11, 42, 33;
-  --vk-sombra-texto-rgb: 0, 0, 0;
-}
-
-/* --- 3 · VINO — borgoña y oro viejo --------------------------------------- */
-:root[data-tema="vino"] {
-  --vk-fondo: #12070B;
-  --vk-tarjeta: linear-gradient(180deg, #392329 0 2px, #2A1219 2px, #1A0B11 100%);
-  --vk-neutro: #3E202A;
-  --vk-borde: #3A1B24;
-  --vk-noche: #551A28;
-
-  --vk-noche-texto: #F7EDE6;
-  --vk-noche-apoyo: #C4A29E;
-
-  --vk-titulo: #F2E5DC;
-  --vk-cifra: #F7EDE6;
-  --vk-secundario: #A78A88;
-  --vk-tenue: #84686A;
-  --vk-medio: #D8BFB9;
-
-  --vk-bien: #3FBF8F;
-  --vk-bien-texto: #63DCAB;
-  --vk-bien-fondo: #154438;
-
-  --est-atencion: #E8B96A;
-  --est-atencion-borde: #C79A52;
-  --est-grave: #BE8A45;
-  --est-medio: #C2A3B0;
-  --est-medio-fondo: #2B1620;
-  --est-sin-dato: #553440;
-  --est-descanso: #1E0F15;
-  --est-descanso-texto: #B49AA0;
-
-  --vk-metal: #E8B96A;
-  --vk-metal-borde: #8A5F26;
-  --vk-metal-brillo: #FFE2B4;
-  --vk-metal-grad: linear-gradient(135deg, #8A5F26 0%, #E8B96A 30%, #FFE2B4 48%, #E8B96A 66%, #8A5F26 100%);
-  --vk-metal-tinta: #33200A;
-
-  --vk-solido: #4A2129;
-  --vk-solido-texto: #F7EDE6;
-
-  --vk-sombra-rgb: 210, 170, 170;
-  --vk-noche-sombra-rgb: 0, 0, 0;
-  --vk-metal-rgb: 232, 185, 106;
-  --vk-velo-rgb: 255, 255, 255;
-  --vk-tarjeta-rgb: 42, 18, 25;
-  --vk-sombra-texto-rgb: 0, 0, 0;
-}
-
-/* --- 4 · GRAFITO — carbón cálido y cobre ---------------------------------- */
-:root[data-tema="grafito"] {
-  --vk-fondo: #0F0E0C;
-  --vk-tarjeta: linear-gradient(180deg, #322F2B 0 2px, #221F1B 2px, #171512 100%);
-  --vk-neutro: #332E27;
-  --vk-borde: #2E2A25;
-  --vk-noche: #3E2F1A;
-
-  --vk-noche-texto: #F4F0EA;
-  --vk-noche-apoyo: #BCB2A6;
-
-  --vk-titulo: #EFEAE2;
-  --vk-cifra: #F4F0EA;
-  --vk-secundario: #9A938A;
-  --vk-tenue: #77706A;
-  --vk-medio: #CFC7BC;
-
-  --vk-bien: #4FB894;
-  --vk-bien-texto: #78DDB6;
-  --vk-bien-fondo: #1E4038;
-
-  --est-atencion: #E0A468;
-  --est-atencion-borde: #D98A4E;
-  --est-grave: #C1783F;
-  --est-medio: #A9AFB8;
-  --est-medio-fondo: #22242A;
-  --est-sin-dato: #4A443C;
-  --est-descanso: #1B1815;
-  --est-descanso-texto: #A79E93;
-
-  --vk-metal: #D98A4E;
-  --vk-metal-borde: #8A5A2B;
-  --vk-metal-brillo: #F6D2A8;
-  --vk-metal-grad: linear-gradient(135deg, #8A5A2B 0%, #D98A4E 30%, #F6D2A8 48%, #D98A4E 66%, #8A5A2B 100%);
-  --vk-metal-tinta: #2E1B08;
-
-  --vk-solido: #3A342C;
-  --vk-solido-texto: #F4F0EA;
-
-  --vk-sombra-rgb: 200, 190, 175;
-  --vk-noche-sombra-rgb: 0, 0, 0;
-  --vk-metal-rgb: 217, 138, 78;
-  --vk-velo-rgb: 255, 255, 255;
-  --vk-tarjeta-rgb: 34, 31, 27;
-  --vk-sombra-texto-rgb: 0, 0, 0;
-}
-
-/* ---------------------------------------------------------------------------
-   AJUSTES QUE VALEN PARA LOS CUATRO VESTIDOS
-   Sólo existen porque hay papeles que en claro eran fondo oscuro con letra
-   clara y al invertirse quedarían letra clara sobre fondo claro.
-   Todos van bajo `[data-tema]`: en producción no existen.
-   --------------------------------------------------------------------------- */
-:root[data-tema] { background: var(--vk-fondo); color-scheme: dark; }
-:root[data-tema] body { background: var(--vk-fondo); }
-:root[data-tema] #root { border-inline-color: transparent; }
-
-/* `--vk-titulo` es TINTA. Donde hacía de fondo sólido (botón principal,
-   pestaña activa) pasa a ser una superficie levantada con su propia tinta. */
-:root[data-tema] .v-nav-tab.active,
-:root[data-tema] .v-rank-tab-btn.active,
-:root[data-tema] .v-rank-ciudad-btn.active,
-:root[data-tema] .v-rank-ciudad-btn.bog.active,
-:root[data-tema] .v-login-btn,
-:root[data-tema] .v-role-mini,
-:root[data-tema] .v-role-mini.admin,
-:root[data-tema] .v-role-mini.oficina {
-  background: var(--vk-solido);
-  color: var(--vk-solido-texto);
-  border-color: var(--vk-borde);
-  box-shadow: inset 0 1px 0 rgba(var(--vk-velo-rgb), 0.07);
-}
-:root[data-tema] .v-nav-tab.active .lb { color: var(--vk-solido-texto); }
-
-/* Dos reglas usan `--vk-tarjeta` como COLOR de letra; con el degradado eso ya
-   no es un color válido, así que se les nombra la tinta que les toca. */
-:root[data-tema] .v-trim-hero,
-:root[data-tema] .v-comp-hero { color: var(--vk-noche-texto); }
-:root[data-tema] .v-sc-chip.tu { background: var(--vk-noche-texto); color: var(--vk-noche); }
-
-/* EL METAL CON RANGO — sólo donde el oro es superficie, y sólo sobre lo ganado. */
-:root[data-tema] .v-podio-base.oro,
-:root[data-tema] .v-sc-badge {
-  background: var(--vk-metal-grad);
-  color: var(--vk-metal-tinta);
-}
-
-/* La línea de luz, ahora sí como sombra interior, en las tarjetas que SÍ tienen
-   clase. Las de estilo en línea la traen dentro del degradado de --vk-tarjeta. */
-:root[data-tema] .v-card,
-:root[data-tema] .v-hoy,
-:root[data-tema] .v-foco,
-:root[data-tema] .v-podio,
-:root[data-tema] .v-acordeon,
-:root[data-tema] .v-team-header,
-:root[data-tema] .v-rank-big,
-:root[data-tema] .v-chip-clickable,
-:root[data-tema] .v-historial-list,
-:root[data-tema] .v-proy-year,
-:root[data-tema] .v-login-card,
-:root[data-tema] .v-hero-year,
-:root[data-tema] .v-trim-hero,
-:root[data-tema] .v-comp-hero,
-:root[data-tema] .v-semana-cerrada {
-  box-shadow:
-    inset 0 1px 0 rgba(var(--vk-velo-rgb), 0.07),
-    0 10px 26px rgba(var(--vk-noche-sombra-rgb), 0.45);
-}
-
-/* La barra de marca y el aviso de "viendo como" se pintan con estilo en línea
-   y con colores que no están en la paleta (gris claro, morado). Aquí se les
-   quita el morado y se les da el papel que les corresponde. `:not([class])`
-   deja fuera los tres botones grandes del Home, que sí llevan clase. */
-:root[data-tema] .v-header button,
-:root[data-tema] .v-app > button:not([class]) {
-  background: var(--vk-neutro) !important;
-  color: var(--vk-secundario) !important;
-  border: 1px solid var(--vk-borde) !important;
-}
-:root[data-tema] .v-app > button:not([class]) { color: var(--vk-titulo) !important; }
-
-/* ---------------------------------------------------------------------------
-   EL SELECTOR. Sólo se dibuja cuando hay tema puesto: el <div> lo crea el
-   script de index.html y ese script no hace nada sin `?tema=` ni preferencia
-   guardada. En producción este bloque no encuentra a quién pintar.
-   --------------------------------------------------------------------------- */
-#vk-tema-switch {
-  position: fixed;
-  right: 10px;
-  bottom: 10px;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 7px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  opacity: 0.5;
-  transition: opacity 0.15s ease;
-  font: 800 9px/1 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-#vk-tema-switch:hover,
-#vk-tema-switch:focus-within { opacity: 1; }
-#vk-tema-switch button[data-t] {
-  width: 17px;
-  height: 17px;
-  padding: 0;
-  font-size: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  cursor: pointer;
-}
-#vk-tema-switch button[data-t].on {
-  outline: 2px solid rgba(255, 255, 255, 0.9);
-  outline-offset: 1px;
-}
-#vk-tema-switch button[data-t="salon"]     { background: linear-gradient(135deg, #151C2B 45%, #E0B01C 45%); }
-#vk-tema-switch button[data-t="esmeralda"] { background: linear-gradient(135deg, #0B2A21 45%, #3FD9A0 45%); }
-#vk-tema-switch button[data-t="vino"]      { background: linear-gradient(135deg, #2A1219 45%, #E8B96A 45%); }
-#vk-tema-switch button[data-t="grafito"]   { background: linear-gradient(135deg, #221F1B 45%, #D98A4E 45%); }
-#vk-tema-switch .vk-tema-off {
-  border: none;
-  background: none;
-  color: rgba(255, 255, 255, 0.65);
-  font: inherit;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  padding: 3px 4px;
-  cursor: pointer;
-}
-#vk-tema-switch .vk-tema-off:hover { color: #fff; }

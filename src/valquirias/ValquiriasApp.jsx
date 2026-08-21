@@ -143,7 +143,7 @@ function BarraClave({ onMiClave }) {
 }
 
 // ---------------------------------------------------------------------------
-// Banner morado del modo "ver como" (prototipo: bannerSimular()).
+// Banner del modo "ver como" (prototipo: bannerSimular()).
 // Va DENTRO de la vista de la vendedora y es el único camino de vuelta al panel.
 // ---------------------------------------------------------------------------
 function BannerVerComo({ vendedora, onSalir }) {
@@ -154,8 +154,8 @@ function BannerVerComo({ vendedora, onSalir }) {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         width: "100%", gap: 10, padding: "11px 14px", marginBottom: 12,
         border: "none", borderRadius: 12, cursor: "pointer",
-        background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-        color: "#fff", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800,
+        background: "var(--vk-banner)",
+        color: "var(--vk-noche-texto)", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800,
         textAlign: "left",
       }}
     >
@@ -216,7 +216,7 @@ function VistaVendedora({ vendedora, verComo = false, onSalirVerComo, onMiClave 
   }
 
   return (
-    <div className="v-app">
+    <div className="v-app vk-tema">
       {/* En modo "ver como" el que está logueado es Luis: el botón de salir se
           esconde para que no cierre SU sesión creyendo que sale de la simulación. */}
       {/* En modo "ver como" tampoco se ofrece cambiar contraseña: la sesión es
@@ -261,7 +261,7 @@ function ErrorDatos({ error, onReintentar }) {
           <button
             onClick={onReintentar}
             style={{
-              fontSize: 12.5, fontWeight: 800, color: "#fff", background: "#7c3aed",
+              fontSize: 12.5, fontWeight: 800, color: "#fff", background: "var(--vk-titulo)",
               border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer",
               fontFamily: "inherit",
             }}
