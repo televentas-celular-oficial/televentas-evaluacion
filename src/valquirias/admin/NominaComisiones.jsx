@@ -122,9 +122,11 @@ export default function NominaComisiones({ onVolver }) {
                 padding: "6px 10px",
                 fontSize: 11,
                 fontWeight: 800,
-                background: activo ? "linear-gradient(135deg, #7c3aed, #ec4899)" : "#fff",
-                color: activo ? "#fff" : "#7c3aed",
-                border: "1.5px solid " + (activo ? "transparent" : "#e2e8f0"),
+                // Mes activo: tinta llena con letra blanca — el mismo botón
+                // activo que en el resto de la app. Antes era morado→rosado.
+                background: activo ? "var(--vk-titulo)" : "var(--vk-tarjeta)",
+                color: activo ? "var(--vk-sobre-tinta)" : "var(--vk-secundario)",
+                border: "1.5px solid " + (activo ? "var(--vk-titulo)" : "var(--vk-borde)"),
                 borderRadius: 8,
                 cursor: "pointer",
                 flexShrink: 0,
@@ -160,7 +162,7 @@ export default function NominaComisiones({ onVolver }) {
       </div>
 
       {/* Info importante */}
-      <div style={{ padding: "10px 12px", background: "rgba(168, 85, 247, 0.08)", borderLeft: "3px solid #a855f7", borderRadius: 10, fontSize: 11, color: "#5b21b6", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
+      <div style={{ padding: "10px 12px", background: "var(--vk-noche)", borderLeft: "3px solid var(--vk-metal)", borderRadius: 10, fontSize: 11, color: "var(--vk-noche-apoyo)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
         💡 Solo comisiones por ventas del mes. <strong>No incluye</strong> premios semanales ($50.000) ni trimestrales ($1.000.000) ni reconocimientos. Ventas ya vienen netas de devoluciones y cambios.
         <br />El % es el del <strong>rol que tenía ese mes</strong>, no el cargo de hoy. Si ascendió a mitad de mes, la fila muestra la pro-rata día a día.
         <br />Aparecen también las que <strong>ya no trabajan aquí</strong> si vendieron en este mes — se les debe igual.
@@ -245,7 +247,7 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total }) {
             <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>
               {v.nombre}
               {/* El badge es el rol de ESE mes, no el cargo de hoy */}
-              <span style={{ marginLeft: 6, fontSize: 9, background: rolMes === "admin" ? "#faf5ff" : "#f0fdf4", color: rolMes === "admin" ? "#7c3aed" : "#047857", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <span style={{ marginLeft: 6, fontSize: 9, background: rolMes === "admin" ? "var(--vk-noche)" : "var(--vk-bien-fondo)", color: rolMes === "admin" ? "var(--vk-noche-apoyo)" : "var(--vk-bien)", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 {ascensoEnEsteMes ? "Asesora → Admin" : ROL_CORTO[rolMes]}
               </span>
               {/* Aparece porque vendió ESTE mes, aunque hoy ya no esté en el
@@ -269,12 +271,12 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total }) {
               <div style={{
                 marginTop: 5,
                 padding: "6px 8px",
-                background: "rgba(124, 58, 237, 0.07)",
-                borderLeft: "2px solid #a855f7",
+                background: "var(--vk-noche)",
+                borderLeft: "2px solid var(--vk-metal)",
                 borderRadius: 6,
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#5b21b6",
+                color: "var(--vk-noche-apoyo)",
                 lineHeight: 1.5,
               }}>
                 <div>
