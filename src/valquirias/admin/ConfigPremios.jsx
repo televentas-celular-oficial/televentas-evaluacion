@@ -50,8 +50,6 @@ export default function ConfigPremios({ onVolver }) {
   // exactamente lo que está en pantalla.
   const refBase = useRef(null);
   const refExtra = useRef(null);
-  const refReconocimiento = useRef(null);
-  const refDescripcion = useRef(null);
 
   // Cambia clave → resetea inputs a valores de la nueva clave
   const claveKey = clave;
@@ -64,8 +62,12 @@ export default function ConfigPremios({ onVolver }) {
   async function guardar() {
     const base = leerPesos(refBase);
     const extra = leerPesos(refExtra);
-    const reconocimiento = (refReconocimiento.current?.value || "").trim();
-    const descripcion = (refDescripcion.current?.value || "").trim();
+    // El campo del reconocimiento se retiró de la pantalla (21-ago-2026), así
+    // que ya no hay input que leer. Se CONSERVA lo que hubiera guardado: leerlo
+    // de un ref inexistente devolvía "" y guardar los montos habría borrado en
+    // silencio el reconocimiento del trimestre.
+    const reconocimiento = configExistente.reconocimiento || "";
+    const descripcion = configExistente.descripcion || "";
     // Se manda SÓLO la clave `premiosTrim` de config: cambiar los premios ya no
     // puede pisar `whitelistActiva` ni ningún otro ajuste.
     // Límite conocido (documentado en DatosContext): dentro de `premiosTrim` el
@@ -112,7 +114,7 @@ export default function ConfigPremios({ onVolver }) {
       )}
 
       <div style={{ padding: "10px 12px", background: "rgba(234, 179, 8, 0.08)", borderLeft: "3px solid #eab308", borderRadius: 10, fontSize: 11, color: "#78350f", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
-        💡 Cada trimestre puede tener diferentes premios. El <strong>monto base</strong> lo gana cada vendedora con nota ≥4.50. El <strong>extra</strong> lo gana la mejor de la ciudad si hay 2+ con nota ≥4.50. El <strong>reconocimiento sorpresa</strong> se anuncia a la #1 (ej: TV, viaje).
+        💡 Cada trimestre puede tener diferentes premios. El <strong>monto base</strong> lo gana cada vendedora con nota ≥4.50. El <strong>extra</strong> lo gana la mejor de la ciudad si hay 2+ con nota ≥4.50.
       </div>
 
       {/* Selector año/trimestre */}
@@ -172,27 +174,14 @@ export default function ConfigPremios({ onVolver }) {
             style={inputStyle}
           />
         </div>
-        <div style={{ marginBottom: 10 }}>
-          <label style={labelStyle}>🏆 Reconocimiento sorpresa</label>
-          <input
-            type="text"
-            key={`recon-${claveKey}`}
-            ref={refReconocimiento}
-            defaultValue={configExistente.reconocimiento}
-            placeholder={"Ej: TV 42\" · Viaje con acompañante"}
-            style={inputStyle}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>📝 Descripción larga (opcional)</label>
-          <textarea
-            key={`desc-${claveKey}`}
-            ref={refDescripcion}
-            defaultValue={configExistente.descripcion}
-            placeholder="Ej: TV Smart 42 pulgadas · a la #1 de cada ciudad"
-            style={{ ...inputStyle, minHeight: 60, fontFamily: "inherit", resize: "vertical" }}
-          />
-        </div>
+        {/* RECONOCIMIENTO SORPRESA — retirado el 21-ago-2026 por decisión de Luis.
+            Se podía escribir y se guardaba bien, pero NO llegaba a ninguna
+            pantalla de la vendedora: sólo se veía en este panel. Un premio que
+            sólo ve el dueño no es un premio, es una promesa muerta.
+            La ESTRUCTURA en Firestore (`config.premiosTrim[Q].reconocimiento` y
+            `.descripcion`) se conserva intacta, y lo ya guardado no se borra:
+            cuando llegue Q4 y Luis decida dónde se anuncia, se vuelve a abrir
+            este campo y se conecta a Mi trimestre. */}
 
         <button
           onClick={guardar}
@@ -225,7 +214,6 @@ export default function ConfigPremios({ onVolver }) {
                 <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>Q{q} {y}</div>
                 <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginTop: 2 }}>
                   💰 {formatoPesos(cfg.montoBase)} base · 🌟 {formatoPesos(cfg.montoExtra)} extra
-                  {cfg.reconocimiento && <> · 🏆 {cfg.reconocimiento}</>}
                 </div>
               </div>
             );

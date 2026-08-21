@@ -31,6 +31,12 @@
   --vk-secundario: #475569;       /* niebla: rótulos y texto de apoyo         */
   --vk-tenue: #94A3B8;            /* sin dato y letra chica                   */
   --vk-medio: #3F3F46;            /* texto sobre gris y acentos de borde      */
+  --vk-sobre-tinta: #FFFFFF;      /* texto sobre --vk-titulo (pestaña activa) */
+  /* ↑ Existe porque la paleta pastel no tiene superficies oscuras, pero los
+     controles segmentados sí usan la tinta como fondo del botón activo. Sin
+     este token se usaba --vk-noche-texto, que en la paleta pastel vale el
+     MISMO #0F172A que el fondo: el rótulo quedaba invisible. Regla: todo
+     fondo oscuro se empareja con este token, nunca con los de "noche". */
 
   /* --- Bien / plata ganada ----------------------------------------------- */
   --vk-bien: #046C4E;             /* verde de lo ganado y de las barras       */
@@ -171,7 +177,7 @@ html {
 .v-team-title.bog { color: var(--vk-titulo); }
 .v-role-mini {
   display: inline-block;
-  color: var(--vk-noche-texto);
+  color: var(--vk-sobre-tinta);
   padding: 2px 8px;
   border-radius: 6px;
   font-size: 10px;
@@ -452,10 +458,10 @@ html {
 }
 .v-nav-tab.active {
   background: var(--vk-titulo);
-  color: var(--vk-noche-texto);
+  color: var(--vk-sobre-tinta);
   box-shadow: 0 4px 12px rgba(var(--vk-sombra-rgb), 0.25);
 }
-.v-nav-tab.active .lb { color: var(--vk-noche-texto); }
+.v-nav-tab.active .lb { color: var(--vk-sobre-tinta); }
 
 /* Tab RANKING */
 .v-team-header {
@@ -488,7 +494,7 @@ html {
 }
 .v-rank-tab-btn.active {
   background: var(--vk-titulo);
-  color: var(--vk-noche-texto); box-shadow: 0 2px 8px rgba(var(--vk-sombra-rgb), 0.2);
+  color: var(--vk-sobre-tinta); box-shadow: 0 2px 8px rgba(var(--vk-sombra-rgb), 0.2);
 }
 .v-rank-ciudad-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
 .v-rank-ciudad-btn {
@@ -497,7 +503,7 @@ html {
   background: var(--vk-tarjeta); border: 1.5px solid var(--vk-borde); border-radius: 10px; cursor: pointer;
 }
 .v-rank-ciudad-btn.active {
-  color: var(--vk-noche-texto); background: var(--vk-titulo);
+  color: var(--vk-sobre-tinta); background: var(--vk-titulo);
   border-color: var(--vk-titulo); box-shadow: 0 2px 6px rgba(var(--vk-sombra-rgb), 0.18);
 }
 .v-rank-ciudad-btn.bog.active {
@@ -731,7 +737,7 @@ html {
 .v-login-btn {
   width: 100%; padding: 14px;
   background: var(--vk-titulo);
-  color: var(--vk-noche-texto); border: none; border-radius: 12px;
+  color: var(--vk-sobre-tinta); border: none; border-radius: 12px;
   font-size: 15px; font-weight: 900; cursor: pointer;
   box-shadow: 0 8px 20px rgba(var(--vk-sombra-rgb), 0.2);
 }

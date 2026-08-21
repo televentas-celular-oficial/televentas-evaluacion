@@ -124,7 +124,6 @@ export default function TrimestreAdmin({ onVolver }) {
   const cfg = datos.config?.premiosTrim?.[`${año}_Q${q}`] || {};
   const montoBase = Number(cfg.montoBase ?? 1_000_000);
   const montoExtra = Number(cfg.montoExtra ?? 1_000_000);
-  const reconocimiento = (cfg.reconocimiento || "").trim();
 
   // ¿El trimestre ya cerró (los 3 meses con snapshot)? Se lo pasamos a
   // `calcPremios` para que NO le quite el premio de un trimestre pasado a quien
@@ -307,11 +306,9 @@ export default function TrimestreAdmin({ onVolver }) {
             <div style={{ fontSize: 13, fontWeight: 900, color: "#9a3412" }}>
               Total a entregar: <span style={{ fontSize: 20 }}>{formatoPesos(totalGeneral)}</span>
             </div>
-            {reconocimiento && (
-              <div style={{ fontSize: 11, color: "#92400e", fontWeight: 700, marginTop: 4 }}>
-                🎁 Reconocimiento sorpresa del trimestre: <strong>{reconocimiento}</strong>
-              </div>
-            )}
+            {/* El reconocimiento sorpresa (la TV) se retiró el 21-ago-2026: se
+                podía escribir pero nunca llegaba a la vendedora. Vuelve en Q4,
+                cuando Luis decida dónde se anuncia. */}
           </div>
 
           {ganadoras.map((g, idx) => {
