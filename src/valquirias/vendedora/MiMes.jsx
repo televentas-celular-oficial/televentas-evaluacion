@@ -469,6 +469,41 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
     hayVentas && diasCerrados > 0 ? Math.round(ventas / diasCerrados) : null;
   const motivoRitmo = !hayVentas ? "sin ventas cargadas" : "aún no hay días cerrados";
 
+  // --------------------------------------------------------------------------
+  // EL SIGUIENTE ESCALÓN — cuánto necesita AL DÍA para alcanzarlo
+  // --------------------------------------------------------------------------
+  // "Tu promedio" decía lo que trae, pero no lo que necesita: sin eso la cifra
+  // no le sirve para decidir nada. El objetivo NO es fijo, sube por la escalera
+  // de la plata y siempre es el PRÓXIMO peldaño que le cambia lo que gana:
+  //
+  //   Medellín, bajo el piso  → el piso ($15.000.000). Debajo de él gana $0.
+  //   Ya pasó el piso         → el tramo 2 (su % se duplica)
+  //   Ya pasó el tramo 2      → el tramo 3
+  //   Ya está en el tramo 3   → no hay más escalón: se le reconoce y punto
+  //
+  // En Bogotá no hay piso, así que la escalera arranca en el tramo 2.
+  // Nada de esto se calcula aquí: `piso.falta` y `sig.falta` vienen del motor.
+  const objetivo =
+    piso.aplica && !piso.superado && piso.falta > 0
+      ? { nombre: "el piso", falta: piso.falta }
+      : sig && sig.falta > 0
+      ? { nombre: sig.nombre.toLowerCase(), falta: sig.falta }
+      : null;
+
+  // Si hoy es el último día del mes no hay "al día" que calcular: lo que falta
+  // hay que hacerlo hoy. Se dice así, no se divide por cero.
+  const necesitaDiario =
+    objetivo && diasRestantes > 0 ? Math.ceil(objetivo.falta / diasRestantes) : null;
+
+  const pieProm =
+    ritmoActual == null
+      ? motivoRitmo
+      : objetivo == null
+      ? "al día · vas en el tramo más alto"
+      : necesitaDiario == null
+      ? `al día · hoy es el último`
+      : `al día · para ${objetivo.nombre} necesitas ${formatoPesos(necesitaDiario)}`;
+
   return (
     <div style={{ color: TINTA }}>
       <BotonVolver onVolver={onVolver} />
@@ -542,9 +577,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
           titulo="Tu promedio"
           apagada={ritmoActual == null}
           cifra={ritmoActual != null ? formatoPesos(ritmoActual) : "no disponible"}
-          pie={
-            ritmoActual != null ? `al día · faltan ${nDias(diasRestantes)}` : motivoRitmo
-          }
+          pie={pieProm}
         />
       </div>
 
