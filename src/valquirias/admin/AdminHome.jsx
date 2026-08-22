@@ -52,9 +52,22 @@ const VERDE_TXT = "var(--vk-bien)";
 const GRIS_BG = "var(--vk-neutro)";
 const GRIS_BORDE = "var(--vk-borde)";
 const GRIS_TXT = "var(--vk-secundario)";
-const LILA_BG = "var(--vk-fondo)";
-const LILA_BORDE = "var(--vk-borde)";
-const LILA_TXT = "var(--vk-secundario)";
+// "Ver la app como vendedora" — ÁMBAR SUAVE (Luis, 22-ago-2026).
+// Se llamaban LILA_* de cuando la app tenía lavanda, pero apuntaban a
+// `--vk-fondo` (#F8FAFC, el color HUECO de la paleta) con borde y texto grises:
+// o sea, el botón estaba pintado con los tres colores más neutros que existen y
+// por eso se perdía entre los tiles blancos.
+//
+// El ámbar es cálido como el lienzo avena y no compite con el verde del
+// interruptor que va justo encima, que significa un ESTADO (app abierta) — dos
+// verdes apilados se leerían como dos estados.
+//
+// El relleno casi no se despega del fondo (1,15:1) y no es ahí donde está el
+// trabajo: lo que hace saltar la fila son el FILO y el TEXTO. El texto ámbar da
+// 5,69:1 sobre su relleno.
+const VERCOMO_BG = "var(--vk-ambar-fondo)";
+const VERCOMO_BORDE = "var(--vk-ambar-borde)";
+const VERCOMO_TXT = "var(--vk-ambar-texto)";
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -506,22 +519,22 @@ export default function AdminHome({ user = null, onVerComo }) {
         onClick={() => setSeccion("vercomo")}
         style={{
           display: "block", width: "100%", textAlign: "left",
-          background: LILA_BG, border: `1px solid ${LILA_BORDE}`, borderRadius: 18,
+          background: VERCOMO_BG, border: `1.5px solid ${VERCOMO_BORDE}`, borderRadius: 18,
           padding: "18px 20px", marginBottom: 6, cursor: "pointer", font: "inherit",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <span style={{
-            width: 38, height: 38, borderRadius: "50%", background: "var(--vk-borde)",
+            width: 38, height: 38, borderRadius: "50%", background: "var(--vk-metal)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 19, flexShrink: 0,
           }}>👁️</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: "-.2px", color: LILA_TXT }}>
+            <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: "-.2px", color: VERCOMO_TXT }}>
               Ver la app como vendedora
             </div>
           </div>
-          <span style={{ fontSize: 20, fontWeight: 800, opacity: 0.45, color: LILA_TXT }}>›</span>
+          <span style={{ fontSize: 20, fontWeight: 800, opacity: 0.45, color: VERCOMO_TXT }}>›</span>
         </div>
       </button>
 

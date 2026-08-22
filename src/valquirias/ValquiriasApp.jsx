@@ -173,8 +173,13 @@ function BannerVerComo({ vendedora, onSalir }) {
       >
         ‹ Volver al panel
       </button>
+      {/* Sin "Viendo como" (Luis, 22-ago-2026). Con esas dos palabras el banner
+          medía 320px contra 347 disponibles: cabía en el papel y en su teléfono
+          no, porque el ancho real es 375 y no 385. Quedaba al filo, y algo que
+          depende de cuántas letras tenga el nombre no está resuelto. El escudo
+          se queda: es lo que dice de un vistazo que esto no es su propia vista. */}
       <span style={{ whiteSpace: "nowrap" }}>
-        🛡️ Viendo como {primerNombre(vendedora?.nombre)} · {vendedora?.ciudad || "—"}
+        🛡️ {primerNombre(vendedora?.nombre)} · {vendedora?.ciudad || "—"}
       </span>
     </div>
   );
