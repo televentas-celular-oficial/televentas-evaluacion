@@ -22,7 +22,8 @@ import {
   ROL_LARGO,
   ROL_CORTO,
   pctTexto,
-  TRAMOS_2026,
+  tramosDe,
+  tramosHeredados,
   pisoAplica,
 } from "../lib/helpers.js";
 import { useDatos } from "../data/DatosContext.jsx";
@@ -41,15 +42,19 @@ const plural = (n, sing, plu) => `${n} ${n === 1 ? sing : plu}`;
 // quién todavía no cruza el piso y por tanto va en $0.
 //
 // Sin un solo texto: las marcas son rayas. Los números ya están en la fila.
-const ESCALA = TRAMOS_2026[2].min;        // $39.309.158 — arranque del tramo 3
-const MARCA_T2 = TRAMOS_2026[1].min;      // $19.278.643 — arranque del tramo 2
-
+//
+// La escala y las marcas se leen DENTRO del componente, no como constantes de
+// módulo: una constante de módulo se evalúa al importar y sería ciega al año,
+// así que un mes de un año con otros cortes se dibujaría con la regla de hoy.
 function BarraTramos({ ventas, ciudad, año, mes, gana }) {
-  const pct = Math.max(0, Math.min(100, (ventas / ESCALA) * 100));
+  const tabla = tramosDe(año);
+  const escala = tabla.at(-1).min;                 // arranque del último tramo
+  const pct = Math.max(0, Math.min(100, (ventas / escala) * 100));
   const marcas = [];
   // El piso sólo se dibuja donde y cuando de verdad rige.
-  if (pisoAplica(ciudad, año, mes)) marcas.push((PISO_MED / ESCALA) * 100);
-  marcas.push((MARCA_T2 / ESCALA) * 100);
+  if (pisoAplica(ciudad, año, mes)) marcas.push((PISO_MED / escala) * 100);
+  // Una raya por cada salto de tramo (el primero arranca en $0, no se dibuja).
+  for (const t of tabla.slice(1, -1)) marcas.push((t.min / escala) * 100);
 
   return (
     <div style={{ position: "relative", height: 7, marginTop: 7 }}>
@@ -211,6 +216,18 @@ export default function NominaComisiones({ onVolver }) {
           decía sigue siendo cierto y sigue estando VISIBLE en la fila misma —
           el badge del rol de ese mes, el desglose de la pro-rata y el sello
           "Ya no trabaja aquí". No se perdió información, se perdió el párrafo. */}
+
+      {/* Los tramos cambian cada 1 de enero. Si el año del mes que se está
+          liquidando todavía no tiene tabla cargada, la app hereda la del último
+          año que sí la tiene — a propósito, porque liquidar en $0 se leería como
+          "no vendió". Pero heredar en silencio sería pagar con una regla que
+          nadie autorizó, así que se dice, y se dice arriba de las cifras. */}
+      {tramosHeredados(selMes.año) && (
+        <div style={{ padding: "12px 14px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid var(--adm-alerta-borde)", borderRadius: 10, fontSize: 11.5, color: "var(--adm-alerta)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
+          ⚠️ Todavía no están cargados los <strong>tramos de comisión de {selMes.año}</strong>.
+          Estas cifras están calculadas con los cortes del año anterior. Cárgalos antes de pagar.
+        </div>
+      )}
 
       {filasSinCiudad.length > 0 && (
         <div style={{ padding: "12px 14px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid var(--adm-alerta-borde)", borderRadius: 10, fontSize: 11.5, color: "var(--adm-alerta)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>

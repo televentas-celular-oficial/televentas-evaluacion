@@ -51,7 +51,7 @@ import {
   tramoActual,
   siguienteTramo,
   tramoParaVentas,
-  TRAMOS_2026,
+  tramosDe,
   PISO_MED,
   pisoAplica,
   resolverExtraSemanal,
@@ -474,9 +474,12 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
   // --- Tramo actual y siguiente (sobre el TOTAL vendido, no sobre el excedente)
   // El tramo depende sólo de ventas y rol, no de la ciudad: se puede mostrar
   // aunque falte la ciudad. Lo que NO se puede es traducirlo a pesos.
-  const tramo = tramoActual(ventasMes, rol);
-  const tramoTabla = tramoParaVentas(ventasMes);
-  const sig = siguienteTramo(ventasMes, rol);
+  // El `año` va en las tres: de aquí salen la etiqueta del tramo, el "% sobre
+  // todo lo vendido" y el "te faltan $X" — tres afirmaciones sobre plata que no
+  // pueden contradecir a la comisión que se calcula abajo con la tabla de ESE año.
+  const tramo = tramoActual(ventasMes, rol, año);
+  const tramoTabla = tramoParaVentas(ventasMes, año);
+  const sig = siguienteTramo(ventasMes, rol, año);
   const faltaSig = sig ? Math.max(0, sig.minVentas - ventasMes) : 0;
 
   // --- Comisión del mes (calcComisionMensual ya aplica el piso de Medellín y,
@@ -535,7 +538,8 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
   // arreglo del rol; ahora los dos leen la misma función.
   const aplicaPiso = pisoAplica(ciudad, año, mes);
   const superoPiso = !aplicaPiso || ventasMes >= PISO_MED;
-  const pctPrimerTramo = rol === "admin" ? TRAMOS_2026[0].pctAdmin : TRAMOS_2026[0].pctAsesora;
+  const primerTramo = tramosDe(año)[0];
+  const pctPrimerTramo = rol === "admin" ? primerTramo.pctAdmin : primerTramo.pctAsesora;
   const piso = ciudadDesconocida ? null : {
     aplica: aplicaPiso,
     monto: aplicaPiso ? PISO_MED : 0,
@@ -549,9 +553,9 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
   };
 
   // --- A cuánto saltaría la comisión si llega al siguiente tramo
-  // OJO: `siguienteTramo`/`tramoActual` leen de la tabla TRAMOS[rol], que YA
-  // trae el pct del rol en `.pct`. NO existen `.pctAdmin`/`.pctAsesora` ahí
-  // (eso es de TRAMOS_2026) — leerlos daba NaN.
+  // OJO: `siguienteTramo`/`tramoActual` devuelven la tabla ya vista desde el rol
+  // (`tramosDeRol`), que trae el pct en `.pct`. NO existen `.pctAdmin`/
+  // `.pctAsesora` ahí — eso es de la tabla cruda — y leerlos daba NaN.
   const pctSig = sig ? sig.pct : null;
   const siguienteTramoInfo = sig
     ? {

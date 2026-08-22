@@ -91,13 +91,77 @@ export const CONFETTI_PIECES = Array.from({ length: 18 }, (_, i) => {
   };
 });
 
-// Tramos de comisión 2026 (rangos EXACTOS según Luis)
-// Aplica desde $0 en BOG. En MED aplica solo si ventasMes >= PISO_MED ($15M).
-export const TRAMOS_2026 = [
-  { min: 0,          max: 19_278_642, pctAsesora: 0.01, pctAdmin: 0.02, label: "Tramo 1" },
-  { min: 19_278_643, max: 39_309_157, pctAsesora: 0.02, pctAdmin: 0.04, label: "Tramo 2" },
-  { min: 39_309_158, max: Infinity,   pctAsesora: 0.03, pctAdmin: 0.06, label: "Tramo 3" },
+// ---------------------------------------------------------------------------
+// TRAMOS DE COMISIÓN — CAMBIAN CADA AÑO
+// ---------------------------------------------------------------------------
+// ⛔ PARA CARGAR UN AÑO NUEVO SE AGREGA UNA CLAVE A `CORTES_POR_AÑO`.
+//    UNA CLAVE YA CARGADA NO SE EDITA NUNCA.
+//
+// Editar los cortes de un año ya vivido es el único gesto que reescribe de
+// golpe TODOS los meses cerrados de ese año, porque hoy nada guarda la comisión
+// pagada: la nómina la recalcula cada vez que se abre. Si Luis se equivocó al
+// cargar un año, se corrige el año en curso; un año que ya se pagó, jamás.
+//
+// Los rangos son EXACTOS según Luis. Aplican desde $0 en BOG; en MED solo si
+// ventasMes >= PISO_MED ($15M) — ver PISO_MED_DESDE abajo.
+
+// Los PORCENTAJES no se mueven (Luis, 22-ago-2026): lo único que cambia de un
+// año a otro son los dos cortes en pesos, y siempre son tres tramos.
+const PCT_TRAMOS = [
+  { pctAsesora: 0.01, pctAdmin: 0.02, label: "Tramo 1" },
+  { pctAsesora: 0.02, pctAdmin: 0.04, label: "Tramo 2" },
+  { pctAsesora: 0.03, pctAdmin: 0.06, label: "Tramo 3" },
 ];
+
+// año → [dónde termina el tramo 1, dónde termina el tramo 2]. La tabla nueva
+// rige desde el 1 de enero de su año (Luis, 22-ago-2026), por eso la llave es
+// el año pelado y no {año, mes} como el piso de MED.
+const CORTES_POR_AÑO = {
+  2026: [19_278_642, 39_309_157],
+};
+
+// Se arman una sola vez al cargar el módulo.
+//
+// `max: null` y NO `Infinity` a propósito: los snapshots se guardan con
+// JSON.stringify, y JSON convierte Infinity en null. Si algún día se congela la
+// tabla dentro de un snapshot, un `Infinity` volvería como null y la
+// comparación `ventas <= null` sería false: la que MÁS vendió caería al Tramo 1
+// y cobraría el 1%. Guardar null desde el principio y comparar explícitamente
+// cierra esa puerta antes de que exista.
+const TABLAS_TRAMOS = {};
+for (const [año, cortes] of Object.entries(CORTES_POR_AÑO)) {
+  TABLAS_TRAMOS[año] = PCT_TRAMOS.map((p, i) => ({
+    ...p,
+    min: i === 0 ? 0 : cortes[i - 1] + 1,
+    max: i < cortes.length ? cortes[i] : null,
+  }));
+}
+
+const AÑOS_TRAMOS = Object.keys(TABLAS_TRAMOS).map(Number).sort((a, b) => a - b);
+
+const dentroDelTramo = (ventas, t) => ventas >= t.min && (t.max === null || ventas <= t.max);
+
+// La tabla que regía en ESE año. Nunca devuelve undefined ni [].
+//
+// - Año posterior al último cargado → hereda el último (enero de 2027 sin
+//   cargar liquida con la tabla de 2026). Se hace así porque la alternativa
+//   —liquidar en $0— se lee en pantalla como "no vendió", que es peor que una
+//   cifra vieja. `tramosHeredados()` existe para poder avisarlo.
+// - Año anterior a todo lo cargado → la más vieja que haya.
+// - Sin año → la vigente. Es lo correcto para el mes en curso.
+export function tramosDe(año = null) {
+  const a = Number(año);
+  if (!Number.isFinite(a) || a <= 0) return TABLAS_TRAMOS[AÑOS_TRAMOS.at(-1)];
+  let elegido = AÑOS_TRAMOS[0];
+  for (const y of AÑOS_TRAMOS) if (y <= a) elegido = y;
+  return TABLAS_TRAMOS[elegido];
+}
+
+// ¿Este año está liquidando con una tabla prestada de un año anterior?
+export function tramosHeredados(año) {
+  const a = Number(año);
+  return Number.isFinite(a) && a > AÑOS_TRAMOS.at(-1);
+}
 
 export const PISO_MED = 15_000_000;
 
@@ -211,9 +275,11 @@ export function claveMesDeFecha(iso) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s.slice(0, 4)}_${s.slice(5, 7)}` : null;
 }
 
-// Devuelve el tramo aplicable según ventas totales del mes
-export function tramoParaVentas(ventasMes) {
-  return TRAMOS_2026.find(t => ventasMes >= t.min && ventasMes <= t.max) || TRAMOS_2026[0];
+// Devuelve el tramo aplicable según ventas totales del mes, con la tabla que
+// regía en ESE año. Sin año = la tabla vigente (correcto para el mes en curso).
+export function tramoParaVentas(ventasMes, año = null) {
+  const tabla = tramosDe(año);
+  return tabla.find(t => dentroDelTramo(ventasMes, t)) || tabla[0];
 }
 
 // Calcula la comisión mensual de UNA vendedora para un mes específico
@@ -240,7 +306,9 @@ export function calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol = n
     };
   }
 
-  const tramo = tramoParaVentas(ventasMes);
+  // El `año` es tan obligatorio aquí como dos líneas arriba en `pisoAplica`:
+  // sin él, un mes de 2026 abierto en 2027 se repagaría con los cortes de 2027.
+  const tramo = tramoParaVentas(ventasMes, año);
 
   // Sin cambio de rol → cálculo directo
   if (!datosCambioRol) {
@@ -291,32 +359,30 @@ export function calcComisionMensual({ ciudad, rol, ventasMes, datosCambioRol = n
   };
 }
 
-// Compat con código anterior
-export const TRAMOS = {
-  asesora: TRAMOS_2026.map(t => ({ nombre: t.label, pct: t.pctAsesora, minVentas: t.min })),
-  admin:   TRAMOS_2026.map(t => ({ nombre: t.label, pct: t.pctAdmin,   minVentas: t.min })),
-};
+// La tabla vista desde UN rol: {nombre, pct, minVentas}. Antes era una
+// constante de módulo (`TRAMOS`), que por definición no podía depender del año.
+export function tramosDeRol(rol, año = null) {
+  const admin = rol === "admin";
+  return tramosDe(año).map(t => ({
+    nombre: t.label,
+    pct: admin ? t.pctAdmin : t.pctAsesora,
+    minVentas: t.min,
+  }));
+}
 
-export function tramoActual(ventasMes, rol) {
-  const tabla = TRAMOS[rol === "admin" ? "admin" : "asesora"];
+export function tramoActual(ventasMes, rol, año = null) {
   let ganado = null;
-  for (const t of tabla) {
+  for (const t of tramosDeRol(rol, año)) {
     if (ventasMes >= t.minVentas) ganado = t;
   }
   return ganado;
 }
 
-export function siguienteTramo(ventasMes, rol) {
-  const tabla = TRAMOS[rol === "admin" ? "admin" : "asesora"];
-  for (const t of tabla) {
+export function siguienteTramo(ventasMes, rol, año = null) {
+  for (const t of tramosDeRol(rol, año)) {
     if (ventasMes < t.minVentas) return t;
   }
   return null;
-}
-
-export function premioTramo(ventasMes, tramo) {
-  if (!tramo) return 0;
-  return Math.round(ventasMes * tramo.pct);
 }
 
 // ============================================================================

@@ -29,7 +29,7 @@
 
 import { useDatos } from "../data/DatosContext.jsx";
 import { derivarMesDeVendedora, derivarRankingMesCiudad } from "../data/derivar.js";
-import { formatoPesos, primerNombre, hoyColombia, PISO_MED, TRAMOS_2026 } from "../lib/helpers.js";
+import { formatoPesos, primerNombre, hoyColombia, PISO_MED, tramosDe } from "../lib/helpers.js";
 
 // Paleta Valkyrias — sólo colores.
 // Los papeles de color viven en valquirias.css (:root). Aquí sólo se nombran.
@@ -396,16 +396,17 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
   // --------------------------------------------------------------------------
   // LA BARRA CON TRAMOS — la escala
   // --------------------------------------------------------------------------
-  // Escala FIJA de $0 hasta donde arranca el tramo 3 (TRAMOS_2026[2].min). Es la
+  // Escala FIJA de $0 hasta donde arranca el último tramo. Es la
   // única que deja las tres puertas dentro del mismo riel y no se mueve de un
   // mes a otro: la barra significa siempre lo mismo. Con la escala pegada al
   // tramo siguiente (0 → tramo 2) la barra se re-escalaría al cruzar cada tramo
   // y el avance daría un salto hacia atrás; con una escala pegada a sus ventas,
   // el piso viajaría de sitio cada día.
-  // Números leídos de TRAMOS_2026 y de PISO_MED — aquí no se calcula ninguno.
-  // Si algún día vende por encima del tramo 3, la escala se estira hasta su
-  // cifra para que el relleno no mienta quedándose clavado en el 100%.
-  const topeTramos = TRAMOS_2026[2].min;
+  // Números leídos de la tabla de tramos del año y de PISO_MED — aquí no se
+  // calcula ninguno. Si algún día vende por encima del último tramo, la escala
+  // se estira hasta su cifra para que el relleno no mienta clavado en el 100%.
+  const tablaTramos = tramosDe(año);
+  const topeTramos = tablaTramos.at(-1).min;
   const escala = hayVentas ? Math.max(topeTramos, ventas) : topeTramos;
   const pctDe = (v) => Math.max(0, Math.min(100, (v / escala) * 100));
 
@@ -420,8 +421,10 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
   if (piso.aplica && piso.monto > 0) {
     marcasTramos.push({ clave: "piso", pct: pctDe(piso.monto) });
   }
-  marcasTramos.push({ clave: "t2", pct: pctDe(TRAMOS_2026[1].min) });
-  marcasTramos.push({ clave: "t3", pct: pctDe(TRAMOS_2026[2].min) });
+  // Una raya por cada tramo salvo el primero, que arranca en $0.
+  tablaTramos.slice(1).forEach((t, i) => {
+    marcasTramos.push({ clave: `t${i + 2}`, pct: pctDe(t.min) });
+  });
 
   // La única línea bajo la barra. Todas las cifras vienen del motor.
   const lineaFalta = !hayVentas
