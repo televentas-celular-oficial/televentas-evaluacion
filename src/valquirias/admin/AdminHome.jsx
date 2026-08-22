@@ -531,7 +531,11 @@ export default function AdminHome({ user = null, onVerComo }) {
 
       {/* Los seis tiles */}
       {GRUPOS.map(g => (
-        <div key={g.titulo}>
+        // El rótulo va DENTRO del mismo bloque de 640px que sus botones. Antes
+        // el rótulo se pegaba al borde izquierdo del panel (1180px) mientras
+        // los botones iban centrados: el nombre del grupo quedaba lejísimos de
+        // lo que nombraba.
+        <div key={g.titulo} style={{ maxWidth: 640, marginLeft: "auto", marginRight: "auto" }}>
           <div style={S.rotulo}>{g.titulo}</div>
           <div style={S.tiles}>
             {g.tiles.map((t, i) => {

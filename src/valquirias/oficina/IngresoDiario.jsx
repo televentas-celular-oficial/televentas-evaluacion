@@ -278,18 +278,18 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
         <div className="v-brand">Indicadores TLV</div>
         <button
           onClick={() => signOut(auth)}
-          style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", background: "transparent", border: "1px solid #e2e8f0", padding: "6px 10px", borderRadius: 8, cursor: "pointer" }}
+          style={{ fontSize: 11, fontWeight: 700, color: "var(--vk-tenue)", background: "transparent", border: "1px solid var(--vk-borde)", padding: "6px 10px", borderRadius: 8, cursor: "pointer" }}
         >Salir</button>
       </div>
 
       <div className="v-greeting">
         Hola <strong>operador</strong> <span className="v-role-mini oficina">Oficina</span>
-        <div style={{ marginTop: 4, fontSize: 12, color: "#0891b2", fontWeight: 900 }}>📝 Ingreso diario de indicadores</div>
+        <div style={{ marginTop: 4, fontSize: 12, color: "var(--vk-secundario)", fontWeight: 900 }}>📝 Ingreso diario de indicadores</div>
       </div>
 
       {/* Aviso de mes cerrado — solo lectura (App.jsx:1082-1086) */}
       {mesCerrado && (
-        <div style={{ background: "#fee2e2", border: "2px solid #fca5a5", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12.5, fontWeight: 800, color: "#991b1b" }}>
+        <div style={{ background: "var(--adm-alerta-fondo)", border: "2px solid var(--adm-alerta-borde)", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12.5, fontWeight: 800, color: "var(--adm-alerta)" }}>
           🔒 Este mes ya está CERRADO. Estás viendo el día en modo solo lectura: no se puede cambiar ni guardar nada. Para corregirlo hay que reabrir el mes desde Admin.
         </div>
       )}
@@ -306,7 +306,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
           (DatosContext.jsx:211-217), así que esta pantalla puede llegar aquí sin
           una sola vendedora y con todo lo demás aparentemente normal. */}
       {datos.cargado && activas.length === 0 && (
-        <div style={{ background: "#fffbeb", border: "2px solid #f59e0b", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12.5, fontWeight: 800, color: "#92400e", lineHeight: 1.55 }}>
+        <div style={{ background: "var(--vk-noche)", border: "2px solid var(--est-atencion-borde)", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12.5, fontWeight: 800, color: "var(--vk-noche-apoyo)", lineHeight: 1.55 }}>
           ⚠️ No llegó ninguna vendedora. No se puede guardar el día así: no habría a quién registrarle nada.
           El equipo se sincroniza desde systemlap — recarga la página y espera a ver los nombres.
           Si sigue vacío, avísale a Luis.
@@ -314,18 +314,18 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
       )}
 
       {/* Selector de fecha */}
-      <div className="v-card" style={{ background: "linear-gradient(135deg, #ecfeff, #f0f9ff)", borderLeft: "4px solid #06b6d4", border: "1px solid rgba(6, 182, 212, 0.2)" }}>
-        <label style={{ fontSize: 11, fontWeight: 900, color: "#0e7490", textTransform: "uppercase", letterSpacing: 1.2, display: "block", marginBottom: 6 }}>📆 Fecha del día a llenar</label>
+      <div className="v-card" style={{ background: "var(--vk-fondo)", borderLeft: "4px solid var(--vk-secundario)", border: "1px solid rgba(6, 182, 212, 0.2)" }}>
+        <label style={{ fontSize: 11, fontWeight: 900, color: "var(--vk-secundario)", textTransform: "uppercase", letterSpacing: 1.2, display: "block", marginBottom: 6 }}>📆 Fecha del día a llenar</label>
         <input
           type="date"
           value={fecha}
           max={hoy.iso}
           onChange={e => setFecha(e.target.value)}
-          style={{ width: "100%", padding: "10px 12px", border: "1.5px solid #06b6d4", borderRadius: 10, fontSize: 15, fontFamily: "inherit", fontWeight: 700, color: "#164e63", background: "#fff" }}
+          style={{ width: "100%", padding: "10px 12px", border: "1.5px solid var(--vk-secundario)", borderRadius: 10, fontSize: 15, fontFamily: "inherit", fontWeight: 700, color: "var(--vk-secundario)", background: "var(--vk-tarjeta)" }}
         />
         {/* `!errorGuardado`: nunca un ✅ verde al lado del aviso de que NO se guardó */}
         {guardado && !errorGuardado && (
-          <div style={{ marginTop: 10, padding: "8px 12px", background: "#ecfdf5", color: "#047857", borderRadius: 8, fontSize: 13, fontWeight: 800, textAlign: "center" }}>
+          <div style={{ marginTop: 10, padding: "8px 12px", background: "var(--vk-bien-fondo)", color: "var(--vk-bien)", borderRadius: 8, fontSize: 13, fontWeight: 800, textAlign: "center" }}>
             {recienGuardado
               ? `✅ Día ${fecha} guardado`
               : esAdminSesion
@@ -336,22 +336,22 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
       </div>
 
       {/* Progreso */}
-      <div style={{ background: "linear-gradient(135deg, #f3e8ff, #fdf4ff)", borderLeft: "4px solid #a855f7", padding: "10px 12px", borderRadius: 12, marginBottom: 10, border: "1px solid rgba(168, 85, 247, 0.2)" }}>
-        <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 900, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 4 }}>Progreso del día</div>
-        <div style={{ fontSize: 18, fontWeight: 900, color: "#4c1d95" }}>
-          {progresoLlenado} <span style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>de {trabajan.length} llenadas</span>
+      <div style={{ background: "var(--vk-noche)", borderLeft: "4px solid var(--vk-tenue)", padding: "10px 12px", borderRadius: 12, marginBottom: 10, border: "1px solid rgba(168, 85, 247, 0.2)" }}>
+        <div style={{ fontSize: 11, color: "var(--vk-secundario)", fontWeight: 900, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 4 }}>Progreso del día</div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: "var(--vk-secundario)" }}>
+          {progresoLlenado} <span style={{ fontSize: 13, color: "var(--vk-secundario)", fontWeight: 700 }}>de {trabajan.length} llenadas</span>
         </div>
         <div style={{ background: "rgba(168, 85, 247, 0.15)", height: 6, borderRadius: 3, marginTop: 6, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${(progresoLlenado / Math.max(1, trabajan.length)) * 100}%`, background: "linear-gradient(90deg, #a855f7, #7c3aed)", borderRadius: 3, transition: "width 0.3s" }} />
+          <div style={{ height: "100%", width: `${(progresoLlenado / Math.max(1, trabajan.length)) * 100}%`, background: "var(--vk-bien)", borderRadius: 3, transition: "width 0.3s" }} />
         </div>
-        <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginTop: 6 }}>
+        <div style={{ fontSize: 11, color: "var(--vk-secundario)", fontWeight: 700, marginTop: 6 }}>
           ✅ {trabajan.length} trabajan · 😴 {activas.length - trabajan.length} descansan
         </div>
       </div>
 
       {/* Bloque 1: ¿Quién descansó? */}
       <div className="v-card">
-        <div className="v-card-title" style={{ color: "#ea580c" }}>1️⃣ ¿Quién descansó hoy?</div>
+        <div className="v-card-title" style={{ color: "var(--est-medio)" }}>1️⃣ ¿Quién descansó hoy?</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {activas.map(v => {
             const desc = filas[v.id]?.descanso;
@@ -364,13 +364,13 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
                 style={{
                   padding: "6px 12px",
                   borderRadius: 20,
-                  border: "2px solid " + (desc ? "#fca5a5" : esBog ? "rgba(245, 158, 11, 0.4)" : "rgba(16, 185, 129, 0.4)"),
+                  border: "2px solid " + (desc ? "var(--adm-alerta-borde)" : esBog ? "rgba(245, 158, 11, 0.4)" : "rgba(16, 185, 129, 0.4)"),
                   cursor: soloLectura ? "default" : "pointer",
                   opacity: soloLectura ? 0.6 : 1,
                   fontSize: 12,
                   fontWeight: 800,
-                  background: desc ? "#fee2e2" : "#fff",
-                  color: desc ? "#dc2626" : esBog ? "#b45309" : "#047857",
+                  background: desc ? "var(--adm-alerta-fondo)" : "var(--vk-tarjeta)",
+                  color: desc ? "var(--adm-alerta)" : esBog ? "var(--vk-metal-borde)" : "var(--vk-bien)",
                   textDecoration: desc ? "line-through" : "none",
                 }}
               >
@@ -382,16 +382,16 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
       </div>
 
       {/* Bloque 2: Novedades por vendedora */}
-      <div style={{ fontSize: 12, fontWeight: 900, color: "#ea580c", textTransform: "uppercase", letterSpacing: 1.5, margin: "16px 4px 8px" }}>
+      <div style={{ fontSize: 12, fontWeight: 900, color: "var(--est-medio)", textTransform: "uppercase", letterSpacing: 1.5, margin: "16px 4px 8px" }}>
         2️⃣ Novedades del día
-        <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginTop: 2, textTransform: "none", letterSpacing: 0 }}>
+        <div style={{ fontSize: 10, color: "var(--vk-secundario)", fontWeight: 700, marginTop: 2, textTransform: "none", letterSpacing: 0 }}>
           Todo empieza en "bien" · marca solo lo que NO fue perfecto
         </div>
       </div>
 
       {/* Sección MED */}
       {activasMed.filter(v => !filas[v.id]?.descanso).length > 0 && (
-        <div style={{ fontSize: 11, fontWeight: 900, color: "#047857", padding: "6px 10px", background: "linear-gradient(90deg, #ecfdf5, transparent)", borderRadius: 6, marginBottom: 6 }}>
+        <div style={{ fontSize: 11, fontWeight: 900, color: "var(--vk-bien)", padding: "6px 10px", background: "var(--vk-fondo)", borderRadius: 6, marginBottom: 6 }}>
           🟢 Team Valkyrias Medellín
         </div>
       )}
@@ -411,7 +411,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
 
       {/* Sección BOG */}
       {activasBog.filter(v => !filas[v.id]?.descanso).length > 0 && (
-        <div style={{ fontSize: 11, fontWeight: 900, color: "#b45309", padding: "6px 10px", background: "linear-gradient(90deg, #fef3c7, transparent)", borderRadius: 6, marginBottom: 6, marginTop: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 900, color: "var(--vk-metal-borde)", padding: "6px 10px", background: "var(--vk-fondo)", borderRadius: 6, marginBottom: 6, marginTop: 10 }}>
           🟡 Team Valkyrias Bogotá
         </div>
       )}
@@ -431,7 +431,7 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
 
       {/* Error de faltantes */}
       {erroresFalt.length > 0 && (
-        <div style={{ background: "#fee2e2", border: "2px solid #fca5a5", borderRadius: 10, padding: "10px 14px", marginTop: 8, fontSize: 12, fontWeight: 800, color: "#991b1b" }}>
+        <div style={{ background: "var(--adm-alerta-fondo)", border: "2px solid var(--adm-alerta-borde)", borderRadius: 10, padding: "10px 14px", marginTop: 8, fontSize: 12, fontWeight: 800, color: "var(--adm-alerta)" }}>
           ⚠️ Faltan {erroresFalt.length} vendedora{erroresFalt.length !== 1 ? "s" : ""} con actitud Regular/Mal sin describir qué pasó.
         </div>
       )}
@@ -446,10 +446,10 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
         const esBloqueo = tipoFallo === "bloqueo";
         return (
           <div style={{
-            background: esBloqueo ? "#eff6ff" : esTimeout ? "#fffbeb" : "#fee2e2",
-            border: `2px solid ${esBloqueo ? "#93c5fd" : esTimeout ? "#f59e0b" : "#dc2626"}`,
+            background: esBloqueo ? "var(--vk-fondo)" : esTimeout ? "var(--vk-noche)" : "var(--adm-alerta-fondo)",
+            border: `2px solid ${esBloqueo ? "var(--vk-borde)" : esTimeout ? "var(--est-atencion-borde)" : "var(--adm-alerta)"}`,
             borderRadius: 12, padding: "12px 14px", marginTop: 10,
-            color: esBloqueo ? "#1e40af" : esTimeout ? "#92400e" : "#991b1b",
+            color: esBloqueo ? "var(--vk-secundario)" : esTimeout ? "var(--vk-noche-apoyo)" : "var(--adm-alerta)",
           }}>
             <div style={{ fontSize: 13.5, fontWeight: 900, marginBottom: 4 }}>
               {esBloqueo ? "🔒 Día cerrado"
@@ -483,10 +483,10 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
             disabled={inhabilitado}
             style={{
               width: "100%",
-              background: apagado ? "#e2e8f0"
-                : guardando ? "#94a3b8"
-                : "linear-gradient(135deg, #10b981, #059669)",
-              color: apagado ? "#94a3b8" : "#fff",
+              background: apagado ? "var(--vk-borde)"
+                : guardando ? "var(--vk-tenue)"
+                : "var(--vk-bien)",
+              color: apagado ? "var(--vk-tenue)" : "var(--vk-tarjeta)",
               border: "none",
               padding: "14px",
               borderRadius: 14,
@@ -528,9 +528,9 @@ function FilaVendedora({ v, f, onCambio, enError, bloqueado = false, fecha, año
   const nd = notaDia(f, año, mes);
 
   return (
-    <div className="v-card" style={{ borderLeft: `4px solid ${hayNov ? "#ea580c" : (esBog ? "#f59e0b" : "#10b981")}`, marginBottom: 8, opacity: bloqueado ? 0.75 : 1 }}>
+    <div className="v-card" style={{ borderLeft: `4px solid ${hayNov ? "var(--est-medio)" : (esBog ? "var(--est-atencion-borde)" : "var(--vk-bien-texto)")}`, marginBottom: 8, opacity: bloqueado ? 0.75 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
-        <div style={{ fontWeight: 900, fontSize: 14, color: "#1e1b4b" }}>
+        <div style={{ fontWeight: 900, fontSize: 14, color: "var(--vk-titulo)" }}>
           {v.nombre}
         </div>
         {nd !== null && nd !== undefined && <NotaBadge nota={nd} />}
@@ -555,7 +555,7 @@ function FilaVendedora({ v, f, onCambio, enError, bloqueado = false, fecha, año
       </div>
 
       {/* TIENDA - 3 checkboxes */}
-      <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 5 }}>🏪 Tienda</div>
+      <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-secundario)", marginBottom: 5 }}>🏪 Tienda</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
         {[["tienda_orden", "Orden"], ["tienda_uniforme", "Uniforme"], ["tienda_deposito", "Depósito"]].map(([campo, etiq]) => {
           const ok = f[campo] === "bien" || f[campo] === undefined;
@@ -567,9 +567,9 @@ function FilaVendedora({ v, f, onCambio, enError, bloqueado = false, fecha, año
               style={{
                 padding: "8px 4px",
                 borderRadius: 8,
-                border: "2px solid " + (ok ? "#86efac" : "#fca5a5"),
-                background: ok ? "#f0fdf4" : "#fee2e2",
-                color: ok ? "#059669" : "#dc2626",
+                border: "2px solid " + (ok ? "var(--vk-bien-texto)" : "var(--adm-alerta-borde)"),
+                background: ok ? "var(--vk-bien-fondo)" : "var(--adm-alerta-fondo)",
+                color: ok ? "var(--vk-bien-texto)" : "var(--adm-alerta)",
                 fontSize: 11,
                 fontWeight: 800,
                 cursor: bloqueado ? "default" : "pointer",
@@ -584,7 +584,7 @@ function FilaVendedora({ v, f, onCambio, enError, bloqueado = false, fecha, año
       {/* PLANILLA */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 5 }}>📋 Planilla</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-secundario)", marginBottom: 5 }}>📋 Planilla</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
             {[["bien", "✅ Bien"], ["mal", "❌ Mal"]].map(([val, lab]) => {
               const sel = (f.planilla || "bien") === val;
@@ -597,9 +597,9 @@ function FilaVendedora({ v, f, onCambio, enError, bloqueado = false, fecha, año
                   style={{
                     padding: "8px 4px",
                     borderRadius: 8,
-                    border: "2px solid " + (sel ? (ok ? "#86efac" : "#fca5a5") : "#e2e8f0"),
-                    background: sel ? (ok ? "#f0fdf4" : "#fee2e2") : "#fff",
-                    color: sel ? (ok ? "#059669" : "#dc2626") : "#94a3b8",
+                    border: "2px solid " + (sel ? (ok ? "var(--vk-bien-texto)" : "var(--adm-alerta-borde)") : "var(--vk-borde)"),
+                    background: sel ? (ok ? "var(--vk-bien-fondo)" : "var(--adm-alerta-fondo)") : "var(--vk-tarjeta)",
+                    color: sel ? (ok ? "var(--vk-bien-texto)" : "var(--adm-alerta)") : "var(--vk-tenue)",
                     fontSize: 11,
                     fontWeight: 800,
                     cursor: bloqueado ? "default" : "pointer",
@@ -612,12 +612,12 @@ function FilaVendedora({ v, f, onCambio, enError, bloqueado = false, fecha, año
       </div>
 
       {/* ACTITUD */}
-      <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 5 }}>💪 Actitud</div>
+      <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-secundario)", marginBottom: 5 }}>💪 Actitud</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
         {[
-          ["bien", "✅ Bien", "#86efac", "#f0fdf4", "#059669"],
-          ["regular", "⚠️ Regular", "#fcd34d", "#fffbeb", "#d97706"],
-          ["mal", "❌ Mal", "#fca5a5", "#fee2e2", "#dc2626"],
+          ["bien", "✅ Bien", "var(--vk-bien-texto)", "var(--vk-bien-fondo)", "var(--vk-bien-texto)"],
+          ["regular", "⚠️ Regular", "var(--vk-metal)", "var(--vk-noche)", "var(--est-atencion)"],
+          ["mal", "❌ Mal", "var(--adm-alerta-borde)", "var(--adm-alerta-fondo)", "var(--adm-alerta)"],
         ].map(([val, lab, b, bg, c]) => {
           const sel = (f.actitud || "bien") === val;
           return (
@@ -628,9 +628,9 @@ function FilaVendedora({ v, f, onCambio, enError, bloqueado = false, fecha, año
               style={{
                 padding: "8px 4px",
                 borderRadius: 8,
-                border: `2px solid ${sel ? b : "#e2e8f0"}`,
-                background: sel ? bg : "#fff",
-                color: sel ? c : "#94a3b8",
+                border: `2px solid ${sel ? b : "var(--vk-borde)"}`,
+                background: sel ? bg : "var(--vk-tarjeta)",
+                color: sel ? c : "var(--vk-tenue)",
                 fontSize: 11,
                 fontWeight: 800,
                 cursor: bloqueado ? "default" : "pointer",
@@ -658,13 +658,13 @@ function FilaVendedora({ v, f, onCambio, enError, bloqueado = false, fecha, año
               padding: "10px 12px",
               fontSize: 12,
               fontFamily: "inherit",
-              border: enError ? "2px solid #dc2626" : "1.5px solid #fbbf24",
-              background: enError ? "#fee2e2" : "#fffbeb",
+              border: enError ? "2px solid var(--adm-alerta)" : "1.5px solid var(--vk-metal)",
+              background: enError ? "var(--adm-alerta-fondo)" : "var(--vk-noche)",
               borderRadius: 10,
             }}
           />
           {enError && (
-            <div style={{ fontSize: 11, color: "#dc2626", marginTop: 4, fontWeight: 700 }}>
+            <div style={{ fontSize: 11, color: "var(--adm-alerta)", marginTop: 4, fontWeight: 700 }}>
               ⚠️ Escribe qué pasó para poder guardar
             </div>
           )}
@@ -678,20 +678,20 @@ function ContadorNumerico({ label, valor, onCambio, max = 100, bloqueado = false
   const v = Number(valor) || 0;
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-secundario)", marginBottom: 5 }}>{label}</div>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <button
           disabled={bloqueado || v <= 0}
           onClick={() => onCambio(Math.max(0, v - 1))}
-          style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid #e2e8f0", background: "#f1f5f9", fontSize: 18, fontWeight: 900, cursor: bloqueado ? "default" : "pointer", flexShrink: 0, color: "#475569", opacity: (bloqueado || v <= 0) ? 0.4 : 1 }}
+          style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid var(--vk-borde)", background: "var(--vk-fondo-hueco)", fontSize: 18, fontWeight: 900, cursor: bloqueado ? "default" : "pointer", flexShrink: 0, color: "var(--vk-secundario)", opacity: (bloqueado || v <= 0) ? 0.4 : 1 }}
         >−</button>
-        <div style={{ flex: 1, textAlign: "center", fontWeight: 800, fontSize: 16, padding: "6px 0", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+        <div style={{ flex: 1, textAlign: "center", fontWeight: 800, fontSize: 16, padding: "6px 0", background: "var(--vk-fondo)", borderRadius: 8, border: "1px solid var(--vk-borde)" }}>
           {v}
         </div>
         <button
           disabled={bloqueado || v >= max}
           onClick={() => onCambio(Math.min(max, v + 1))}
-          style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid #e2e8f0", background: "#f1f5f9", fontSize: 18, fontWeight: 900, cursor: bloqueado ? "default" : "pointer", flexShrink: 0, color: "#475569", opacity: (bloqueado || v >= max) ? 0.4 : 1 }}
+          style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid var(--vk-borde)", background: "var(--vk-fondo-hueco)", fontSize: 18, fontWeight: 900, cursor: bloqueado ? "default" : "pointer", flexShrink: 0, color: "var(--vk-secundario)", opacity: (bloqueado || v >= max) ? 0.4 : 1 }}
         >+</button>
       </div>
     </div>
