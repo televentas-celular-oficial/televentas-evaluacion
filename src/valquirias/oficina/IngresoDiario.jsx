@@ -53,6 +53,8 @@ function diaVacio() {
   };
 }
 
+const DIAS_CORTOS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+
 export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuardar, user = null }) {
   // Los datos crudos se leen directamente del contexto (no de props): esta pantalla
   // necesita `registros` para precargar el día y `snapshots` para saber si el mes
@@ -65,6 +67,9 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
 
   const hoy = hoyColombia();
   const [fecha, setFecha] = useState(hoy.iso);
+  // Sólo se salta al día pendiente UNA vez, al abrir. Después manda quien llena:
+  // si escoge una fecha a mano, nadie se la mueve.
+  const saltoInicial = useRef(false);
   const [filas, setFilas] = useState({});
   const [guardado, setGuardado] = useState(false);        // el día YA tiene registros en Firestore
   const [recienGuardado, setRecienGuardado] = useState(false); // se acaba de guardar en esta sesión
@@ -170,6 +175,38 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
   }
 
   const trabajan = activas.filter(v => !filas[v.id]?.descanso);
+
+  // --------------------------------------------------------------------------
+  // LOS DÍAS QUE FALTAN POR LLENAR
+  // --------------------------------------------------------------------------
+  // Esta pantalla se llena CON RETRASO, por diseño de la casa: hoy se llena el
+  // de ayer, y el lunes se llenan viernes, sábado y domingo. Abrirla en la fecha
+  // de HOY —que es justo la que nadie va a llenar— obligaba a cambiar la fecha a
+  // mano cada vez, y de ahí salían los días saltados que después trababan el
+  // cierre del mes.
+  //
+  // Pendiente = un día del mes en curso, anterior a hoy, sin UN SOLO registro.
+  // Un día a medias no se cuenta como pendiente: alguien ya lo estaba llenando y
+  // mandarla allá sería peor. Y no se mira más atrás del mes en curso porque un
+  // mes cerrado ya no se puede tocar.
+  const pendientes = useMemo(() => {
+    const out = [];
+    const mm = String(hoy.mes).padStart(2, "0");
+    for (let d = 1; d < hoy.dia; d++) {
+      const f = `${hoy.año}-${mm}-${String(d).padStart(2, "0")}`;
+      if (!activas.some(v => !!registros[`${v.id}_${f}`])) out.push(f);
+    }
+    return out;
+  }, [activas, registros, hoy.año, hoy.mes, hoy.dia]);
+
+  // Al abrir, saltar al MÁS VIEJO pendiente. Una sola vez y sólo cuando los
+  // datos ya llegaron: antes de eso `registros` está vacío y TODO parecería
+  // pendiente.
+  useEffect(() => {
+    if (saltoInicial.current || !datos.cargado || !activas.length) return;
+    saltoInicial.current = true;
+    if (pendientes.length) setFecha(pendientes[0]);
+  }, [datos.cargado, activas.length, pendientes]);
 
   const activasMed = activas.filter(v => v.ciudad === "MED");
   const activasBog = activas.filter(v => v.ciudad === "BOG");
@@ -334,6 +371,44 @@ export default function IngresoDiario({ vendedoras = VENDEDORAS_DEFAULT, onGuard
           </div>
         )}
       </div>
+
+      {/* LOS DÍAS QUE FALTAN — sólo aparece si de verdad falta alguno.
+          Cada uno es un botón: se toca y se va directo a llenarlo, sin pelear
+          con el calendario. El que se está llenando queda marcado. */}
+      {pendientes.length > 0 && (
+        <div style={{
+          background: "var(--est-atencion-fondo)", border: "1px solid var(--est-atencion-borde)",
+          borderRadius: 12, padding: "10px 12px", marginBottom: 10,
+        }}>
+          <div style={{
+            fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 1.1,
+            color: "var(--vk-noche-apoyo)", marginBottom: 7,
+          }}>
+            {pendientes.length === 1 ? "1 día sin llenar" : `${pendientes.length} días sin llenar`}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {pendientes.map(f => {
+              const [, , dd] = f.split("-");
+              const activo = f === fecha;
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFecha(f)}
+                  style={{
+                    fontSize: 12, fontWeight: 800, padding: "6px 11px", borderRadius: 9,
+                    cursor: "pointer", font: "inherit", fontFamily: "inherit",
+                    background: activo ? "var(--vk-titulo)" : "var(--vk-tarjeta)",
+                    color: activo ? "var(--vk-sobre-tinta)" : "var(--vk-noche-apoyo)",
+                    border: `1px solid ${activo ? "var(--vk-titulo)" : "var(--est-atencion-borde)"}`,
+                  }}
+                >
+                  {DIAS_CORTOS[new Date(`${f}T12:00:00`).getDay()]} {Number(dd)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Progreso */}
       <div style={{ background: "var(--vk-noche)", borderLeft: "4px solid var(--vk-tenue)", padding: "10px 12px", borderRadius: 12, marginBottom: 10, border: "1px solid rgba(168, 85, 247, 0.2)" }}>
