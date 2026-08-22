@@ -3,7 +3,7 @@
 //
 // Orden fijo:
 //   1. Vendido en <mes>      — tarjeta crema/dorada, cifra centrada, BARRA CON TRAMOS
-//   2. Ganas hoy + Tu ritmo  — dos tarjetas pequeñas del mismo tamaño
+//   2. Ganas hoy + Tu promedio — dos tarjetas pequeñas del mismo tamaño
 //   3. Mi puesto en ventas   — ranking de SU ciudad
 //   4. Tu nota de <mes>      — tarjeta crema/dorada, nota centrada, barra 1.00–5.00
 //   5. El desglose           — comportamiento / ventas, cada uno con su barrita
@@ -539,7 +539,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
           pie={hito ? `${hito.que}: ${formatoPesos(hito.monto)}` : null}
         />
         <TarjetaChica
-          titulo="Tu ritmo"
+          titulo="Tu promedio"
           apagada={ritmoActual == null}
           cifra={ritmoActual != null ? formatoPesos(ritmoActual) : "no disponible"}
           pie={
