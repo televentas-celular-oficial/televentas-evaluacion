@@ -569,9 +569,39 @@ export function derivarMesDeVendedora(datos, vendedora, año, mes) {
   const ultimoDia = new Date(año, mes, 0).getDate();
   const dia = (hoy.año === año && hoy.mes === mes) ? hoy.dia : ultimoDia;
 
+  // --------------------------------------------------------------------------
+  // HASTA QUÉ DÍA HAY COMPORTAMIENTO REGISTRADO
+  // --------------------------------------------------------------------------
+  // El ingreso diario se llena CON RETRASO, por diseño de la casa: hoy se llena
+  // el de ayer, y el lunes se llenan viernes, sábado y domingo. O sea que la
+  // mitad de comportamiento de la nota SIEMPRE va unos días atrás de las ventas,
+  // que llegan de systemlap cada 5 minutos.
+  //
+  // Un día sin registrar NO baja la nota: `calcMesV2` sólo promedia los días que
+  // existen (lib/calculos.js). Pero sin decirlo, la vendedora ve una nota que se
+  // mueve sola los lunes y cree que le perdieron días. Por eso se nombra la
+  // fecha de corte, y por eso NO se nombra la de ventas: esa es siempre hoy.
+  const prefReg = `${vend.id}_${año}-${String(mes).padStart(2, "0")}`;
+  const fechasReg = Object.keys(datos?.registros || {})
+    .filter(k => k.startsWith(prefReg))
+    .map(k => k.slice(-10))
+    .filter(f => /^\d{4}-\d{2}-\d{2}$/.test(f))
+    .sort();
+  const ultimoRegistro = fechasReg.length ? fechasReg[fechasReg.length - 1] : null;
+
   return {
     año,
     mes,
+    // "2026-08-20" | null — el último día con comportamiento registrado
+    ultimoRegistro,
+    // "miércoles 20" | null — el mismo dato, ya escrito para la pantalla
+    ultimoRegistroTexto: ultimoRegistro ? diaLargo(ultimoRegistro).toLowerCase() : null,
+    // true = el comportamiento va atrás de hoy (lo normal con este ritmo)
+    comportamientoAtrasado: !!(
+      ultimoRegistro &&
+      hoy.año === año && hoy.mes === mes &&
+      ultimoRegistro < hoy.iso
+    ),
     nombreMes: nombreMes(mes),
     ciudad,
     // true = no se pudo determinar la ciudad → comisión y piso van en null a

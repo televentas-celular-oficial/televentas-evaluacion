@@ -520,10 +520,15 @@ export default function DetalleIndicador({
                 </div>
               ))}
 
-              <div style={{ fontSize: 11.5, color: TENUE, marginTop: 8 }}>
+              {/* La tira TERMINA en el último día registrado, no en hoy: el
+                  ingreso diario se llena con retraso. Sin decirlo, los días que
+                  faltan al final parecen días perdidos. */}
+              <div style={{ fontSize: 11.5, color: TENUE, marginTop: 8, lineHeight: 1.5 }}>
                 {ind.cerrado
                   ? "Este mes ya cerró: su nota quedó fija."
-                  : "Se van sumando a medida que pasa el mes."}
+                  : dias.length
+                    ? <>Contado hasta el <strong style={{ color: APOYO }}>{(dias[dias.length - 1].etiqueta || "").toLowerCase()}</strong>. Los días siguientes entran cuando se registren.</>
+                    : "Se van sumando a medida que pasa el mes."}
               </div>
             </>
           )}

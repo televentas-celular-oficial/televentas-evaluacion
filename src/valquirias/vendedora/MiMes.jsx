@@ -717,6 +717,23 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
           nota={notaComp}
           motivo={`Tu comportamiento de ${nombreMes} todavía no está disponible.`}
         />
+
+        {/* LA FECHA DE CORTE DEL COMPORTAMIENTO.
+            Va pegada a la fila de Comportamiento, no como aviso suelto arriba:
+            es esa mitad la que se atrasa, no la pantalla entera. Las ventas
+            llegan cada 5 minutos y por eso no llevan sello — decir "ventas al
+            día de hoy" sería nombrar lo obvio.
+            Sin esta línea la nota se mueve sola los lunes (cuando entran el
+            viernes, el sábado y el domingo) y parece que le perdieron días. */}
+        {mes.comportamientoAtrasado && (
+          <div style={{
+            fontSize: 11.5, color: APOYO, fontWeight: 600, lineHeight: 1.5,
+            padding: "0 0 8px 2px", marginTop: -2,
+          }}>
+            Contado hasta el <strong style={{ color: TINTA }}>{mes.ultimoRegistroTexto}</strong>.
+            Los días siguientes entran cuando se registren.
+          </div>
+        )}
         <FilaDesglose
           titulo="Ventas"
           peso={pesoVent}
