@@ -580,12 +580,27 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
       {/* ------------------------------------------------------------------ */}
       {/* 2) GANAS HOY · TU RITMO                                             */}
       {/* ------------------------------------------------------------------ */}
+      {/* EL MES CON CAMBIO DE CARGO SE EXPLICA (Luis, 22-ago-2026).
+          El motor ya prorratea día a día cuando el ascenso cae dentro del mes, y
+          ya arma la frase — sólo que ninguna pantalla la pintaba. Sin ella, la
+          cifra de "Ganas hoy" no cuadra con ningún porcentaje que ella conozca:
+          no es el 2% ni el 4%, es una mezcla, y parecía un error nuestro.
+          `mes.cambioRol` viene null salvo que el cambio haya ocurrido de verdad
+          ese mes, así que esto NO agrega una línea a los meses normales — que
+          era la condición de Luis: informarlo SÓLO cuando sucede. En un mes
+          corriente el pie sigue siendo el hito de siempre. */}
       <div style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "stretch" }}>
         <TarjetaChica
           titulo="Ganas hoy"
           apagada={comisionHoy == null}
           cifra={comisionHoy != null ? formatoPesos(comisionHoy) : "no disponible"}
-          pie={hito ? `${hito.que}: ${formatoPesos(hito.monto)}` : null}
+          pie={
+            mes.cambioRol
+              ? mes.comisionTexto
+              : hito
+              ? `${hito.que}: ${formatoPesos(hito.monto)}`
+              : null
+          }
           saltar={!!puerta}
         />
         <TarjetaChica

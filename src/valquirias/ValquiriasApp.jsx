@@ -27,6 +27,7 @@ import { auth } from "../firebase.js";
 import { rolDe } from "../lib/constantes.js";
 import { primerNombre } from "./lib/helpers.js";
 
+import Muro from "./common/Muro.jsx";
 import Login from "./auth/Login.jsx";
 import MiClave from "./auth/MiClave.jsx";
 import IngresoDiario from "./oficina/IngresoDiario.jsx";
@@ -243,7 +244,17 @@ function VistaVendedora({ vendedora, verComo = false, onSalirVerComo }) {
           la de Luis, no la de ella. Cambiarla ahí sería cambiar la de él. */}
       <BarraMarca conSalir={!verComo} />
       {verComo && <BannerVerComo vendedora={vendedora} onSalir={onSalirVerComo} />}
-      {contenido}
+      {/* El muro va por DENTRO de la cáscara: si se cae "Mi mes", la marca y el
+          banner siguen ahí y ella puede volver al inicio sin recargar nada.
+          El `key` con la ruta es lo que lo resetea — un ErrorBoundary no se
+          limpia solo, y sin esto se quedaría pegado al navegar a otra pantalla. */}
+      <Muro
+        key={`${ruta}:${indicador?.id || ""}`}
+        donde={ruta === "indicador" ? `indicador:${indicador?.id}` : ruta}
+        onVolver={volverAlHome}
+      >
+        {contenido}
+      </Muro>
     </div>
   );
 }

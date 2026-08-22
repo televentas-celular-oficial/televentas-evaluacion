@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import ValquiriasApp from './valquirias/ValquiriasApp.jsx'
+import Muro from './valquirias/common/Muro.jsx'
 
 // ============================================================================
 // SIEMPRE se monta la app nueva (Valquirias TLV). No hay segunda app.
@@ -45,8 +46,14 @@ if (params.has('v')) {
   )
 }
 
+// El muro de afuera, el de último recurso. El de adentro (ValquiriasApp) deja
+// la cáscara viva y permite volver al inicio; este atrapa lo que se caiga ANTES
+// de que exista esa cáscara — el login, la carga de datos, el panel — donde lo
+// otro que hay es la página en blanco.
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ValquiriasApp />
+    <Muro donde="app">
+      <ValquiriasApp />
+    </Muro>
   </StrictMode>,
 )
