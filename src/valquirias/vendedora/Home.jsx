@@ -59,7 +59,11 @@ const TINTA = "var(--vk-titulo)";       // Tinta — títulos y texto fuerte
 const CIFRA = "var(--vk-cifra)";        // Tinta — toda cifra de dinero y toda nota
 const APOYO = "var(--vk-secundario)";   // Niebla — texto secundario
 const NOCHE = "var(--vk-noche)";        // Una sola tarjeta por pantalla
-const ORO = "var(--vk-metal)";          // Sólo sobre la tarjeta noche, y sólo si ya ganó
+const ORO = "var(--vk-metal)";          // Veladuras de oro dentro de la tarjeta
+const ORO_FILO = "var(--vk-metal-borde)"; // El filo (#B45309): 4,7:1 sobre el lienzo
+// El oro claro NO sirve para texto: #FCD34D sobre el crema de la tarjeta da
+// 1,38:1. Este ámbar oscuro dice lo mismo y se lee (6,8:1).
+const ORO_TEXTO = "var(--vk-noche-apoyo)";
 // Las ciudades dejan de tener color y se escriben: Medellín y Bogotá quedan en
 // tinta, como texto. Ninguna vuelve a ir pintada del color de un aviso.
 const COLOR_CIUDAD = { MED: TINTA, BOG: TINTA };
@@ -128,10 +132,10 @@ const CSS = `
 function TarjetaLunes({ semana, vendedora, onCerrar }) {
   if (!semana) return null;
 
-  const { club = [], clubCount = 0, hayExtra, lider, ganadorasExtra = [],
+  const { club = [], clubCount = 0, hayExtra, ganadorasExtra = [],
     notaDesempate, gane, premio, umbral, desde, hasta } = semana;
-  // Con doble empate no hay `lider` único, pero sí varias que se llevan el
-  // EXTRA — por eso esto se mide contra el conjunto y no contra `lider`.
+  // `lider` NO se lee a propósito: con doble empate viene null y aun así hay
+  // dos que se llevan el EXTRA. Se mide contra el conjunto `ganadorasExtra`.
   // Mismo conjunto que usa MiCash.jsx:261 para marcar la fila con corona.
   const idsExtra = new Set(ganadorasExtra.map(g => String(g.id)));
   const estoyEnElExtra = idsExtra.has(String(vendedora?.id));
@@ -151,15 +155,26 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
     );
   }
 
-  // LA TARJETA NOCHE DEL HOME. Sólo cuando el premio YA ESTÁ GANADO: ahí, y sólo
-  // ahí, aparece el oro de la pantalla. Si ganaron otras, la misma tarjeta va en
-  // papel — la noticia es buena, pero la cifra principal no es suya.
+  // LA TARJETA DEL HOME CUANDO GANÓ ELLA. Es el único momento de celebración
+  // que tiene la app, así que tiene que LEERSE.
+  //
+  // ⚠️ Estaba escrita para una tarjeta oscura que ya no existe. `--vk-noche` hoy
+  // vale #FFFBEB (crema) desde el repintado pastel, pero el título seguía
+  // saliendo con `--vk-metal` (#FCD34D, amarillo pastel): contraste 1,38:1.
+  // "Ganaste tus $50.000 🎉" era prácticamente invisible — y el caso de al lado,
+  // el de cuando ganaban OTRAS, se leía perfecto. Las veladuras blancas
+  // (`--vk-velo-rgb` = 255,255,255) hacían lo mismo con las filas y la línea:
+  // blanco al 7% sobre crema no pinta nada.
+  //
+  // El oro se queda, pero donde sí funciona sobre crema: el filo de la tarjeta y
+  // el fondo de las filas. El texto va en ámbar oscuro, que sigue diciendo
+  // "dinero" y se lee. Mismo criterio que `--vk-sobre-tinta` (21-ago-2026).
   const fondo = gane ? NOCHE : V.tarjeta;
-  const borde = gane ? NOCHE : V.borde;
+  const borde = gane ? ORO_FILO : V.borde;
   const tinta = gane ? V.nocheTexto : TINTA;
-  const fondoFila = gane ? "rgba(var(--vk-velo-rgb),.07)" : V.fondo;
-  const fondoFilaYo = gane ? "rgba(var(--vk-metal-rgb),.12)" : V.tarjeta;
-  const lineaNota = gane ? "rgba(var(--vk-velo-rgb),.18)" : "rgba(var(--vk-sombra-rgb),.10)";
+  const fondoFila = gane ? "rgba(var(--vk-metal-rgb),.14)" : V.fondo;
+  const fondoFilaYo = gane ? "rgba(var(--vk-metal-rgb),.34)" : V.tarjeta;
+  const lineaNota = gane ? "rgba(var(--vk-metal-rgb),.45)" : "rgba(var(--vk-sombra-rgb),.10)";
   const titulo = gane
     ? (hayExtra && estoyEnElExtra ? "Te llevaste los dos premios 🎉" : `Ganaste tus ${peso(premio)} 🎉`)
     : "Ganaron el premio de la semana";
@@ -169,9 +184,9 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
     <div style={{ ...estiloTarjeta, background: fondo, border: `1px solid ${borde}`, color: tinta }}>
       <BotonCerrar onCerrar={onCerrar} oscura={gane} />
       <div style={estiloEyebrow}>Semana pasada{rango ? ` · ${rango}` : ""}</div>
-      <div style={{ ...estiloTitulo, color: gane ? ORO : TINTA }}>{titulo}</div>
+      <div style={{ ...estiloTitulo, color: gane ? ORO_TEXTO : TINTA }}>{titulo}</div>
 
-      {club.map((f, i) => {
+      {club.map((f) => {
         const esYo = String(f.id) === String(vendedora?.id);
         // El EXTRA sólo existe si 2+ llegaron al umbral (regla real de
         // calcPremios). Con doble empate lo ganan TODAS las empatadas, así que
@@ -223,7 +238,9 @@ function BotonCerrar({ onCerrar, oscura = false }) {
       aria-label="Cerrar el aviso de la semana pasada"
       style={{
         position: "absolute", top: 11, right: 12,
-        background: oscura ? "rgba(var(--vk-velo-rgb),.16)" : "rgba(var(--vk-sombra-rgb),.07)", border: "none",
+        // La × iba en blanco al 16% sobre crema, o sea invisible en la única
+        // tarjeta donde hace falta poder cerrarla.
+        background: oscura ? "rgba(var(--vk-metal-rgb),.30)" : "rgba(var(--vk-sombra-rgb),.07)", border: "none",
         width: 25, height: 25, borderRadius: "50%", font: "inherit", fontSize: 14, lineHeight: 1,
         cursor: "pointer", color: "inherit", opacity: 0.65,
       }}
