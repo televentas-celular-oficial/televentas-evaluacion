@@ -163,8 +163,10 @@ function BannerVerComo({ vendedora, onSalir }) {
         textAlign: "left",
       }}
     >
+      {/* El volver va SIEMPRE a la izquierda, como en toda la app. Estaba al
+          revés: el nombre a la izquierda y el volver colgando a la derecha. */}
+      <span>‹ Volver al panel</span>
       <span>🛡️ Viendo como {primerNombre(vendedora?.nombre)} · {vendedora?.ciudad || "—"}</span>
-      <span>← Volver al panel</span>
     </button>
   );
 }
