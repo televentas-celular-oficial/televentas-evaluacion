@@ -187,7 +187,7 @@ function estiloDia(estado) {
 function Marco({ onVolver, etiquetaVolver, children }) {
   return (
     <div>
-      {onVolver && <button className="v-back-btn" onClick={onVolver}>‹ {etiquetaVolver}</button>}
+      {onVolver && <button className="v-back-btn v-back-solo" onClick={onVolver}>‹ {etiquetaVolver}</button>}
       {children}
     </div>
   );

@@ -128,10 +128,6 @@ const S = {
   // enormes de 580px cada uno. El `maxWidth` es a propósito: el panel entero
   // mide 1180px porque las TABLAS lo necesitan, pero un menú de botones
   // desparramado a lo ancho de la pantalla se lee peor, no mejor.
-  tiles: {
-    display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-    gap: 8, maxWidth: 640, marginLeft: "auto", marginRight: "auto",
-  },
   tile: {
     background: "var(--vk-tarjeta)", border: `1px solid ${LINEA}`, borderRadius: 13,
     padding: "16px 12px", textAlign: "center", cursor: "pointer", font: "inherit",
@@ -233,7 +229,7 @@ function SelectorVerComo({ activas, onVolver, onElegir }) {
 
   return (
     <div className="v-app v-ancho">
-      <button className="v-back-btn" onClick={onVolver}>‹ Volver al panel</button>
+      <button className="v-back-btn v-back-solo" onClick={onVolver}>‹ Volver al panel</button>
       <div style={{ ...S.titulo, fontSize: 19 }}>👁️ Ver como vendedora</div>
 
       {med.length > 0 && (
@@ -270,7 +266,7 @@ function MenuRankings({ onVolver, onIr }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
   return (
     <div className="v-app v-ancho">
-      <button className="v-back-btn" onClick={onVolver}>‹ Volver al panel</button>
+      <button className="v-back-btn v-back-solo" onClick={onVolver}>‹ Volver al panel</button>
       <div style={{ ...S.titulo, fontSize: 19, marginBottom: 14 }}>🏅 Rankings</div>
       {RANKINGS.map(r => (
         <button
@@ -535,9 +531,12 @@ export default function AdminHome({ user = null, onVerComo }) {
         // el rótulo se pegaba al borde izquierdo del panel (1180px) mientras
         // los botones iban centrados: el nombre del grupo quedaba lejísimos de
         // lo que nombraba.
-        <div key={g.titulo} style={{ maxWidth: 640, marginLeft: "auto", marginRight: "auto" }}>
+        <div key={g.titulo}>
           <div style={S.rotulo}>{g.titulo}</div>
-          <div style={S.tiles}>
+          {/* `--n` = cuántos botones tiene ESTE grupo. Se reparten el ancho
+              completo entre ellos, así que todos los grupos quedan a ras con
+              el resto de la pantalla. */}
+          <div className="v-tiles" style={{ "--n": g.tiles.length }}>
             {g.tiles.map((t, i) => {
               // Grupo con cantidad impar: la última ficha ocupa las dos columnas
               // en vez de dejar un hueco. Misma ficha, mismo estilo — sólo el ancho.

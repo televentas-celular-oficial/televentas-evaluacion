@@ -676,6 +676,23 @@ body {
   padding: 6px 12px; background: var(--vk-neutro);
   border-radius: 8px; cursor: pointer; border: none;
 }
+/* Cuando el botón va SOLO (sin la cabecera `.v-header-detalle` que ya separa),
+   necesita su propio aire abajo: sin esto el título se le monta encima. */
+.v-back-solo { display: inline-block; margin-bottom: 14px; }
+
+/* LOS BOTONES DEL PANEL — un grupo ocupa el ancho completo, siempre.
+   Antes la rejilla se acotaba a 640px centrados: el bloque de botones quedaba
+   más angosto que todo lo demás de la pantalla y la app se veía despareja de
+   un lado a otro. Ahora cada grupo reparte el ancho entre SUS botones (`--n`),
+   así que todos los grupos empiezan y terminan donde empieza y termina el
+   resto del panel. En el celular manda el ancho mínimo, no el número. */
+.v-tiles {
+  display: grid; gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+@media (min-width: 900px) {
+  .v-tiles { grid-template-columns: repeat(var(--n, 2), 1fr); }
+}
 .v-header-title { font-size: 15px; font-weight: 900; color: var(--vk-titulo); letter-spacing: -0.3px; }
 
 /* Trimestre HERO naranja */
