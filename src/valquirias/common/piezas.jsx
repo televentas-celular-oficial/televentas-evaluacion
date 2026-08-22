@@ -5,14 +5,16 @@
 // app: la tarjeta crema con borde dorado, la barra con marcas, el badge de la
 // nota y el botón de volver.
 //
-// ⚠️ MiMes.jsx TODAVÍA tiene su propia copia de BarraMarcada y Badge. No se
-// migró porque ese archivo está congelado (no se toca en esta tarea). Cuando el
-// dueño lo autorice, MiMes puede importar de aquí y borrar sus copias: los
-// cuerpos son idénticos, así que el cambio es sólo quitar y añadir un import.
+// MiMes.jsx tenía su propia copia de BarraMarcada, byte por byte igual salvo el
+// `export`. Se borró el 22-ago-2026 al añadirle a la barra el barrido y los dos
+// estados de marca: mantener la mejora en dos sitios era garantía de que la
+// puerta se encendiera en una pantalla y en la otra no. Ahora hay una sola.
 //
 // Reglas que se respetan aquí:
 // - Cero hex escritos a mano: todos los colores salen de valquirias.css.
 // - Cero rojo. Un dato que falta es un HUECO punteado, nunca una alarma.
+
+import { useState, useEffect } from "react";
 
 // --- Papeles ---------------------------------------------------------------
 export const VERDE = "var(--vk-bien)";
@@ -133,7 +135,34 @@ export function BotonVolver({ onVolver, texto = "‹ Volver" }) {
 // el arranque de un tramo, el 4.50 del premio): una raya discreta sobre el riel
 // y su etiqueta debajo. `fila` reparte las etiquetas en dos alturas cuando dos
 // marcas quedan tan cerca que sus textos se pisarían.
-export function BarraMarcada({ pct, marcas = [], alto = 10, relleno = VERDE, riel = NEUTRO }) {
+//
+// LAS MARCAS TIENEN DOS ESTADOS (aprobado por Luis, 22-ago-2026)
+// Antes las tres rayas se veían iguales: la que ya cruzó y la que le falta.
+//   raya dorada                    → puerta por abrir
+//   muesca blanca + punto verde    → puerta cruzada  (`m.cruzada`)
+// `m.nueva` marca la que acaba de cruzar: es la única que hace el halo.
+//
+// `desde` es el barrido: el relleno arranca clavado en ese porcentaje y viaja
+// hasta `pct`. Se ve pasar la puerta. Arranca EN la marca a propósito, así la
+// animación no necesita saber dónde estaba ayer y no hay que guardar ningún
+// número. Sin `desde`, la barra se pinta quieta, como siempre.
+export function BarraMarcada({ pct, marcas = [], alto = 10, relleno = VERDE, riel = NEUTRO, desde = null }) {
+  // El estado es un sí/no —"¿ya lo solté?"— y no el ancho en sí. Guardar el
+  // ancho obligaba a re-sincronizarlo con `pct` desde el efecto cada vez que
+  // llegaban ventas nuevas, y un setState síncrono dentro de un efecto encadena
+  // renders. Así el ancho siempre sale de `pct`, que es la verdad del motor.
+  const [suelto, setSuelto] = useState(desde == null);
+  useEffect(() => {
+    if (desde == null || suelto) return;
+    // Dos cuadros: uno para que el navegador pinte el relleno EN la marca, y el
+    // siguiente para soltarlo. Con uno solo, React agrupa los dos valores y la
+    // transición no arranca — el relleno aparecería ya en su sitio.
+    let id2 = 0;
+    const id1 = requestAnimationFrame(() => { id2 = requestAnimationFrame(() => setSuelto(true)); });
+    return () => { cancelAnimationFrame(id1); cancelAnimationFrame(id2); };
+  }, [desde, suelto]);
+  const ancho = suelto ? pct : desde;
+
   // Sólo se reserva alto para etiquetas si alguna marca TRAE etiqueta. Sin esto,
   // una barra de marcas sin texto dejaba una franja vacía debajo.
   const conTexto = marcas.filter((m) => m.texto);
@@ -151,10 +180,11 @@ export function BarraMarcada({ pct, marcas = [], alto = 10, relleno = VERDE, rie
           }}
         >
           <div
+            className={desde == null ? undefined : "v-barra-barre"}
             style={{
               display: "block",
               height: "100%",
-              width: `${pct}%`,
+              width: `${ancho}%`,
               background: relleno,
               borderRadius: alto / 2,
             }}
@@ -167,12 +197,19 @@ export function BarraMarcada({ pct, marcas = [], alto = 10, relleno = VERDE, rie
               position: "absolute",
               left: `${m.pct}%`,
               top: -3,
-              marginLeft: -1,
-              width: 2,
+              marginLeft: m.cruzada ? -1.5 : -1,
+              width: m.cruzada ? 3 : 2,
               height: alto + 6,
               borderRadius: 1,
-              background: ORO_FILO,
+              background: m.cruzada ? PAPEL : ORO_FILO,
             }}
+          />
+        ))}
+        {marcas.filter((m) => m.cruzada).map((m) => (
+          <span
+            key={`${m.clave}-pt`}
+            className={m.nueva ? "v-punto-hito nuevo" : "v-punto-hito"}
+            style={{ left: `${m.pct}%`, top: -(alto - 3) }}
           />
         ))}
       </div>

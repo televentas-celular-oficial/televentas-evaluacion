@@ -30,6 +30,9 @@
 import { useDatos } from "../data/DatosContext.jsx";
 import { derivarMesDeVendedora, derivarRankingMesCiudad } from "../data/derivar.js";
 import { formatoPesos, primerNombre, hoyColombia, PISO_MED, tramosDe } from "../lib/helpers.js";
+import { BarraMarcada } from "../common/piezas.jsx";
+import { hitoPendiente, marcarHito, periodoMes, nivelDelMes } from "../lib/hitos.js";
+import { useState, useEffect } from "react";
 
 // Paleta Valkyrias — sólo colores.
 // Los papeles de color viven en valquirias.css (:root). Aquí sólo se nombran.
@@ -65,13 +68,6 @@ const nDias = (n) => (n === 1 ? "1 día" : `${n} días`);
 // Nota → % de la barra de 1.00 a 5.00 (el rango real de una nota).
 const pctNota = (n) => Math.max(0, Math.min(100, ((n - 1) / 4) * 100));
 
-// Una etiqueta de marca centrada bajo su tramo, sin salirse de la barra.
-const anclaje = (p) =>
-  p <= 12
-    ? { left: 0, transform: "none" }
-    : p >= 88
-    ? { left: `${p}%`, transform: "translateX(-100%)" }
-    : { left: `${p}%`, transform: "translateX(-50%)" };
 
 const S = {
   card: {
@@ -135,83 +131,16 @@ function BotonVolver({ onVolver }) {
 }
 
 
-// ---------------------------------------------------------------------------
-// BARRA CON MARCAS
-// ---------------------------------------------------------------------------
-// `pct` es dónde va el relleno. `marcas` son puntos FIJOS de la escala (el piso,
-// el arranque de un tramo, el 4.50 del premio): una raya discreta sobre el riel
-// y su etiqueta debajo. `fila` reparte las etiquetas en dos alturas cuando dos
-// marcas quedan tan cerca que sus textos se pisarían.
-function BarraMarcada({ pct, marcas = [], alto = 10, relleno = VERDE, riel = NEUTRO }) {
-  // Sólo se reserva alto para etiquetas si alguna marca TRAE etiqueta. Sin esto,
-  // una barra de marcas sin texto dejaba una franja vacía debajo.
-  const conTexto = marcas.filter((m) => m.texto);
-  const filas = conTexto.length ? Math.max(...conTexto.map((m) => m.fila || 0)) + 1 : 0;
-  return (
-    <div>
-      <div style={{ position: "relative", height: alto, marginTop: 12 }}>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: riel,
-            borderRadius: alto / 2,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              display: "block",
-              height: "100%",
-              width: `${pct}%`,
-              background: relleno,
-              borderRadius: alto / 2,
-            }}
-          />
-        </div>
-        {marcas.map((m) => (
-          <span
-            key={m.clave}
-            style={{
-              position: "absolute",
-              left: `${m.pct}%`,
-              top: -3,
-              marginLeft: -1,
-              width: 2,
-              height: alto + 6,
-              borderRadius: 1,
-              background: ORO_FILO,
-            }}
-          />
-        ))}
-      </div>
-      {filas > 0 && (
-        <div style={{ position: "relative", height: filas * 15, marginTop: 6 }}>
-          {conTexto.map((m) => (
-            <span
-              key={m.clave}
-              style={{
-                position: "absolute",
-                top: (m.fila || 0) * 15,
-                whiteSpace: "nowrap",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: ".2px",
-                color: C_APOYO,
-                ...anclaje(m.pct),
-              }}
-            >
-              {m.texto}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+// La copia local de BarraMarcada se borró el 22-ago-2026: era idéntica a la de
+// common/piezas.jsx salvo el `export`, y al darle el barrido y los dos estados
+// de marca, mantener dos copias garantizaba que la puerta se encendiera en una
+// pantalla y en la otra no. Ahora se importa.
 
 // Una de las dos tarjetas pequeñas de la fila 2. Las dos miden lo mismo.
-function TarjetaChica({ titulo, cifra, pie, apagada = false }) {
+// `saltar` es el día que cruzó una puerta: la cifra escala y vuelve, una sola
+// vez. No cuenta ni cambia de color — salta y se queda. Es el golpe de vista con
+// el ojo ya bajando de la barra, y es donde está la plata.
+function TarjetaChica({ titulo, cifra, pie, apagada = false, saltar = false }) {
   return (
     <div style={{ ...S.card, flex: 1, minWidth: 0, marginBottom: 0, padding: 14 }}>
       <div style={{ ...S.lbl, fontSize: 11, marginBottom: 5 }}>{titulo}</div>
@@ -224,7 +153,7 @@ function TarjetaChica({ titulo, cifra, pie, apagada = false }) {
           lineHeight: 1.2,
         }}
       >
-        {cifra}
+        {saltar && !apagada ? <span className="v-salta">{cifra}</span> : cifra}
       </div>
       {pie ? (
         <div style={{ fontSize: 11, color: APOYO, fontWeight: 600, marginTop: 5, lineHeight: 1.45 }}>
@@ -322,6 +251,36 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
   const nombreMes = mes?.nombreMes || "";
 
   // --------------------------------------------------------------------------
+  // LA PUERTA SE ENCIENDE — cruzar un escalón de plata
+  // --------------------------------------------------------------------------
+  // Aprobado por Luis el 22-ago-2026 (docs/prototipo-celebraciones.html).
+  //
+  // ⚠️ LOS DOS HOOKS VAN AQUÍ ARRIBA, NO JUNTO A LA BARRA. Unas líneas más abajo
+  // hay un return temprano (ciudad desconocida) y un hook declarado después de
+  // un return se ejecuta en unos renders y no en otros: React lo prohíbe y la
+  // pantalla revienta. Todo lo que necesitan sale de `mes` y `rk`, que ya están.
+  //
+  // Se decide UNA sola vez, al montar. Escribir después ya no cambia la
+  // decisión, así que ir al Home y volver no vuelve a disparar el momento.
+  // Sin confeti a propósito: cruzar el piso y el tramo 2 en un mismo mes son dos
+  // momentos, y si cae confeti en todo deja de significar algo. El confeti se
+  // reserva para el 4.50 del trimestre, que pasa una vez cada tres meses.
+  const tablaTramos = tramosDe(año);
+  const nivelHoy = nivelDelMes({
+    hayVentas: !!(rk?.disponible && rk?.misVentas != null),
+    tramoInfo: mes?.tramoInfo,
+    piso: mes?.piso,
+    tabla: tablaTramos,
+  });
+  const periodo = periodoMes(año, nMes);
+  const [celebraNivel] = useState(() =>
+    hitoPendiente("mes", vendedora?.id, periodo, nivelHoy) ? nivelHoy : null
+  );
+  useEffect(() => {
+    marcarHito("mes", vendedora?.id, periodo, nivelHoy);
+  }, [vendedora?.id, periodo, nivelHoy]);
+
+  // --------------------------------------------------------------------------
   // CIUDAD — se resuelve o no se resuelve. NO hay ciudad por defecto.
   // --------------------------------------------------------------------------
   // derivar.js ya hace lo correcto: con ciudad desconocida devuelve
@@ -405,7 +364,6 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
   // Números leídos de la tabla de tramos del año y de PISO_MED — aquí no se
   // calcula ninguno. Si algún día vende por encima del último tramo, la escala
   // se estira hasta su cifra para que el relleno no mienta clavado en el 100%.
-  const tablaTramos = tramosDe(año);
   const topeTramos = tablaTramos.at(-1).min;
   const escala = hayVentas ? Math.max(topeTramos, ventas) : topeTramos;
   const pctDe = (v) => Math.max(0, Math.min(100, (v / escala) * 100));
@@ -418,13 +376,40 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
   // barra no puede decir.
   const marcasTramos = [];
   // El piso SÓLO existe en Medellín (`piso.aplica` es `ciudad === "MED"`).
+  // `monto` es el peso que hay que pasar para cruzar esa raya. Va en el mismo
+  // sitio donde se crea cada marca: fijarlo después, por índice, era una bomba
+  // el día que alguien reordene los push.
   if (piso.aplica && piso.monto > 0) {
-    marcasTramos.push({ clave: "piso", pct: pctDe(piso.monto) });
+    marcasTramos.push({ clave: "piso", pct: pctDe(piso.monto), monto: piso.monto });
   }
   // Una raya por cada tramo salvo el primero, que arranca en $0.
   tablaTramos.slice(1).forEach((t, i) => {
-    marcasTramos.push({ clave: `t${i + 2}`, pct: pctDe(t.min) });
+    marcasTramos.push({ clave: `t${i + 2}`, pct: pctDe(t.min), monto: t.min });
   });
+
+  // Puerta cruzada = muesca blanca con punto verde. Es ESTADO, se deriva de sus
+  // ventas de hoy en cada render: si una devolución la baja, vuelve sola a ser
+  // raya dorada, sin decir una palabra.
+  marcasTramos.forEach((m) => { m.cruzada = hayVentas && ventas >= m.monto; });
+
+  // Qué raya acaba de cruzar. Nivel 2 en Medellín es el piso; de ahí para
+  // arriba, el tramo. (Nivel 2 en Bogotá es el tramo 1, que no tiene raya —
+  // pero tampoco se celebra nunca: la siembra silenciosa lo deja sembrado.)
+  const clavePuerta =
+    celebraNivel == null ? null
+    : celebraNivel === 2 ? (piso.aplica ? "piso" : null)
+    : `t${celebraNivel - 1}`;
+  const puerta = clavePuerta ? marcasTramos.find((m) => m.clave === clavePuerta) : null;
+  if (puerta) puerta.nueva = true;
+
+  const esUltimoTramo = celebraNivel != null && celebraNivel === tablaTramos.length + 1;
+  const lineaHito = !puerta
+    ? null
+    : celebraNivel === 2
+    ? `Pasaste el piso de ${formatoPesos(PISO_MED)}. Desde aquí tu mes empieza a generar comisión.`
+    : esUltimoTramo
+    ? `Entraste al ${mes.tramoInfo.nombre.toLowerCase()}, el más alto. No hay escalón por encima: tu porcentaje queda en el máximo sobre todo lo vendido.`
+    : `Entraste al ${mes.tramoInfo.nombre.toLowerCase()}. Tu porcentaje sube y se aplica sobre todo lo que llevas vendido en ${nombreMes}.`;
 
   // La única línea bajo la barra. Todas las cifras vienen del motor.
   const lineaFalta = !hayVentas
@@ -546,15 +531,41 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
               {formatoPesos(ventas)}
             </div>
 
-            <BarraMarcada pct={pctDe(ventas)} marcas={marcasTramos} />
+            {/* `desde` sólo va el día del cruce: el relleno arranca clavado en
+                la raya recién pasada y barre hasta su cifra. Se ve pasar la
+                puerta. Cualquier otro día la barra se pinta quieta. */}
+            <BarraMarcada
+              pct={pctDe(ventas)}
+              marcas={marcasTramos}
+              desde={puerta ? puerta.pct : null}
+            />
 
-            {lineaFalta && (
+            {/* La frase del momento. En el último tramo REEMPLAZA la línea de
+                siempre en vez de apilarse: "estás en el tramo 3, el más alto"
+                debajo de "entraste al tramo 3, el más alto" diría lo mismo dos
+                veces. */}
+            {lineaHito && (
+              <div
+                style={{
+                  fontSize: 14,
+                  color: C_TXT,
+                  fontWeight: 800,
+                  marginTop: 10,
+                  textAlign: "center",
+                  lineHeight: 1.45,
+                }}
+              >
+                {lineaHito}
+              </div>
+            )}
+
+            {lineaFalta && !esUltimoTramo && (
               <div
                 style={{
                   fontSize: 12.5,
-                  color: C_TXT,
+                  color: lineaHito ? C_APOYO : C_TXT,
                   fontWeight: 700,
-                  marginTop: 10,
+                  marginTop: lineaHito ? 5 : 10,
                   textAlign: "center",
                   lineHeight: 1.5,
                 }}
@@ -575,6 +586,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
           apagada={comisionHoy == null}
           cifra={comisionHoy != null ? formatoPesos(comisionHoy) : "no disponible"}
           pie={hito ? `${hito.que}: ${formatoPesos(hito.monto)}` : null}
+          saltar={!!puerta}
         />
         <TarjetaChica
           titulo="Tu promedio"

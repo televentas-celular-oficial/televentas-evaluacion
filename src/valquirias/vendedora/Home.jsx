@@ -27,7 +27,7 @@
 // vez hace falta tocar el cash, se toca UNA sola fuente y las dos pantallas
 // dicen lo mismo.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useDatos } from "../data/DatosContext.jsx";
 import ConfettiRain from "../common/ConfettiRain.jsx";
 import {
@@ -38,7 +38,10 @@ import {
   PREMIO_EFECTIVO_SEMANA,
 } from "../data/derivar.js";
 import { armarSemana, ganadorasDe, fechasSemana, hoyISOColombia } from "./MiCash.jsx";
-import { formatoPesos, primerNombre, hoyColombia, esLunesEnColombia } from "../lib/helpers.js";
+import {
+  formatoPesos, primerNombre, hoyColombia, esLunesEnColombia, tramosDe, PISO_MED,
+} from "../lib/helpers.js";
+import { hitoPendiente, marcarHito, periodoMes, periodoTrim, nivelDelMes } from "../lib/hitos.js";
 
 // ---------------------------------------------------------------------------
 // Paleta exacta del prototipo
@@ -259,21 +262,31 @@ const estiloNota = { fontSize: 12.5, fontWeight: 600, lineHeight: 1.55, marginTo
 // ---------------------------------------------------------------------------
 // Botón grande
 // ---------------------------------------------------------------------------
-function BotonGrande({ tipo, valor, valorPendiente, pie, onIr }) {
+// `aviso` es una noticia que ella todavía no ha ido a ver: cruzó un tramo o
+// cruzó la vara del trimestre. No se agrega ninguna tarjeta — se le pone filo
+// dorado al botón que ya existe y su pie cambia de texto. Se apaga solo cuando
+// ella entra a la pantalla y allá se marca vista.
+function BotonGrande({ tipo, valor, valorPendiente, pie, onIr, aviso = null }) {
   const c = BOTONES[tipo];
   return (
     <button
       className="vk-gran"
       onClick={() => onIr?.(tipo)}
-      style={{ background: c.fondo, borderColor: c.borde }}
-      aria-label={c.rotulo}
+      style={
+        aviso
+          ? { background: c.fondo, borderColor: ORO_FILO, borderWidth: 1.5 }
+          : { background: c.fondo, borderColor: c.borde }
+      }
+      aria-label={aviso ? `${c.rotulo}. ${aviso}` : c.rotulo}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 12 }}>
         <span
           aria-hidden="true"
           style={{
             width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center",
-            justifyContent: "center", fontSize: 19, flexShrink: 0, background: c.globo,
+            justifyContent: "center", fontSize: 19, flexShrink: 0,
+            background: aviso ? ORO : c.globo,
+            boxShadow: aviso ? "0 0 0 3px rgba(var(--vk-metal-rgb),.4)" : "none",
           }}
         >
           {c.emoji}
@@ -290,7 +303,16 @@ function BotonGrande({ tipo, valor, valorPendiente, pie, onIr }) {
       >
         {valor}
       </div>
-      <div style={{ fontSize: 12.5, fontWeight: 600, marginTop: 6, lineHeight: 1.5, color: c.texto }}>{pie}</div>
+      {/* El aviso PISA el pie de siempre. Se recupera apenas ella entra: es lo
+          que evita añadir una línea nueva al botón. */}
+      <div
+        style={{
+          fontSize: 12.5, fontWeight: aviso ? 800 : 600, marginTop: 6, lineHeight: 1.5,
+          color: aviso ? ORO_TEXTO : c.texto,
+        }}
+      >
+        {aviso || pie}
+      </div>
     </button>
   );
 }
@@ -385,6 +407,66 @@ export default function Home({ vendedora, onIr }) {
     () => (vendedora ? derivarTrimestreEnVivo(datos, vendedora, hoy.año, Math.ceil(hoy.mes / 3)) : null),
     [datos, vendedora, hoy.año, hoy.mes]
   );
+
+  // --------------------------------------------------------------------------
+  // AVISOS DE HITO — una noticia que todavía no ha ido a ver
+  // --------------------------------------------------------------------------
+  // Si cruza un tramo un martes y sólo abre Mi mes el jueves, el momento la
+  // espera aquí. El botón que ya existe se pone con filo dorado y su pie cambia.
+  //
+  // ⚠️ EL HOME SÓLO LEE, NUNCA ESCRIBE EL HITO. Si escribiera, pasar por el Home
+  // le consumiría la celebración y llegaría a Mi mes sin nada. Quien marca el
+  // hito como visto es la pantalla del dato, y sólo cuando de verdad lo pinta.
+  //
+  // Ningún texto de aquí dice "hoy": este aviso puede llevar dos días puesto.
+  //
+  // ⚠️ TODO ESTO VA ARRIBA DEL `if (!vendedora)` de abajo. Un hook declarado
+  // después de un return se ejecuta en unos renders y no en otros: React lo
+  // prohíbe y la pantalla revienta.
+
+  // EL CONFETI DEL LUNES CAE UNA VEZ, NO CADA VEZ.
+  // `lunesCerrada` es estado del componente y el Home se DESMONTA al navegar
+  // (ValquiriasApp intercambia la pantalla), así que ese lunes el confeti volvía
+  // a caer cada vez que ella entraba y salía del Home. Ahora lo recuerda el
+  // teléfono, con el lunes de esa semana como llave.
+  //
+  // `sembrar: false` a propósito: aquí no hay nada viejo que arrastrar — esa
+  // semana cerró anoche. Si sembrara, el primer lunes se quedaría sin confeti.
+  const lunesGanado = !!(esLunes && semanaPasada?.gane);
+  const periodoLunes = semanaPasada?.desde || null;
+  const [confetiLunes] = useState(() =>
+    lunesGanado && hitoPendiente("lunes", vendedora?.id, periodoLunes, 1, { sembrar: false })
+  );
+  useEffect(() => {
+    if (confetiLunes) marcarHito("lunes", vendedora?.id, periodoLunes, 1);
+  }, [confetiLunes, vendedora?.id, periodoLunes]);
+
+  const qHoy = Math.ceil(hoy.mes / 3);
+  const nivelMes = nivelDelMes({
+    hayVentas: hayVentasMes,
+    tramoInfo: mes?.tramoInfo,
+    piso: mes?.piso,
+    tabla: tramosDe(hoy.año),
+  });
+  const avisoMes =
+    vendedora && hitoPendiente("mes", vendedora.id, periodoMes(hoy.año, hoy.mes), nivelMes)
+      ? nivelMes === 2 && mes?.piso?.aplica
+        ? `Pasaste el piso de ${peso(PISO_MED)} · toca para verlo`
+        : mes?.tramoInfo
+        ? `Entraste al ${mes.tramoInfo.nombre.toLowerCase()}${
+            nivelMes === tramosDe(hoy.año).length + 1 ? ", el más alto" : ""
+          } · toca para verlo`
+        : null
+      : null;
+
+  const cruzoVara = !!(
+    trim && trim.compite !== false && trim.nota != null && trim.meta != null && trim.nota >= trim.meta
+  );
+  const avisoTrim =
+    vendedora &&
+    hitoPendiente("trim", vendedora.id, periodoTrim(hoy.año, qHoy), cruzoVara ? 2 : 1)
+      ? `Tu nota pasó el ${Number(trim.meta).toFixed(2)} · toca para verlo`
+      : null;
 
   if (!vendedora) {
     return (
@@ -520,8 +602,8 @@ export default function Home({ vendedora, onIr }) {
     <>
       <style>{CSS}</style>
 
-      {/* Confeti SOLO si ella ganó la semana pasada */}
-      <ConfettiRain trigger={mostrarLunes && semanaPasada.gane} />
+      {/* Confeti SOLO si ella ganó la semana pasada, y sólo la primera vez */}
+      <ConfettiRain trigger={confetiLunes} />
 
       <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-.6px", color: TINTA, margin: "4px 0 2px" }}>
         Hola, {primerNombre(vendedora.nombre)}
@@ -544,8 +626,8 @@ export default function Home({ vendedora, onIr }) {
       )}
 
       <BotonGrande tipo="cash" valor={cashValor} valorPendiente={cashPendiente} pie={cashPie} onIr={onIr} />
-      <BotonGrande tipo="mes"  valor={mesValor}  valorPendiente={mesPendiente}  pie={mesPie}  onIr={onIr} />
-      <BotonGrande tipo="trim" valor={trimValor} valorPendiente={trimPendiente} pie={trimPie} onIr={onIr} />
+      <BotonGrande tipo="mes"  valor={mesValor}  valorPendiente={mesPendiente}  pie={mesPie}  onIr={onIr} aviso={avisoMes} />
+      <BotonGrande tipo="trim" valor={trimValor} valorPendiente={trimPendiente} pie={trimPie} onIr={onIr} aviso={avisoTrim} />
     </>
   );
 }

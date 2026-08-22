@@ -284,6 +284,51 @@ body {
   100% { transform: translateY(120vh) rotate(720deg); opacity: 0.3; }
 }
 
+/* ===========================================================================
+   LA PUERTA SE ENCIENDE — cruzar un tramo, cruzar el 4.50
+   ===========================================================================
+   Aprobado por Luis el 22-ago-2026 (docs/prototipo-celebraciones.html).
+   El barrido: el relleno arranca clavado en la marca recién cruzada y viaja
+   hasta su cifra real. La transición vive aquí y no en el style inline para
+   que `prefers-reduced-motion` la pueda apagar. */
+.v-barra-barre { transition: width .9s cubic-bezier(.22, .9, .3, 1); }
+
+/* El punto verde sobre la muesca blanca. Es ESTADO, no adorno: dice "esta
+   puerta ya está cruzada" y se queda puesto todos los días. */
+.v-punto-hito {
+  position: absolute;
+  width: 7px; height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: var(--vk-bien);
+}
+/* Sólo la que ACABA de cruzar hace el halo, y una sola vez. `forwards` es
+   obligatorio: sin él el punto vuelve a su estado inicial al terminar la
+   animación y la puerta cruzada se vería igual que la cerrada. */
+.v-punto-hito.nuevo { animation: v-halo 1.2s ease-out .5s 1 forwards; }
+@keyframes v-halo {
+  0%   { transform: scale(0);    box-shadow: 0 0 0 0   rgba(var(--vk-metal-rgb), .85); }
+  55%  { transform: scale(1.25); box-shadow: 0 0 0 11px rgba(var(--vk-metal-rgb), .55); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 16px rgba(var(--vk-metal-rgb), 0); }
+}
+
+/* La cifra que salta: el golpe de vista con el ojo ya bajando, y es donde está
+   la plata. No cuenta ni cambia de color — salta y se queda. */
+.v-salta { display: inline-block; animation: v-salto .55s cubic-bezier(.3, 1.5, .5, 1) .6s 1; }
+@keyframes v-salto {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v-barra-barre { transition: none; }
+  .v-salta { animation: none; }
+  /* El halo se va, el punto NO: sin él la puerta cruzada se vería igual que la
+     cerrada, y eso no es una animación, es la información. */
+  .v-punto-hito.nuevo { animation: none; }
+}
+
 /* Cards genéricas */
 .v-card {
   border-radius: 16px;

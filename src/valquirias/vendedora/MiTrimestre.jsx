@@ -46,6 +46,8 @@ import {
   derivarRankingIndicadorTrimestre,
 } from "../data/derivar.js";
 import { formatoPesos, hoyColombia } from "../lib/helpers.js";
+import { hitoPendiente, marcarHito, periodoTrim } from "../lib/hitos.js";
+import ConfettiRain from "../common/ConfettiRain.jsx";
 import { fmtN, fechaLarga } from "../../lib/calculos.js";
 import {
   BarraMarcada,
@@ -279,6 +281,40 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
     ) + 1
   );
 
+  // --------------------------------------------------------------------------
+  // LA PUERTA SE ENCIENDE — cruzar la vara del premio
+  // --------------------------------------------------------------------------
+  // Aprobado por Luis el 22-ago-2026 (docs/prototipo-celebraciones.html).
+  // Aquí SÍ cae confeti: es el mismo de los lunes, sin tocarle una línea, y pasa
+  // una vez cada tres meses. Ese es justo el motivo de que el escalón de mes NO
+  // lo lleve — si cae en todo, deja de significar algo.
+  //
+  // ⚠️ Los hooks van ANTES de los dos returns tempranos de abajo. Un hook después
+  // de un return se salta en unos renders y no en otros: React lo prohíbe.
+  //
+  // GUARDA DURA `trim.compite !== false`: a quien entró con el trimestre andando
+  // no se le celebra la vara — sería festejarle un premio que este trimestre no
+  // puede cobrar. Es la misma condición con la que la pantalla ya le oculta la
+  // distancia a la vara más abajo.
+  const cruzoLaVara = !!(
+    trim &&
+    trim.compite !== false &&
+    trim.nota != null &&
+    trim.meta != null &&
+    trim.nota >= trim.meta
+  );
+  // 1 = todavía debajo de la vara, 2 = arriba. Empieza en 1 y no en 0 porque
+  // `marcarHito` ignora los niveles <= 0: con un 0 no quedaría registro del
+  // trimestre, y el día que cruzara se leería como "trimestre nuevo" y la
+  // siembra silenciosa se comería justo esta celebración.
+  const periodoQ = periodoTrim(añoQ, qNum);
+  const [celebraVara] = useState(() =>
+    hitoPendiente("trim", vendedora?.id, periodoQ, cruzoLaVara ? 2 : 1)
+  );
+  useEffect(() => {
+    marcarHito("trim", vendedora?.id, periodoQ, cruzoLaVara ? 2 : 1);
+  }, [vendedora?.id, periodoQ, cruzoLaVara]);
+
   if (!vendedora || !trim) {
     return (
       <Vacio
@@ -391,6 +427,10 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
 
   return (
     <div style={{ color: TINTA }}>
+      {/* El único confeti de una pantalla que no sea el Home, y sólo el día que
+          cruza la vara. Respeta "reducir movimiento" por su cuenta. */}
+      <ConfettiRain trigger={celebraVara} />
+
       <BotonVolver onVolver={onVolver} />
 
       <div style={S.titulo}>💎 Mi trimestre</div>
@@ -477,7 +517,10 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
       {/* ------------------------------------------------------------------ */}
       {/* 2) TU NOTA                                                          */}
       {/* ------------------------------------------------------------------ */}
-      <div style={S.card}>
+      {/* La tarjeta de la nota va CREMA mientras esté arriba de la vara. No es
+          una animación, es un estado: el día que baje vuelve a blanca sola, sin
+          decir una palabra. */}
+      <div style={pasoLaVara && participa ? S.cardOro : S.card}>
         <div style={{ ...S.lbl, textAlign: "center" }}>Tu nota</div>
 
         <div
@@ -486,15 +529,25 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
             textAlign: "center", color: hayNota ? CIFRA : TENUE,
           }}
         >
-          {fmtN(nota)}
+          {celebraVara ? <span className="v-salta">{fmtN(nota)}</span> : fmtN(nota)}
         </div>
 
         {/* Escala de la nota: 1.00 a 5.00, con el 4.50 del premio marcado.
             Sin nota la barra queda hueca — la marca sigue diciendo dónde está
-            la vara, que es lo que se quería mostrar. */}
+            la vara, que es lo que se quería mostrar.
+            El día que la cruza, el relleno arranca clavado en la raya y barre
+            hasta su nota: por primera vez el verde pasa la marca. */}
         <BarraMarcada
           pct={hayNota ? pctNota(nota) : 0}
-          marcas={[{ clave: "premio", pct: pctNota(meta), fila: 0, texto: `${meta.toFixed(2)} premio` }]}
+          marcas={[{
+            clave: "premio",
+            pct: pctNota(meta),
+            fila: 0,
+            texto: `${meta.toFixed(2)} premio`,
+            cruzada: pasoLaVara && participa,
+            nueva: celebraVara,
+          }]}
+          desde={celebraVara ? pctNota(meta) : null}
         />
 
         {/* La distancia a la vara SÓLO se le nombra a quien puede cobrarla. A
@@ -519,6 +572,26 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
             ) : (
               <>Te faltaron {fmtN(falta)} para el {meta.toFixed(2)}.</>
             )
+          ) : celebraVara ? (
+            // El día del cruce. Dos renglones: el hecho, y debajo la mecánica.
+            // Lo que NO dice: "ganaste $1.000.000". Con días por delante y una
+            // nota que se mueve todos los días, coronarla sería mentirle.
+            <>
+              <span style={{ fontSize: 14, fontWeight: 800, color: C_TXT }}>
+                Cruzaste el {meta.toFixed(2)}.
+              </span>
+              <br />
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: C_APOYO }}>
+                {diasRestantes > 0 ? (
+                  <>
+                    Hoy estás por encima de la vara del {formatoPesos(montoBase)}. Quedan{" "}
+                    {nDias(diasRestantes)} y la nota se mueve todos los días.
+                  </>
+                ) : (
+                  <>Hoy cierra el trimestre y quedas por encima de la vara del {formatoPesos(montoBase)}.</>
+                )}
+              </span>
+            </>
           ) : diasRestantes > 0 ? (
             <>Ya pasaste el {meta.toFixed(2)} y quedan {nDias(diasRestantes)}.</>
           ) : (
