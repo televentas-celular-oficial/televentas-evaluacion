@@ -170,6 +170,9 @@ function cuadroDia(estado) {
   if (estado === "grave") return { background: "var(--est-grave)", border: "1px solid var(--est-grave)" };
   if (estado === "mal") return { background: "var(--est-atencion-fondo)", border: "1px solid var(--est-atencion-borde)" };
   if (estado === "sindato") return { background: "transparent", border: "1px dashed var(--est-sin-dato)" };
+  // `cero`: el día pasó y no hubo nada. No es falla (no baja la nota del día)
+  // pero tampoco es logro, así que no va verde: va hueco.
+  if (estado === "cero") return { background: "var(--vk-neutro)", border: "1px solid var(--vk-borde)" };
   return { background: "var(--vk-bien-fondo)", border: "1px solid var(--vk-bien-texto)" };
 }
 
@@ -318,6 +321,8 @@ export default function DetalleIndicador({
   const dias = !esTrim ? (ind.dias || []) : null;
   // Los únicos días que llevan texto: los que tienen algo que corregir.
   const novedades = (dias || []).filter(d => d.estado === "mal" || d.estado === "grave");
+  // Sólo para reseñas: días en que sí consiguió al menos una.
+  const conResena = (dias || []).filter(d => d.estado === "ok").length;
   const nombreMesMes = !esTrim
     ? ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
        "agosto", "septiembre", "octubre", "noviembre", "diciembre"][m - 1]
@@ -474,11 +479,20 @@ export default function DetalleIndicador({
 
               {/* "Días bien" sólo donde el día ES un veredicto.
                   Reseñas no juzga el día: su nota es el ratio del mes, y por eso
-                  `diaDeIndicador` nunca le pone "mal" (derivar.js:350). Decir
-                  "24 días bien" en un indicador con nota 1.07 sería mentirle. */}
+                  `diaDeIndicador` nunca le pone "mal". Decir "24 días bien" en un
+                  indicador con nota 1.07 sería mentirle — y decir "24 días
+                  registrados" cuando en ninguno consiguió una reseña tampoco
+                  cuenta lo que pasó. Se dice el hecho: cuántos días sin ninguna. */}
               <div style={{ fontSize: 11.5, fontWeight: 800, color: APOYO, marginBottom: novedades.length ? 8 : 0 }}>
                 {ind.id === "resenas" ? (
-                  <strong style={{ color: TINTA }}>{dias.length} días registrados</strong>
+                  conResena === 0 ? (
+                    <strong style={{ color: TINTA }}>{dias.length} días sin reseñas</strong>
+                  ) : (
+                    <>
+                      <strong style={{ color: TINTA }}>{conResena} {conResena === 1 ? "día con reseña" : "días con reseña"}</strong>
+                      {dias.length - conResena > 0 && ` · ${dias.length - conResena} sin ninguna`}
+                    </>
+                  )
                 ) : (
                   <>
                     <strong style={{ color: TINTA }}>{dias.length - novedades.length} días bien</strong>

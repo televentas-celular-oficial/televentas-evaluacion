@@ -347,7 +347,10 @@ function diaDeIndicador(indId, reg) {
   if (indId === "resenas") {
     const n = reg.resenas || 0;
     // Las reseñas no penalizan por día (la nota es el ratio del mes): nunca "mal".
-    return { texto: n ? plural(n, "reseña", "reseñas") : "Sin reseñas", estado: "ok" };
+    // Pero un día sin reseñas TAMPOCO es "ok": pintarlo verde le decía "bien"
+    // a un día en que no consiguió ninguna. `cero` es el estado neutro — ni
+    // logro ni falla — y la tira lo pinta hueco. (Luis, 21-ago-2026)
+    return { texto: n ? plural(n, "reseña", "reseñas") : "Sin reseñas", estado: n ? "ok" : "cero" };
   }
   if (indId === "tienda") {
     const ok = reg.tienda_orden === "bien" && reg.tienda_uniforme === "bien" && reg.tienda_deposito === "bien";
