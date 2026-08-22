@@ -111,36 +111,27 @@ const btnBarra = {
   fontFamily: "inherit",
 };
 
-function BarraMarca({ conSalir = true, onMiClave }) {
+// El botón "🔑 Mi contraseña" se quitó de aquí el 22-ago-2026 (regla de Luis):
+// estaba fijo en TODAS las pantallas, se comía una franja entera arriba y casi
+// nadie lo iba a tocar. Quien necesite cambiar su clave sale y usa "Olvidé mi
+// contraseña" en el login (`IngresoClave`, vista "olvide"), que sí manda correo.
+// La pantalla `MiClave` sigue viva, pero YA NO tiene botón: se llega a ella con
+// `?clave=1` en la URL, igual que el enlace mágico vive en `?acceso=link`. Es
+// una puerta de emergencia, no algo que se ofrezca en pantalla.
+function BarraMarca({ conSalir = true }) {
   return (
     <div className="v-header">
       <div className="v-brand">⚡ Valkyrias</div>
-      <div style={{ display: "flex", gap: 8 }}>
-        {onMiClave && (
-          <button onClick={onMiClave} style={btnBarra}>🔑 Mi contraseña</button>
-        )}
-        {conSalir ? (
-          <button onClick={() => signOut(auth)} style={btnBarra}>Salir</button>
-        ) : null}
-      </div>
+      {conSalir ? (
+        <button onClick={() => signOut(auth)} style={btnBarra}>Salir</button>
+      ) : null}
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Barra mínima para las pantallas que NO llevan BarraMarca (panel de Luis y la
-// pantalla única de Carolina). Existe por una sola razón: quien ya tiene sesión
-// abierta pero NO tiene contraseña (porque entró alguna vez con link mágico)
-// necesita poder ponérsela sin que le llegue ningún correo. Ese es justamente
-// el caso del dueño y del operador el día del cambio.
-// ---------------------------------------------------------------------------
-function BarraClave({ onMiClave }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 14px 0" }}>
-      <button onClick={onMiClave} style={btnBarra}>🔑 Mi contraseña</button>
-    </div>
-  );
-}
+// (Aquí vivía `BarraClave`, una barra que existía SÓLO para el botón de
+// "Mi contraseña" en el panel y en el ingreso diario. Sin el botón no tenía
+// contenido, así que se fue con él — y con ella la franja vacía de arriba.)
 
 // ---------------------------------------------------------------------------
 // Banner del modo "ver como" (prototipo: bannerSimular()).
@@ -179,7 +170,7 @@ function BannerVerComo({ vendedora, onSalir }) {
 // `vendedora` puede ser la de la sesión o, en modo "ver como", la que el admin
 // eligió. Todo lo que se pinta sale de ese objeto → ciudad y rol son los de ella.
 // ---------------------------------------------------------------------------
-function VistaVendedora({ vendedora, verComo = false, onSalirVerComo, onMiClave }) {
+function VistaVendedora({ vendedora, verComo = false, onSalirVerComo }) {
   const [ruta, setRuta] = useState("home");             // home | cash | mes | trim | indicador
   const [indicador, setIndicador] = useState(null);     // { id, modo: "mes" | "trim" }
 
@@ -227,7 +218,7 @@ function VistaVendedora({ vendedora, verComo = false, onSalirVerComo, onMiClave 
           esconde para que no cierre SU sesión creyendo que sale de la simulación. */}
       {/* En modo "ver como" tampoco se ofrece cambiar contraseña: la sesión es
           la de Luis, no la de ella. Cambiarla ahí sería cambiar la de él. */}
-      <BarraMarca conSalir={!verComo} onMiClave={verComo ? null : onMiClave} />
+      <BarraMarca conSalir={!verComo} />
       {verComo && <BannerVerComo vendedora={vendedora} onSalir={onSalirVerComo} />}
       {contenido}
     </div>
@@ -333,7 +324,16 @@ function ValquiriasAppInner({ user, authListo, onUser }) {
 
   // Pantalla "🔑 Mi contraseña" (ponerse/cambiarse la clave desde adentro).
   const [verClave, setVerClave] = useState(false);
-  const abrirClave = () => setVerClave(true);
+  // Puerta de emergencia a "Mi contraseña": `?clave=1`. El botón permanente se
+  // quitó el 22-ago-2026 porque se comía una franja arriba de TODAS las
+  // pantallas. El camino normal para cambiarla es salir y usar "Olvidé mi
+  // contraseña" en el login, que manda correo. Esto es para el caso raro: ya
+  // tiene sesión abierta y quiere cambiarla sin esperar un correo.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("clave") === "1") {
+      setVerClave(true);
+    }
+  }, []);
 
   // Nota: no hace falta resetear `verComoId`/`verClave` cuando cambia el
   // usuario — el padre remonta este componente con `key={user.uid}`, así que
@@ -376,7 +376,6 @@ function ValquiriasAppInner({ user, authListo, onUser }) {
   if (rol === "oficina") {
     return (
       <>
-      <BarraClave onMiClave={abrirClave} />
       <IngresoDiario
         vendedoras={datosFS.vendedoras}
         // Quién está logueado: IngresoDiario lo necesita para saber si puede
@@ -421,8 +420,7 @@ function ValquiriasAppInner({ user, authListo, onUser }) {
     // único que puede corregir un día ya guardado.
     return (
       <>
-        <BarraClave onMiClave={abrirClave} />
-        <AdminHome user={user} onVerComo={(v) => setVerComoId(v?.id ?? null)} />
+          <AdminHome user={user} onVerComo={(v) => setVerComoId(v?.id ?? null)} />
       </>
     );
   }
@@ -447,5 +445,5 @@ function ValquiriasAppInner({ user, authListo, onUser }) {
 
   if (!vendedora) return <SinPerfil email={user.email || ""} />;
 
-  return <VistaVendedora vendedora={vendedora} onMiClave={abrirClave} />;
+  return <VistaVendedora vendedora={vendedora} />;
 }
