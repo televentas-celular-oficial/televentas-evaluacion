@@ -1081,9 +1081,11 @@ export function tabsRankingIndicador(año, mes, datos = null) {
   const hoy = hoyColombia();
   const defs = indicadoresDelMes(año || hoy.año, mes || hoy.mes, datos?.snapshots || null);
   return [
-    { id: "general", label: "General", emoji: "🏅", color: "#7c3aed" },
+    // Estos dos colores viajan hasta el filo izquierdo de cada fila en el
+    // ranking por indicador. Eran hex a mano — y "general" era MORADO.
+    { id: "general", label: "General", emoji: "🏅", color: "var(--vk-titulo)" },
     ...defs.map(d => ({ id: d.id, label: d.label, emoji: d.emoji, color: d.color })),
-    { id: "ventas", label: "Ventas", emoji: "💰", color: "#ea580c" },
+    { id: "ventas", label: "Ventas", emoji: "💰", color: "var(--est-medio)" },
   ];
 }
 

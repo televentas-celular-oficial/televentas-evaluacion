@@ -106,8 +106,8 @@ function guardarIngresoDiario(datos, { fecha, filas, vids }) {
 // (El prototipo la deja siempre visible; lo que se quitó fue la fila de iconos.)
 // ---------------------------------------------------------------------------
 const btnBarra = {
-  fontSize: 12, fontWeight: 700, color: "#94a3b8", background: "transparent",
-  border: "1px solid #e2e8f0", padding: "6px 10px", borderRadius: 8, cursor: "pointer",
+  fontSize: 12, fontWeight: 700, color: "var(--vk-tenue)", background: "transparent",
+  border: "1px solid var(--vk-borde)", padding: "6px 10px", borderRadius: 8, cursor: "pointer",
   fontFamily: "inherit",
 };
 
@@ -251,15 +251,15 @@ function ErrorDatos({ error, onReintentar }) {
     <div className="v-app">
       <div className="v-loading" style={{ padding: 40, textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>📡</div>
-        <div style={{ fontSize: 15, fontWeight: 900, color: "#1e1b4b", marginBottom: 8 }}>
+        <div style={{ fontSize: 15, fontWeight: 900, color: "var(--vk-titulo)", marginBottom: 8 }}>
           No pudimos cargar tus datos
         </div>
-        <div style={{ fontSize: 12.5, color: "#64748b", fontWeight: 700, marginBottom: 6, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 12.5, color: "var(--vk-secundario)", fontWeight: 700, marginBottom: 6, lineHeight: 1.6 }}>
           Tu ingreso estuvo bien — lo que falló fue traer la información. Casi siempre
           es la conexión. Toca «Reintentar»; si vuelve a pasar, avísale a Luis.
         </div>
         {codigo && (
-          <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, marginBottom: 18, wordBreak: "break-word" }}>
+          <div style={{ fontSize: 11, color: "var(--vk-tenue)", fontWeight: 700, marginBottom: 18, wordBreak: "break-word" }}>
             {String(codigo)}
           </div>
         )}
@@ -267,7 +267,7 @@ function ErrorDatos({ error, onReintentar }) {
           <button
             onClick={onReintentar}
             style={{
-              fontSize: 12.5, fontWeight: 800, color: "#fff", background: "var(--vk-titulo)",
+              fontSize: 12.5, fontWeight: 800, color: "var(--vk-tarjeta)", background: "var(--vk-titulo)",
               border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer",
               fontFamily: "inherit",
             }}
@@ -277,8 +277,8 @@ function ErrorDatos({ error, onReintentar }) {
           <button
             onClick={() => signOut(auth)}
             style={{
-              fontSize: 12, fontWeight: 700, color: "#94a3b8", background: "transparent",
-              border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 10, cursor: "pointer",
+              fontSize: 12, fontWeight: 700, color: "var(--vk-tenue)", background: "transparent",
+              border: "1px solid var(--vk-borde)", padding: "10px 16px", borderRadius: 10, cursor: "pointer",
               fontFamily: "inherit",
             }}
           >
@@ -303,10 +303,10 @@ function SinPerfil({ email }) {
     <div className="v-app">
       <div className="v-loading" style={{ padding: 40, textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>🤔</div>
-        <div style={{ fontSize: 15, fontWeight: 900, color: "#1e1b4b", marginBottom: 8 }}>
+        <div style={{ fontSize: 15, fontWeight: 900, color: "var(--vk-titulo)", marginBottom: 8 }}>
           No encontramos tu perfil
         </div>
-        <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700, marginBottom: 20, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 12, color: "var(--vk-secundario)", fontWeight: 700, marginBottom: 20, lineHeight: 1.6 }}>
           {email ? <>El correo <strong>{email}</strong> no está</> : "Tu correo no está"} en la
           lista del equipo. Escríbele al administrador y dile con cuál correo estás entrando —
           él lo registra y entras enseguida.
@@ -314,8 +314,8 @@ function SinPerfil({ email }) {
         <button
           onClick={() => signOut(auth)}
           style={{
-            fontSize: 12, fontWeight: 700, color: "#94a3b8", background: "transparent",
-            border: "1px solid #e2e8f0", padding: "8px 16px", borderRadius: 8, cursor: "pointer",
+            fontSize: 12, fontWeight: 700, color: "var(--vk-tenue)", background: "transparent",
+            border: "1px solid var(--vk-borde)", padding: "8px 16px", borderRadius: 8, cursor: "pointer",
           }}
         >
           Cerrar sesión
@@ -398,17 +398,12 @@ function ValquiriasAppInner({ user, authListo, onUser }) {
           <div className="v-app">
             <BarraMarca conSalir={false} />
             <div className="v-loading" style={{ padding: 30, textAlign: "center" }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#1e1b4b", marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--vk-titulo)", marginBottom: 14 }}>
                 Esa vendedora ya no está en la lista del equipo.
               </div>
-              <button
-                onClick={() => setVerComoId(null)}
-                style={{
-                  fontSize: 12, fontWeight: 800, color: "#5b21b6", background: "#f3e8ff",
-                  border: "1px solid #ddd3f5", padding: "8px 16px", borderRadius: 10, cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >← Volver al panel</button>
+              <button className="v-back-btn" onClick={() => setVerComoId(null)}>
+                ‹ Volver al panel
+              </button>
             </div>
           </div>
         );

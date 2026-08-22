@@ -244,7 +244,7 @@ export default function LoginMagicLink({ onLoggedIn, onVolverAClave }) {
 
   const linkTxt = {
     background: "none", border: "none", font: "inherit", fontSize: 12.5,
-    fontWeight: 700, color: "#7c3aed", cursor: "pointer", marginTop: 14,
+    fontWeight: 700, color: "var(--vk-secundario)", cursor: "pointer", marginTop: 14,
     textDecoration: "underline", padding: 0,
   };
 
@@ -272,8 +272,8 @@ export default function LoginMagicLink({ onLoggedIn, onVolverAClave }) {
             <div className="v-login-hero">⚡ Valkyrias</div>
             <div className="v-login-sub">Confirma tu correo para entrar</div>
             <div style={{
-              fontSize: 12.5, color: "#475569", fontWeight: 600, lineHeight: 1.6,
-              textAlign: "left", background: "#f8fafc", borderRadius: 10,
+              fontSize: 12.5, color: "var(--vk-secundario)", fontWeight: 600, lineHeight: 1.6,
+              textAlign: "left", background: "var(--vk-fondo)", borderRadius: 10,
               padding: "11px 13px", marginBottom: 16,
             }}>
               Tu link es correcto ✅ Como lo abriste en otro navegador, necesitamos que
@@ -298,7 +298,7 @@ export default function LoginMagicLink({ onLoggedIn, onVolverAClave }) {
               Entrar
             </button>
             {msg && <div className={"v-login-msg " + msgTipo}>{msg}</div>}
-            <div style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 700, marginTop: 14, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 11.5, color: "var(--vk-tenue)", fontWeight: 700, marginTop: 14, lineHeight: 1.5 }}>
               Puedes intentar las veces que necesites: <strong>este link no se gasta</strong>.
             </div>
             <button style={linkTxt} onClick={() => { setMsg(null); setFase("form"); }}>
@@ -318,8 +318,8 @@ export default function LoginMagicLink({ onLoggedIn, onVolverAClave }) {
           <div className="v-login-hero">⚡ Valkyrias</div>
           <div className="v-login-sub">Entrar con un link al correo</div>
           <div style={{
-            fontSize: 12, color: "#92400e", fontWeight: 700, lineHeight: 1.55,
-            textAlign: "left", background: "#fffbeb", borderRadius: 10,
+            fontSize: 12, color: "var(--vk-noche-apoyo)", fontWeight: 700, lineHeight: 1.55,
+            textAlign: "left", background: "var(--vk-noche)", borderRadius: 10,
             padding: "10px 12px", marginBottom: 16,
           }}>
             Esto es la <strong>salida de emergencia</strong>. Solo se pueden mandar
@@ -356,7 +356,7 @@ export default function LoginMagicLink({ onLoggedIn, onVolverAClave }) {
               </button>
             </div>
           )}
-          <div style={{ marginTop: 18, fontSize: 11, color: "#94a3b8", fontWeight: 700, lineHeight: 1.55 }}>
+          <div style={{ marginTop: 18, fontSize: 11, color: "var(--vk-tenue)", fontWeight: 700, lineHeight: 1.55 }}>
             💬 ¿No tienes email de acceso? Escríbele al administrador.
             <br />
             Si ya tenías contraseña, entrar por link te la borra: vuelve a crearla
