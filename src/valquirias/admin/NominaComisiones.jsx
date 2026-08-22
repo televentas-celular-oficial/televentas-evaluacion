@@ -183,23 +183,25 @@ export default function NominaComisiones({ onVolver }) {
       {/* HERO total */}
       <div style={{
         background: "var(--vk-noche)",
-        color: "var(--vk-tarjeta)",
+        border: "1px solid var(--vk-metal)",
+        // Era un degradado verde con letra blanca. Al pasar el fondo a crema, la
+        // letra blanca quedó INVISIBLE. Todo fondo claro va con tinta.
+        color: "var(--vk-noche-texto)",
         padding: "22px 20px",
         borderRadius: 20,
         marginBottom: 10,
-        boxShadow: "0 15px 35px rgba(16, 185, 129, 0.35)",
+        boxShadow: "0 2px 10px rgba(var(--vk-metal-rgb), 0.25)",
         position: "relative",
         overflow: "hidden",
         textAlign: "center",
       }}>
-        <div style={{ position: "absolute", top: "-50%", right: "-30%", width: 260, height: 260, background: "radial-gradient(circle, rgba(255,255,255,0.25), transparent 60%)", borderRadius: "50%", pointerEvents: "none" }} />
-        <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 2, opacity: 0.95, marginBottom: 4, position: "relative" }}>
+        <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 2, color: "var(--vk-noche-apoyo)", marginBottom: 4, position: "relative" }}>
           💰 Total a pagar · {MES_NOMBRES[selMes.mes - 1]} {selMes.año}
         </div>
-        <div style={{ fontSize: 36, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1, position: "relative", textShadow: "0 2px 6px rgba(0,0,0,0.15)" }}>
+        <div style={{ fontSize: 36, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1, position: "relative" }}>
           {formatoPesos(totalGen)}
         </div>
-        <div style={{ fontSize: 12, marginTop: 8, opacity: 0.95, fontWeight: 700, position: "relative" }}>
+        <div style={{ fontSize: 12, marginTop: 8, fontWeight: 700, position: "relative" }}>
           🟢 MED {formatoPesos(totalMed)} · 🟡 BOG {formatoPesos(totalBog)}
         </div>
       </div>

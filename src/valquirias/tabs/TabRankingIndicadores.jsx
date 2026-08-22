@@ -224,8 +224,10 @@ function chipStyle(activo) {
     padding: "6px 10px",
     fontSize: 11,
     fontWeight: 800,
-    background: activo ? "var(--vk-noche)" : "var(--vk-tarjeta)",
-    color: activo ? "var(--vk-tarjeta)" : "var(--vk-secundario)",
+    // El chip activo es TINTA LLENA, como todo botón activo de la app. Estaba
+    // en crema con letra blanca: invisible.
+    background: activo ? "var(--vk-titulo)" : "var(--vk-tarjeta)",
+    color: activo ? "var(--vk-sobre-tinta)" : "var(--vk-secundario)",
     border: "1.5px solid " + (activo ? "transparent" : "var(--vk-borde)"),
     borderRadius: 8,
     cursor: "pointer",
