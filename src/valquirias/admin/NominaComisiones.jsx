@@ -87,11 +87,27 @@ export default function NominaComisiones({ onVolver }) {
   // Cálculo automático con datos reales de Firestore — sin fallbacks mock.
   const claveMes = `${selMes.año}_${String(selMes.mes).padStart(2, "0")}`;
   const ventasFS = datos.metas?.[claveMes]?.vendidas || {};
+  // La foto del mes, si ya está cerrado. De aquí sale la comisión congelada.
+  const snapMes = datos.snapshots?.[claveMes] || null;
   const vendedoras = datos.vendedoras || [];
   const hayVendedoras = vendedoras.length > 0;
-  const hayVentasMes = Object.values(ventasFS).some(v => Number(v) > 0);
+  const hayVentasMes =
+    Object.values(ventasFS).some(v => Number(v) > 0) ||
+    Object.values(snapMes?.vendedoras || {}).some(r => Number(r?.comision?.ventas) > 0);
 
   const filas = useMemo(() => {
+    // EL MES CERRADO MANDA. Desde el 22-ago-2026 el cierre guarda la comisión
+    // con la que se liquidó; antes esta pantalla la recalculaba siempre desde
+    // `metas[mes].vendidas`, el documento VIVO que el worker reescribe cada 5
+    // minutos, así que un resync movía la cifra de un mes ya pagado.
+    // Misma regla que la nota (calculos.js:434): si la clave está, manda la foto.
+    // Snapshots anteriores a este cambio no traen `comision` → cálculo vivo,
+    // que da exactamente el mismo número. Nada de lo ya cerrado se mueve.
+    const congeladaDe = (vid) => {
+      const c = snapMes?.vendedoras?.[vid]?.comision;
+      return c && Object.prototype.hasOwnProperty.call(c, "monto") ? c : null;
+    };
+
     return vendedoras
       // QUIÉN ENTRA EN LA NÓMINA DE ESTE MES:
       // las activas de hoy, MÁS cualquiera que tenga ventas registradas en el
@@ -100,13 +116,38 @@ export default function NominaComisiones({ onVolver }) {
       // `activa: false` y desaparecía de la nómina de los meses que SÍ trabajó
       // y SÍ generó comisión — el dueño le quedaba debiendo sin enterarse.
       // Quien salió y no vendió nada ese mes sigue fuera (no aporta ruido).
-      .filter(v => v.activa !== false || Number(ventasFS[v.id]) > 0)
+      // En un mes cerrado la vara son las ventas CONGELADAS: si la foto dice que
+      // vendió, entra, aunque hoy el documento vivo ya no la tenga.
+      .filter(v => v.activa !== false || Number(ventasFS[v.id]) > 0 || Number(congeladaDe(v.id)?.ventas) > 0)
       .map(v => {
-        const ventas = ventasFS[v.id] || 0;
+        const cong = congeladaDe(v.id);
         // Rol que tenía en el mes SELECCIONADO, no el de hoy. Si el ascenso
         // cayó dentro del mes, `datosCambioRol` hace que calcComisionMensual
         // prorratee día a día. Fuente única: lib/helpers.js.
         const { rol, datosCambioRol, historico } = rolDeMes(v, selMes.año, selMes.mes);
+
+        if (cong) {
+          return {
+            v: { ...v, rolTienda: cong.rol || rol, ciudad: cong.ciudad ?? v.ciudad },
+            ventas: cong.ventas,
+            calc: {
+              comision: cong.monto,
+              tramo: cong.tramo,
+              pct: cong.pct,
+              aplicaPiso: cong.aplicaPiso,
+              pasoPiso: cong.pasoPiso,
+              detalle: cong.detalle,
+              proRata: cong.proRata || undefined,
+            },
+            rolMes: cong.rol || rol,
+            rolHistorico: historico,
+            ascensoEnEsteMes: !!cong.ascensoEnEsteMes,
+            yaNoTrabaja: v.activa === false,
+            congelada: true,
+          };
+        }
+
+        const ventas = ventasFS[v.id] || 0;
         const calc = calcComisionMensual({
           ciudad: v.ciudad,
           rol,
@@ -126,10 +167,16 @@ export default function NominaComisiones({ onVolver }) {
           ascensoEnEsteMes: !!datosCambioRol,
           // true = hoy ya no está en el roster, pero este mes trabajó y vendió
           yaNoTrabaja: v.activa === false,
+          congelada: false,
         };
       })
       .sort((a, b) => b.calc.comision - a.calc.comision);
-  }, [selMes, datos.metas, datos.vendedoras]);
+  }, [selMes, datos.metas, datos.vendedoras, snapMes]);
+
+  // Todas las filas leídas de la foto = el mes está de verdad congelado. Si
+  // alguna se calculó viva (snapshot viejo sin `comision`, o alguien que entró
+  // después del cierre) no se promete un candado que no existe.
+  const mesCongelado = filas.length > 0 && filas.every(f => f.congelada);
 
   const filasMed = filas.filter(f => f.v.ciudad === "MED");
   const filasBog = filas.filter(f => f.v.ciudad === "BOG");
@@ -222,7 +269,15 @@ export default function NominaComisiones({ onVolver }) {
           año que sí la tiene — a propósito, porque liquidar en $0 se leería como
           "no vendió". Pero heredar en silencio sería pagar con una regla que
           nadie autorizó, así que se dice, y se dice arriba de las cifras. */}
-      {tramosHeredados(selMes.año) && (
+      {/* El candado. Un mes cerrado ya no se recalcula: se lee la foto. */}
+      {mesCongelado && (
+        <div style={{ padding: "10px 14px", background: "rgba(var(--vk-metal-rgb), 0.10)", borderLeft: "3px solid var(--vk-metal-borde)", borderRadius: 10, fontSize: 11.5, color: "var(--vk-titulo)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
+          🔒 Mes cerrado. Estas cifras son las que se congelaron al cerrarlo — no
+          se vuelven a calcular, aunque cambien las ventas en systemlap.
+        </div>
+      )}
+
+      {!mesCongelado && tramosHeredados(selMes.año) && (
         <div style={{ padding: "12px 14px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid var(--adm-alerta-borde)", borderRadius: 10, fontSize: 11.5, color: "var(--adm-alerta)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
           ⚠️ Todavía no están cargados los <strong>tramos de comisión de {selMes.año}</strong>.
           Estas cifras están calculadas con los cortes del año anterior. Cárgalos antes de pagar.

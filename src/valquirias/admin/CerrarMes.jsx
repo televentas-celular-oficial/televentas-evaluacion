@@ -47,7 +47,9 @@
 
 import { useState, useMemo } from "react";
 import { useDatos } from "../data/DatosContext.jsx";
-import { hoyColombia } from "../lib/helpers.js";
+import {
+  hoyColombia, rolDeMes, calcComisionMensual, tramosDe, pisoAplica, PISO_MED,
+} from "../lib/helpers.js";
 import { MES_NAMES, esFormulaV2, getIndicadores } from "../../lib/constantes.js";
 import { claveMes, calcNotaMensual, fmtN } from "../../lib/calculos.js";
 
@@ -188,20 +190,70 @@ function detectarFaltantes({ registros, metas, vendedoras }, añoC, mesC) {
 
 // El snapshot exacto que se va a escribir. La vista previa usa ESTA misma
 // función, así que lo que se muestra es literalmente lo que se congela.
+// ════════════════════════════════════════════════════════════════════════════
+// LA COMISIÓN TAMBIÉN SE CONGELA (22-ago-2026)
+// ════════════════════════════════════════════════════════════════════════════
+// Hasta hoy el cierre congelaba la NOTA pero no la PLATA: la nómina recalculaba
+// la comisión de cada mes cada vez que se abría, leyendo `metas[mes].vendidas`,
+// que es el documento VIVO que el worker reescribe cada 5 minutos. O sea que un
+// resync que tocara las ventas de junio movía la comisión de junio — un mes que
+// Luis ya pagó el 15 de julio.
+//
+// Ahora el cierre guarda la cifra con la que se liquidó y todo lo que hizo
+// falta para llegar a ella: las ventas exactas, la ciudad, el rol de ESE mes
+// (con la pro-rata si el ascenso cayó dentro), el tramo y el piso vigentes.
+// Es la misma regla que ya rige para la nota: si la clave está en el snapshot,
+// manda el snapshot (ver calculos.js:434).
+//
+// Es ADITIVO: los snapshots ya escritos no traen `comision`, así que caen al
+// cálculo vivo como siempre. Nada de lo ya cerrado cambia de cifra.
 function construirSnapshot({ registros, metas, vendedoras }, añoC, mesC) {
+  const ventasDelMes = metas?.[claveMes(añoC, mesC)]?.vendidas || {};
+
   const snap = {
     año: añoC, mes: mesC,
     version: esFormulaV2(añoC, mesC) ? "v2" : "v1",
     indicadores: getIndicadores(añoC, mesC),
+    // Las reglas de plata que regían ESE mes, congeladas al lado de las notas.
+    // Los tramos cambian cada 1 de enero y el piso de MED arrancó en ago-2026:
+    // guardarlas deja el recibo completo de por qué se pagó lo que se pagó.
+    tramos: tramosDe(añoC),
+    pisoMed: pisoAplica("MED", añoC, mesC) ? PISO_MED : 0,
     fechaCierre: new Date().toISOString(),
     vendedoras: {},
   };
   (vendedoras || []).forEach(v => {
     const r = calcNotaMensual(registros, metas, v.id, añoC, mesC, null, vendedoras);
+
+    // Mismas dos líneas que usa la nómina (NominaComisiones.jsx:105-119), a
+    // propósito: la cifra que se congela tiene que ser exactamente la que el
+    // dueño tenía en pantalla al momento de cerrar, no una parecida.
+    const ventas = Number(ventasDelMes[v.id]) || 0;
+    const { rol, datosCambioRol } = rolDeMes(v, añoC, mesC);
+    const calc = calcComisionMensual({
+      ciudad: v.ciudad, rol, ventasMes: ventas, datosCambioRol, año: añoC, mes: mesC,
+    });
+
     snap.vendedoras[v.id] = {
       notaBase: r.notaBase, notaVentas: r.notaVentas, notaFinal: r.notaFinal,
       bono: r.bono || 0, dias: r.dias, porInd: r.porInd, detalle: r.detalle,
       real: r.real, meta: r.meta, pct: r.pct,
+      // Campo por campo y no `...calc`: el spread dejaría un `comision.comision`
+      // dentro del objeto `comision`, que es justo el nombre con el que alguien
+      // se equivoca al leerlo. Los pesos se llaman `monto`.
+      comision: {
+        ventas,
+        ciudad: v.ciudad || null,
+        rol,
+        ascensoEnEsteMes: !!datosCambioRol,
+        monto: calc.comision,
+        pct: calc.pct ?? null,
+        tramo: calc.tramo || null,
+        aplicaPiso: !!calc.aplicaPiso,
+        pasoPiso: !!calc.pasoPiso,
+        detalle: calc.detalle || null,
+        proRata: calc.proRata || null,
+      },
     };
   });
   return snap;
