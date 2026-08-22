@@ -66,11 +66,11 @@ import {
 import { MES_NAMES, PESOS_TRIMESTRE } from "../../lib/constantes.js";
 import { formatoPesos, hoyColombia } from "../lib/helpers.js";
 
-const CIUDAD_COLOR = { MED: "#10b981", BOG: "#f59e0b" };
+const CIUDAD_COLOR = { MED: "var(--vk-bien-texto)", BOG: "var(--est-atencion-borde)" };
 const CIUDAD_NOMBRE = { MED: "Medellín", BOG: "Bogotá" };
 
 const FILTROS = [
-  { val: "TODAS", lab: "🌎 Todas", col: "#7c3aed" },
+  { val: "TODAS", lab: "🌎 Todas", col: "var(--vk-titulo)" },
   { val: "MED", lab: "🟢 Medellín", col: CIUDAD_COLOR.MED },
   { val: "BOG", lab: "🟡 Bogotá", col: CIUDAD_COLOR.BOG },
 ];
@@ -91,8 +91,8 @@ function BadgeCiudad({ ciudad }) {
     <span style={{
       fontSize: 9, fontWeight: 900, letterSpacing: 0.5, textTransform: "uppercase",
       padding: "1px 6px", borderRadius: 5, flexShrink: 0,
-      background: ciudad === "MED" ? "#ecfdf5" : "#fffbeb",
-      color: ciudad === "MED" ? "#047857" : "#92400e",
+      background: ciudad === "MED" ? "var(--vk-bien-fondo)" : "var(--vk-noche)",
+      color: ciudad === "MED" ? "var(--vk-bien)" : "var(--vk-noche-apoyo)",
       border: `1px solid ${CIUDAD_COLOR[ciudad]}40`,
     }}>{ciudad === "MED" ? "🟢 MED" : "🟡 BOG"}</span>
   );
@@ -245,7 +245,7 @@ export default function TrimestreAdmin({ onVolver }) {
       </div>
 
       {/* Filtro de ciudad */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 10, padding: 6, background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 10, padding: 6, background: "var(--vk-fondo)", borderRadius: 12, border: "1px solid var(--vk-borde)" }}>
         {FILTROS.map(({ val, lab, col }) => {
           const sel = filtroCiudad === val;
           return (
@@ -254,7 +254,7 @@ export default function TrimestreAdmin({ onVolver }) {
                 flex: 1, padding: "8px 4px", borderRadius: 9, border: "none", cursor: "pointer",
                 fontSize: 12, fontWeight: 900,
                 background: sel ? col : "transparent",
-                color: sel ? "#fff" : "#64748b",
+                color: sel ? "var(--vk-tarjeta)" : "var(--vk-secundario)",
               }}>{lab}</button>
           );
         })}
@@ -268,42 +268,42 @@ export default function TrimestreAdmin({ onVolver }) {
             <button key={a} onClick={() => { setAño(a); if (a === hoy.año && q > qActual) setQ(qActual); }}
               style={{
                 padding: "5px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 900,
-                background: sel ? "#1e1b4b" : "#fff", color: sel ? "#fff" : "#64748b",
-                border: "1.5px solid " + (sel ? "transparent" : "#e2e8f0"),
+                background: sel ? "var(--vk-titulo)" : "var(--vk-tarjeta)", color: sel ? "var(--vk-tarjeta)" : "var(--vk-secundario)",
+                border: "1.5px solid " + (sel ? "transparent" : "var(--vk-borde)"),
               }}>{a}</button>
           );
         })}
-        <div style={{ width: 1, height: 20, background: "#e2e8f0", margin: "0 2px" }} />
+        <div style={{ width: 1, height: 20, background: "var(--vk-borde)", margin: "0 2px" }} />
         {qsDisponibles.map(n => {
           const sel = q === n;
           return (
             <button key={n} onClick={() => setQ(n)}
               style={{
                 padding: "5px 16px", borderRadius: 16, cursor: "pointer", fontSize: 11, fontWeight: 900,
-                background: sel ? "linear-gradient(135deg, #7c3aed, #ec4899)" : "#fff",
-                color: sel ? "#fff" : "#7c3aed",
-                border: "1.5px solid " + (sel ? "transparent" : "#e2e8f0"),
+                background: sel ? "var(--vk-titulo)" : "var(--vk-tarjeta)",
+                color: sel ? "var(--vk-sobre-tinta)" : "var(--vk-secundario)",
+                border: "1.5px solid " + (sel ? "transparent" : "var(--vk-borde)"),
               }}>Q{n}</button>
           );
         })}
       </div>
 
-      <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: "var(--vk-secundario)", fontWeight: 700, marginBottom: 12 }}>
         {meses.map(m => MES_NAMES[m - 1]).join(" · ")} · Pesos: 20% · 30% · 50%
       </div>
 
       {/* ================= PREMIOS ================= */}
       {ganadoras.length > 0 && (
         <div style={{
-          background: "linear-gradient(135deg, #fff7ed, #fff)",
-          border: "2px solid #fed7aa", borderRadius: 18, padding: 14, marginBottom: 14,
+          background: "var(--vk-noche)",
+          border: "1px solid var(--vk-metal)", borderRadius: 18, padding: 14, marginBottom: 14,
           boxShadow: "0 8px 24px rgba(234, 88, 12, 0.10)",
         }}>
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 10, fontWeight: 900, color: "#ea580c", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 4 }}>
+            <div style={{ fontSize: 10, fontWeight: 900, color: "var(--est-medio)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 4 }}>
               🏆 Premios {trimestreFinal ? "(final)" : "(tiempo real)"}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 900, color: "#9a3412" }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: "var(--est-medio)" }}>
               Total a entregar: <span style={{ fontSize: 20 }}>{formatoPesos(totalGeneral)}</span>
             </div>
             {/* El reconocimiento sorpresa (la TV) se retiró el 21-ago-2026: se
@@ -314,13 +314,13 @@ export default function TrimestreAdmin({ onVolver }) {
           {ganadoras.map((g, idx) => {
             const esTop = idx === 0 && g.total >= montoBase + montoExtra;
             const fondoCard = g.total >= montoBase + montoExtra
-              ? "linear-gradient(135deg, #fef9c3, #fff)"
+              ? "var(--vk-noche)"
               : g.ciudad === "MED"
-                ? "linear-gradient(135deg, #ecfdf5, #fff)"
-                : "linear-gradient(135deg, #fffbeb, #fff)";
+                ? "var(--vk-bien-fondo)"
+                : "var(--vk-noche)";
             const bordeCard = esTop
-              ? "2px solid #fde047"
-              : `1px solid ${g.ciudad === "MED" ? "#6ee7b7" : "#fde68a"}`;
+              ? "2px solid var(--vk-metal)"
+              : `1px solid ${g.ciudad === "MED" ? "var(--vk-bien-texto)" : "var(--est-atencion-borde)"}`;
             const palabras = enPalabras(g.total);
 
             return (
@@ -333,38 +333,38 @@ export default function TrimestreAdmin({ onVolver }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                   <div style={{
                     width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-                    background: CIUDAD_COLOR[g.ciudad], color: "#fff",
+                    background: CIUDAD_COLOR[g.ciudad], color: "var(--vk-tarjeta)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 16, fontWeight: 900,
                   }}>{(g.nombre || "?")[0]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                      <div style={{ fontWeight: 900, fontSize: 14, color: "#1e1b4b" }}>{g.nombre}</div>
+                      <div style={{ fontWeight: 900, fontSize: 14, color: "var(--vk-titulo)" }}>{g.nombre}</div>
                       <BadgeCiudad ciudad={g.ciudad} />
                     </div>
-                    <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginTop: 2 }}>
+                    <div style={{ fontSize: 10, color: "var(--vk-secundario)", fontWeight: 700, marginTop: 2 }}>
                       Nota trimestral: <span style={{ color: colorN(g.notaTrim), fontWeight: 900 }}>{fmtN(g.notaTrim)}</span>
-                      {!g.completo && <span style={{ color: "#94a3b8" }}> · {g.mesesConDatos}/3 meses</span>}
+                      {!g.completo && <span style={{ color: "var(--vk-tenue)" }}> · {g.mesesConDatos}/3 meses</span>}
                     </div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 9, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}>Gana</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, lineHeight: 1.1, color: esTop ? "#854d0e" : "#9a3412" }}>
+                    <div style={{ fontSize: 9, fontWeight: 900, color: "var(--vk-secundario)", textTransform: "uppercase", letterSpacing: 0.5 }}>Gana</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, lineHeight: 1.1, color: esTop ? "var(--est-grave)" : "var(--est-medio)" }}>
                       {formatoPesos(g.total)}
                     </div>
                     {palabras && (
-                      <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", marginTop: 2 }}>{palabras}</div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "var(--vk-secundario)", marginTop: 2 }}>{palabras}</div>
                     )}
                   </div>
                 </div>
 
                 {/* Razones de cada premio */}
-                <div style={{ borderTop: `1px dashed ${esTop ? "#fde047" : "#e2e8f0"}`, paddingTop: 8 }}>
+                <div style={{ borderTop: `1px dashed ${esTop ? "var(--vk-metal)" : "var(--vk-borde)"}`, paddingTop: 8 }}>
                   {g.razones.map((r, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 0", fontSize: 11, color: "#475569", fontWeight: 700 }}>
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 0", fontSize: 11, color: "var(--vk-secundario)", fontWeight: 700 }}>
                       <span style={{ flexShrink: 0 }}>{r.emoji}</span>
                       <span style={{ flex: 1 }}>{r.razon}</span>
-                      <span style={{ fontWeight: 900, color: "#1e1b4b" }}>{formatoPesos(r.monto)}</span>
+                      <span style={{ fontWeight: 900, color: "var(--vk-titulo)" }}>{formatoPesos(r.monto)}</span>
                     </div>
                   ))}
                 </div>
@@ -375,7 +375,7 @@ export default function TrimestreAdmin({ onVolver }) {
       )}
 
       {rankingTrim.length > 0 && ganadoras.length === 0 && (
-        <div style={{ padding: "12px 14px", background: "rgba(245, 158, 11, 0.10)", borderLeft: "3px solid #f59e0b", borderRadius: 10, fontSize: 11, color: "#92400e", fontWeight: 700, marginBottom: 12, lineHeight: 1.55 }}>
+        <div style={{ padding: "12px 14px", background: "rgba(245, 158, 11, 0.10)", borderLeft: "3px solid var(--est-atencion-borde)", borderRadius: 10, fontSize: 11, color: "var(--vk-noche-apoyo)", fontWeight: 700, marginBottom: 12, lineHeight: 1.55 }}>
           🏆 Todavía nadie llega a 4.50 en el trimestre — sin premio por ahora.
         </div>
       )}
@@ -383,18 +383,18 @@ export default function TrimestreAdmin({ onVolver }) {
       {/* ================= RANKING TRIMESTRAL ================= */}
       {rankingTrim.length > 0 && (
         <>
-          <div style={{ fontSize: 11, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: "var(--vk-secundario)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8 }}>
             Ranking trimestral
           </div>
           {rankingTrim.map(v => {
             const esExtra = idsExtra.has(v.id);
             const conBono = idsConBono.has(v.id);
-            const colorBorde = esExtra ? "#fbbf24" : conBono ? "#ea580c" : "#cbd5e1";
+            const colorBorde = esExtra ? "var(--vk-metal)" : conBono ? "var(--est-medio)" : "var(--est-sin-dato)";
             const fondo = esExtra
-              ? "linear-gradient(90deg, #fef9c3, #fff 40%)"
+              ? "var(--vk-noche)"
               : conBono
-                ? "linear-gradient(90deg, #ffedd5, #fff 40%)"
-                : "#fff";
+                ? "var(--est-medio-fondo)"
+                : "var(--vk-tarjeta)";
             return (
               <div key={v.id} style={{
                 display: "flex", alignItems: "center", gap: 11,
@@ -407,29 +407,29 @@ export default function TrimestreAdmin({ onVolver }) {
                   width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontWeight: 900, fontSize: 15,
-                  color: v.rt <= 3 ? "#fff" : "#64748b",
+                  color: v.rt <= 3 ? "var(--vk-tarjeta)" : "var(--vk-secundario)",
                   background:
-                    v.rt === 1 ? "linear-gradient(135deg, #fbbf24, #f59e0b)" :
-                    v.rt === 2 ? "linear-gradient(135deg, #cbd5e1, #94a3b8)" :
-                    v.rt === 3 ? "linear-gradient(135deg, #fb923c, #c2410c)" : "#f1f5f9",
+                    v.rt === 1 ? "var(--vk-metal)" :
+                    v.rt === 2 ? "var(--est-sin-dato)" :
+                    v.rt === 3 ? "var(--est-medio)" : "var(--vk-fondo-hueco)",
                 }}>#{v.rt}</div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <div style={{ fontWeight: 900, fontSize: 13, color: "#1e1b4b" }}>{v.nombre}</div>
+                    <div style={{ fontWeight: 900, fontSize: 13, color: "var(--vk-titulo)" }}>{v.nombre}</div>
                     <BadgeCiudad ciudad={v.ciudad} />
                     {conBono && (
-                      <span style={{ fontSize: 10, fontWeight: 900, color: "#9a3412", background: "#ffedd5", padding: "2px 8px", borderRadius: 8 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "var(--est-medio)", background: "var(--est-medio-fondo)", padding: "2px 8px", borderRadius: 8 }}>
                         ⭐ ≥4.50 · {formatoPesos(montoBase)}
                       </span>
                     )}
                     {esExtra && (
-                      <span style={{ fontSize: 10, fontWeight: 900, color: "#854d0e", background: "#fef9c3", padding: "2px 8px", borderRadius: 8 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "var(--est-grave)", background: "var(--vk-noche)", padding: "2px 8px", borderRadius: 8 }}>
                         🌟 +{formatoPesos(montoExtra)} EXTRA
                       </span>
                     )}
                     {!v.completo && (
-                      <span style={{ fontSize: 9, fontWeight: 900, color: "#94a3b8", background: "#f1f5f9", padding: "1px 6px", borderRadius: 8 }}>
+                      <span style={{ fontSize: 9, fontWeight: 900, color: "var(--vk-tenue)", background: "var(--vk-fondo-hueco)", padding: "1px 6px", borderRadius: 8 }}>
                         {v.mesesConDatos}/3 meses
                       </span>
                     )}
@@ -438,9 +438,9 @@ export default function TrimestreAdmin({ onVolver }) {
                   {/* Nota de cada mes con su peso ×20/30/50% */}
                   <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
                     {v.mesesTrim.map(m => (
-                      <div key={m.mes} style={{ fontSize: 10, color: "#475569", background: "#f8fafc", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
-                        {MES_NAMES[m.mes - 1]}: <span style={{ color: m.nota !== null ? colorN(m.nota) : "#94a3b8", fontWeight: 900 }}>{fmtN(m.nota)}</span>
-                        <span style={{ color: "#cbd5e1" }}> ×{m.peso}%</span>
+                      <div key={m.mes} style={{ fontSize: 10, color: "var(--vk-secundario)", background: "var(--vk-fondo)", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
+                        {MES_NAMES[m.mes - 1]}: <span style={{ color: m.nota !== null ? colorN(m.nota) : "var(--vk-tenue)", fontWeight: 900 }}>{fmtN(m.nota)}</span>
+                        <span style={{ color: "var(--est-sin-dato)" }}> ×{m.peso}%</span>
                       </div>
                     ))}
                   </div>
@@ -454,7 +454,7 @@ export default function TrimestreAdmin({ onVolver }) {
       )}
 
       {rankingTrim.length === 0 && sinDatos.length === 0 && (
-        <div style={{ padding: "18px 16px", background: "rgba(148, 163, 184, 0.10)", borderRadius: 12, fontSize: 12, color: "#64748b", fontWeight: 700, textAlign: "center" }}>
+        <div style={{ padding: "18px 16px", background: "rgba(148, 163, 184, 0.10)", borderRadius: 12, fontSize: 12, color: "var(--vk-secundario)", fontWeight: 700, textAlign: "center" }}>
           Sin vendedoras para este trimestre con el filtro seleccionado.
         </div>
       )}
@@ -462,16 +462,16 @@ export default function TrimestreAdmin({ onVolver }) {
       {/* ================= SIN DATOS AÚN ================= */}
       {sinDatos.length > 0 && (
         <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 900, color: "var(--vk-tenue)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 6 }}>
             Sin datos aún
           </div>
           {sinDatos.map(v => (
             <div key={v.id} style={{
               display: "flex", alignItems: "center", gap: 8,
-              padding: "10px 13px", background: "#fff", borderRadius: 12, marginBottom: 4,
+              padding: "10px 13px", background: "var(--vk-tarjeta)", borderRadius: 12, marginBottom: 4,
               opacity: 0.55, boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
             }}>
-              <div style={{ fontWeight: 900, fontSize: 13, color: "#94a3b8" }}>{v.nombre}</div>
+              <div style={{ fontWeight: 900, fontSize: 13, color: "var(--vk-tenue)" }}>{v.nombre}</div>
               <BadgeCiudad ciudad={v.ciudad} />
             </div>
           ))}
@@ -483,14 +483,10 @@ export default function TrimestreAdmin({ onVolver }) {
           App.jsx:1608-1621) listaba justamente a quien el dueño dijo que "ni
           debe aparecer". Se eliminó: en su lugar queda esta nota de una línea
           que explica el criterio, no las personas. */}
-      <div style={{ marginTop: 14, padding: "10px 13px", background: "rgba(148, 163, 184, 0.10)", borderRadius: 10, fontSize: 10.5, color: "#64748b", fontWeight: 700, lineHeight: 1.55 }}>
+      <div style={{ marginTop: 14, padding: "10px 13px", background: "rgba(148, 163, 184, 0.10)", borderRadius: 10, fontSize: 10.5, color: "var(--vk-secundario)", fontWeight: 700, lineHeight: 1.55 }}>
         {congelado
           ? "Trimestre cerrado: este ranking es el congelado de sus 3 meses. No cambia aunque hoy se desactive a alguien."
           : "En el trimestre solo compite quien está activa, entró antes o el mismo día en que arrancó el trimestre, y tiene los meses del trimestre que ya cerraron. Quien entró después compite desde el trimestre siguiente."}
-      </div>
-
-      <div style={{ marginTop: 12, textAlign: "center", fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>
-        📸 Toma pantallazo para el anuncio · calculado el {hoy.iso}
       </div>
     </div>
   );
