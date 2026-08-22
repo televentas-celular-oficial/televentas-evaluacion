@@ -43,23 +43,23 @@ import IngresoDiario from "../oficina/IngresoDiario.jsx";
 import TabRankingIndicadores from "../tabs/TabRankingIndicadores.jsx";
 
 // ── Paleta del prototipo ────────────────────────────────────────────────────
-const TINTA = "#0f172a";
-const APOYO = "#475569";
-const LINEA = "#e2e8f0";
-const VERDE_BG = "#f0fdf9";
-const VERDE_BORDE = "#b6e6d5";
-const VERDE_TXT = "#046c4e";
-const GRIS_BG = "#f4f4f5";
-const GRIS_BORDE = "#d9d9dd";
-const GRIS_TXT = "#52525b";
-const LILA_BG = "#f7f4ff";
-const LILA_BORDE = "#ddd3f5";
-const LILA_TXT = "#5b2ec4";
+const TINTA = "var(--vk-titulo)";
+const APOYO = "var(--vk-secundario)";
+const LINEA = "var(--vk-borde)";
+const VERDE_BG = "var(--vk-bien-fondo)";
+const VERDE_BORDE = "var(--vk-bien-texto)";
+const VERDE_TXT = "var(--vk-bien)";
+const GRIS_BG = "var(--vk-neutro)";
+const GRIS_BORDE = "var(--vk-borde)";
+const GRIS_TXT = "var(--vk-secundario)";
+const LILA_BG = "var(--vk-fondo)";
+const LILA_BORDE = "var(--vk-borde)";
+const LILA_TXT = "var(--vk-secundario)";
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-const COLOR_CIUDAD = { MED: "#10b981", BOG: "#f59e0b" };
+const COLOR_CIUDAD = { MED: "var(--vk-bien-texto)", BOG: "var(--est-atencion-borde)" };
 
 // Los SEIS tiles, en los tres grupos que pidió el dueño.
 const GRUPOS = [
@@ -120,7 +120,7 @@ const RANKINGS = [
 const S = {
   titulo: { fontSize: 22, fontWeight: 800, margin: "0 0 12px", color: TINTA },
   rotulo: {
-    fontSize: 12, fontWeight: 800, color: "#334155", textTransform: "uppercase",
+    fontSize: 12, fontWeight: 800, color: "var(--vk-secundario)", textTransform: "uppercase",
     letterSpacing: ".7px", margin: "16px 0 7px",
   },
   // Rejilla que se acomoda sola: 2 columnas en el celular, 4 en el Mac.
@@ -133,7 +133,7 @@ const S = {
     gap: 8, maxWidth: 640, marginLeft: "auto", marginRight: "auto",
   },
   tile: {
-    background: "#fff", border: `1px solid ${LINEA}`, borderRadius: 13,
+    background: "var(--vk-tarjeta)", border: `1px solid ${LINEA}`, borderRadius: 13,
     padding: "16px 12px", textAlign: "center", cursor: "pointer", font: "inherit",
   },
   volver: {
@@ -178,12 +178,12 @@ function ConVolver({ onVolver, children }) {
     <div>
       <div style={{
         position: "sticky", top: 0, zIndex: 30, padding: "10px 12px",
-        background: "#fff", borderBottom: `1px solid ${LINEA}`,
+        background: "var(--vk-tarjeta)", borderBottom: `1px solid ${LINEA}`,
       }}>
         <button
           onClick={onVolver}
           style={{
-            background: "#fff", border: `1px solid ${LINEA}`, color: APOYO,
+            background: "var(--vk-tarjeta)", border: `1px solid ${LINEA}`, color: APOYO,
             fontWeight: 800, fontSize: 13, borderRadius: 10, padding: "8px 14px",
             cursor: "pointer", fontFamily: "inherit",
           }}
@@ -212,14 +212,14 @@ function SelectorVerComo({ activas, onVolver, onElegir }) {
       onClick={() => onElegir?.(v)}
       style={{
         display: "flex", alignItems: "center", gap: 9, width: "100%",
-        background: "#fff", border: "none", borderRadius: 9,
+        background: "var(--vk-tarjeta)", border: "none", borderRadius: 9,
         boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 4,
         padding: "11px 12px", textAlign: "left", cursor: "pointer", font: "inherit",
       }}
     >
       <span style={{
         width: 30, height: 30, borderRadius: "50%",
-        background: COLOR_CIUDAD[v.ciudad] || "#94a3b8", color: "#fff",
+        background: COLOR_CIUDAD[v.ciudad] || "var(--vk-tenue)", color: "var(--vk-tarjeta)",
         display: "flex", alignItems: "center", justifyContent: "center",
         fontWeight: 800, fontSize: 14, flexShrink: 0,
       }}>{(v.nombre || "?")[0]}</span>
@@ -229,7 +229,7 @@ function SelectorVerComo({ activas, onVolver, onElegir }) {
           {v.rolTienda === "admin" ? "Administradora" : "Asesora"}
         </div>
       </span>
-      <span style={{ color: "#a855f7", fontWeight: 800, fontSize: 17 }}>›</span>
+      <span style={{ color: "var(--vk-tenue)", fontWeight: 800, fontSize: 17 }}>›</span>
     </button>
   );
 
@@ -280,7 +280,7 @@ function MenuRankings({ onVolver, onIr }) {
           onClick={() => onIr(r.id)}
           style={{
             display: "flex", alignItems: "center", gap: 11, width: "100%",
-            background: "#fff", border: `1px solid ${LINEA}`, borderRadius: 13,
+            background: "var(--vk-tarjeta)", border: `1px solid ${LINEA}`, borderRadius: 13,
             padding: "15px 16px", marginBottom: 8, cursor: "pointer",
             font: "inherit", textAlign: "left",
           }}
@@ -415,7 +415,7 @@ export default function AdminHome({ user = null, onVerComo }) {
         <button
           onClick={() => signOut(auth)}
           style={{
-            fontSize: 12, fontWeight: 700, color: "#94a3b8", background: "transparent",
+            fontSize: 12, fontWeight: 700, color: "var(--vk-tenue)", background: "transparent",
             border: `1px solid ${LINEA}`, padding: "6px 10px", borderRadius: 8,
             cursor: "pointer", fontFamily: "inherit",
           }}
@@ -426,7 +426,7 @@ export default function AdminHome({ user = null, onVerComo }) {
 
       {/* Ventas del mes */}
       <div style={{
-        background: "linear-gradient(135deg,#10b981,#059669)", color: "#fff",
+        background: "var(--vk-bien)", color: "var(--vk-tarjeta)",
         border: "none", borderRadius: 13, padding: 16, marginBottom: 10,
       }}>
         <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.3px", opacity: 0.92 }}>
@@ -467,13 +467,13 @@ export default function AdminHome({ user = null, onVerComo }) {
             width: 54, height: 30, borderRadius: 15, border: "none",
             cursor: cambiandoAcceso ? "progress" : "pointer",
             opacity: cambiandoAcceso ? 0.6 : 1,
-            flexShrink: 0, background: accesoOn ? "#059669" : "#a1a1aa",
+            flexShrink: 0, background: accesoOn ? "var(--vk-bien-texto)" : "var(--vk-tenue)",
             position: "relative", padding: 0,
           }}
         >
           <span style={{
             position: "absolute", top: 3, left: accesoOn ? 27 : 3,
-            width: 24, height: 24, borderRadius: "50%", background: "#fff",
+            width: 24, height: 24, borderRadius: "50%", background: "var(--vk-tarjeta)",
             transition: "left .18s",
           }} />
         </button>
@@ -482,8 +482,8 @@ export default function AdminHome({ user = null, onVerComo }) {
       {/* El cambio de acceso falló: decirlo, y decir en qué estado quedó */}
       {errorAcceso && (
         <div style={{
-          background: "#fee2e2", border: "2px solid #dc2626", borderRadius: 12,
-          padding: "11px 13px", marginBottom: 10, color: "#991b1b",
+          background: "var(--adm-alerta-fondo)", border: "2px solid var(--adm-alerta)", borderRadius: 12,
+          padding: "11px 13px", marginBottom: 10, color: "var(--adm-alerta)",
         }}>
           <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 3 }}>
             ❌ No se pudo {errorAcceso.querido ? "ABRIR" : "CERRAR"} el acceso
@@ -499,7 +499,7 @@ export default function AdminHome({ user = null, onVerComo }) {
           <button
             onClick={() => setErrorAcceso(null)}
             style={{
-              marginTop: 8, background: "#fff", border: "1px solid #fca5a5", color: "#991b1b",
+              marginTop: 8, background: "var(--vk-tarjeta)", border: "1px solid var(--adm-alerta-borde)", color: "var(--adm-alerta)",
               borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 800,
               cursor: "pointer", fontFamily: "inherit",
             }}
@@ -518,7 +518,7 @@ export default function AdminHome({ user = null, onVerComo }) {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <span style={{
-            width: 38, height: 38, borderRadius: "50%", background: "#e6dcfb",
+            width: 38, height: 38, borderRadius: "50%", background: "var(--vk-borde)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 19, flexShrink: 0,
           }}>👁️</span>

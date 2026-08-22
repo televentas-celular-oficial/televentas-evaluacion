@@ -182,8 +182,8 @@ export default function NominaComisiones({ onVolver }) {
 
       {/* HERO total */}
       <div style={{
-        background: "linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)",
-        color: "#fff",
+        background: "var(--vk-noche)",
+        color: "var(--vk-tarjeta)",
         padding: "22px 20px",
         borderRadius: 20,
         marginBottom: 10,
@@ -211,20 +211,20 @@ export default function NominaComisiones({ onVolver }) {
           "Ya no trabaja aquí". No se perdió información, se perdió el párrafo. */}
 
       {filasSinCiudad.length > 0 && (
-        <div style={{ padding: "12px 14px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid #ef4444", borderRadius: 10, fontSize: 11.5, color: "#991b1b", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
+        <div style={{ padding: "12px 14px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid var(--adm-alerta-borde)", borderRadius: 10, fontSize: 11.5, color: "var(--adm-alerta)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
           🚫 Con ventas pero <strong>sin ciudad</strong> en su ficha, no se puede liquidar (no se sabe si aplica el piso de Medellín):{" "}
           {filasSinCiudad.map(f => `${f.v.nombre} (${formatoPesos(f.ventas)})`).join(" · ")}. Corrige la ciudad en systemlap y vuelve a sincronizar.
         </div>
       )}
 
       {!hayVendedoras && (
-        <div style={{ padding: "18px 16px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid #ef4444", borderRadius: 10, fontSize: 12, color: "#991b1b", fontWeight: 700, marginBottom: 10, lineHeight: 1.55, textAlign: "center" }}>
+        <div style={{ padding: "18px 16px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid var(--adm-alerta-borde)", borderRadius: 10, fontSize: 12, color: "var(--adm-alerta)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55, textAlign: "center" }}>
           🚫 Sin vendedoras sincronizadas — verifica el sync desde systemlap.
         </div>
       )}
 
       {hayVendedoras && !hayVentasMes && (
-        <div style={{ padding: "14px 16px", background: "rgba(245, 158, 11, 0.10)", borderLeft: "3px solid #f59e0b", borderRadius: 10, fontSize: 12, color: "#92400e", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
+        <div style={{ padding: "14px 16px", background: "rgba(245, 158, 11, 0.10)", borderLeft: "3px solid var(--est-atencion-borde)", borderRadius: 10, fontSize: 12, color: "var(--vk-noche-apoyo)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
           ⚠️ Sin ventas cargadas para {MES_NOMBRES[selMes.mes - 1]} {selMes.año} — carga desde la vista de Carolina.
         </div>
       )}
@@ -260,16 +260,16 @@ export default function NominaComisiones({ onVolver }) {
 }
 
 function SeccionCiudad({ titulo, subtitulo, color, filas, total, año, mes }) {
-  const bg = color === "green" ? "linear-gradient(135deg, #ecfdf5, #d1fae5)" : "linear-gradient(135deg, #fef3c7, #fde68a)";
-  const borde = color === "green" ? "#10b981" : "#f59e0b";
-  const tint = color === "green" ? "#047857" : "#92400e";
+  const bg = color === "green" ? "var(--vk-bien-fondo)" : "var(--vk-noche)";
+  const borde = color === "green" ? "var(--vk-bien-texto)" : "var(--est-atencion-borde)";
+  const tint = color === "green" ? "var(--vk-bien)" : "var(--vk-noche-apoyo)";
 
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ background: bg, borderLeft: `4px solid ${borde}`, padding: "10px 12px", borderRadius: 12, marginBottom: 6, border: `1px solid ${borde}20` }}>
         <div style={{ fontSize: 13, fontWeight: 900, color: tint }}>{titulo}</div>
         {subtitulo && (
-          <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginTop: 2 }}>{subtitulo}</div>
+          <div style={{ fontSize: 10, color: "var(--vk-secundario)", fontWeight: 700, marginTop: 2 }}>{subtitulo}</div>
         )}
       </div>
 
@@ -281,15 +281,15 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total, año, mes }) {
           gridTemplateColumns: "1fr auto",
           alignItems: "center",
           padding: "10px 12px",
-          background: "#fff",
+          background: "var(--vk-tarjeta)",
           borderRadius: 12,
           marginBottom: 4,
           boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-          borderLeft: "3px solid " + (calc.comision > 0 ? borde : "#cbd5e1"),
+          borderLeft: "3px solid " + (calc.comision > 0 ? borde : "var(--est-sin-dato)"),
           opacity: calc.comision > 0 ? 1 : 0.7,
         }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: "var(--vk-titulo)" }}>
               {v.nombre}
               {/* El badge es el rol de ESE mes, no el cargo de hoy */}
               <span style={{ marginLeft: 6, fontSize: 9, background: rolMes === "admin" ? "var(--vk-noche)" : "var(--vk-bien-fondo)", color: rolMes === "admin" ? "var(--vk-noche-apoyo)" : "var(--vk-bien)", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>
@@ -298,12 +298,12 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total, año, mes }) {
               {/* Aparece porque vendió ESTE mes, aunque hoy ya no esté en el
                   roster. El badge explica por qué está en la lista. */}
               {yaNoTrabaja && (
-                <span style={{ marginLeft: 5, fontSize: 9, background: "#fef2f2", color: "#b91c1c", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5, border: "1px solid #fecaca" }}>
+                <span style={{ marginLeft: 5, fontSize: 9, background: "var(--adm-alerta-fondo)", color: "var(--adm-alerta)", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5, border: "1px solid var(--adm-alerta-borde)" }}>
                   Ya no trabaja aquí
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginTop: 2 }}>
+            <div style={{ fontSize: 11, color: "var(--vk-secundario)", fontWeight: 700, marginTop: 2 }}>
               Vendió {formatoPesos(ventas)}
               {/* El TRAMO se nombra siempre, no sólo cuando hubo ascenso: es lo
                   que explica por qué le tocó ese porcentaje y no otro. Cuando
@@ -350,7 +350,7 @@ function SeccionCiudad({ titulo, subtitulo, color, filas, total, año, mes }) {
           <div style={{
             fontSize: 15,
             fontWeight: 900,
-            color: calc.comision > 0 ? tint : "#94a3b8",
+            color: calc.comision > 0 ? tint : "var(--vk-tenue)",
             textAlign: "right",
             minWidth: 90,
           }}>

@@ -91,8 +91,8 @@ export default function CargarMetas({ onVolver }) {
         <div style={{
           padding: "10px 14px", borderRadius: 10, marginBottom: 10,
           fontSize: 12, fontWeight: 800,
-          background: msg.tipo === "err" ? "#fee2e2" : "#d1fae5",
-          color: msg.tipo === "err" ? "#991b1b" : "#065f46",
+          background: msg.tipo === "err" ? "var(--adm-alerta-fondo)" : "var(--vk-bien-fondo)",
+          color: msg.tipo === "err" ? "var(--adm-alerta)" : "var(--vk-bien)",
         }}>{msg.txt}</div>
       )}
 
@@ -117,30 +117,30 @@ export default function CargarMetas({ onVolver }) {
         </div>
 
         {cerrado ? (
-          <div style={{ padding: "12px 14px", background: "linear-gradient(135deg, #fef3c7, #fde68a)", borderRadius: 10, fontSize: 13, fontWeight: 900, color: "#92400e", textAlign: "center" }}>
+          <div style={{ padding: "12px 14px", background: "var(--vk-noche)", borderRadius: 10, fontSize: 13, fontWeight: 900, color: "var(--vk-noche-apoyo)", textAlign: "center" }}>
             🔒 {MES_NAMES[mesSel - 1]} {añoSel} está CERRADO
             <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4 }}>No se puede modificar la meta</div>
           </div>
         ) : (
           <>
             <div style={{ marginBottom: 10 }}>
-              <label style={{ ...labelStyle, color: "#047857" }}>🟢 Meta Medellín</label>
+              <label style={{ ...labelStyle, color: "var(--vk-bien)" }}>🟢 Meta Medellín</label>
               <InputPesos
                 key={`med-${clave}`}
                 inputRef={refMED}
                 defaultValue={inicialMED}
                 placeholder="Ej: 250.000.000"
-                style={{ ...inputStyle, borderColor: "#10b981", background: "#f0fdf4" }}
+                style={{ ...inputStyle, borderColor: "var(--vk-bien-texto)", background: "var(--vk-bien-fondo)" }}
               />
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ ...labelStyle, color: "#b45309" }}>🟡 Meta Bogotá</label>
+              <label style={{ ...labelStyle, color: "var(--vk-metal-borde)" }}>🟡 Meta Bogotá</label>
               <InputPesos
                 key={`bog-${clave}`}
                 inputRef={refBOG}
                 defaultValue={inicialBOG}
                 placeholder="Ej: 150.000.000"
-                style={{ ...inputStyle, borderColor: "#f59e0b", background: "#fffbeb" }}
+                style={{ ...inputStyle, borderColor: "var(--est-atencion-borde)", background: "var(--vk-noche)" }}
               />
             </div>
             <button
@@ -148,8 +148,8 @@ export default function CargarMetas({ onVolver }) {
               style={{
                 width: "100%",
                 padding: "12px",
-                background: "linear-gradient(135deg, #f97316, #ea580c)",
-                color: "#fff",
+                background: "var(--est-atencion)",
+                color: "var(--vk-tarjeta)",
                 border: "none",
                 borderRadius: 12,
                 fontSize: 14,
@@ -171,16 +171,16 @@ export default function CargarMetas({ onVolver }) {
           <div style={{
             padding: "18px 14px",
             background: "rgba(148, 163, 184, 0.08)",
-            border: "1.5px dashed #cbd5e1",
+            border: "1.5px dashed var(--est-sin-dato)",
             borderRadius: 10,
             fontSize: 12,
             fontWeight: 700,
-            color: "#64748b",
+            color: "var(--vk-secundario)",
             textAlign: "center",
             lineHeight: 1.5,
           }}>
             Aún no hay metas guardadas.
-            <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4, color: "#94a3b8" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4, color: "var(--vk-tenue)" }}>
               Usa el formulario de arriba para crear la primera.
             </div>
           </div>
@@ -200,16 +200,16 @@ export default function CargarMetas({ onVolver }) {
                 fontWeight: 700,
                 cursor: c.cerrado ? "default" : "pointer",
               }} onClick={() => !c.cerrado && (setAñoSel(c.año), setMesSel(c.mes))}>
-                <span style={{ color: "#1e1b4b", fontWeight: 900 }}>
+                <span style={{ color: "var(--vk-titulo)", fontWeight: 900 }}>
                   {c.cerrado && "🔒 "}{MES_NAMES[c.mes - 1]} {c.año}
                 </span>
-                <span style={{ color: "#047857" }}>{c.med ? formatoPesos(c.med) : "—"}</span>
-                <span style={{ color: "#b45309" }}>{c.bog ? formatoPesos(c.bog) : "—"}</span>
-                {!c.cerrado && <span style={{ color: "#a855f7", fontWeight: 900 }}>›</span>}
-                {c.cerrado && <span style={{ color: "#94a3b8", fontSize: 10 }}>cerrado</span>}
+                <span style={{ color: "var(--vk-bien)" }}>{c.med ? formatoPesos(c.med) : "—"}</span>
+                <span style={{ color: "var(--vk-metal-borde)" }}>{c.bog ? formatoPesos(c.bog) : "—"}</span>
+                {!c.cerrado && <span style={{ color: "var(--vk-tenue)", fontWeight: 900 }}>›</span>}
+                {c.cerrado && <span style={{ color: "var(--vk-tenue)", fontSize: 10 }}>cerrado</span>}
               </div>
             ))}
-            <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginTop: 6, textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: "var(--vk-tenue)", fontWeight: 700, marginTop: 6, textAlign: "center" }}>
               Toca un mes no cerrado para editarlo
             </div>
           </>
@@ -220,12 +220,12 @@ export default function CargarMetas({ onVolver }) {
 }
 
 const labelStyle = {
-  fontSize: 11, fontWeight: 900, color: "#475569",
+  fontSize: 11, fontWeight: 900, color: "var(--vk-secundario)",
   textTransform: "uppercase", letterSpacing: 1.2,
   marginBottom: 6, display: "block",
 };
 const inputStyle = {
   width: "100%", padding: "10px 12px", borderRadius: 10,
-  border: "1.5px solid #cbd5e1", fontSize: 14, fontFamily: "inherit",
-  fontWeight: 700, color: "#0f172a", background: "#fff",
+  border: "1.5px solid var(--est-sin-dato)", fontSize: 14, fontFamily: "inherit",
+  fontWeight: 700, color: "var(--vk-titulo)", background: "var(--vk-tarjeta)",
 };

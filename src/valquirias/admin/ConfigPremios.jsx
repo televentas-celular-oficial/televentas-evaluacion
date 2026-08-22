@@ -108,8 +108,8 @@ export default function ConfigPremios({ onVolver }) {
         <div style={{
           padding: "10px 14px", borderRadius: 10, marginBottom: 10,
           fontSize: 12, fontWeight: 800,
-          background: msg.tipo === "err" ? "#fee2e2" : "#d1fae5",
-          color: msg.tipo === "err" ? "#991b1b" : "#065f46",
+          background: msg.tipo === "err" ? "var(--adm-alerta-fondo)" : "var(--vk-bien-fondo)",
+          color: msg.tipo === "err" ? "var(--adm-alerta)" : "var(--vk-bien)",
         }}>{msg.txt}</div>
       )}
 
@@ -135,11 +135,9 @@ export default function ConfigPremios({ onVolver }) {
                     padding: "8px 4px",
                     fontSize: 12,
                     fontWeight: 900,
-                    background: activo
-                      ? "linear-gradient(135deg, #f59e0b, #ea580c)"
-                      : "#fff",
-                    color: activo ? "#fff" : "#b45309",
-                    border: "1.5px solid " + (activo ? "transparent" : "#e2e8f0"),
+                    background: activo ? "var(--vk-titulo)" : "var(--vk-tarjeta)",
+                    color: activo ? "var(--vk-sobre-tinta)" : "var(--vk-secundario)",
+                    border: "1.5px solid " + (activo ? "transparent" : "var(--vk-borde)"),
                     borderRadius: 10,
                     cursor: "pointer",
                     lineHeight: 1.1,
@@ -187,8 +185,8 @@ export default function ConfigPremios({ onVolver }) {
           onClick={guardar}
           style={{
             width: "100%", padding: "12px",
-            background: "linear-gradient(135deg, #f59e0b, #ea580c)",
-            color: "#fff", border: "none", borderRadius: 12,
+            background: "var(--est-atencion)",
+            color: "var(--vk-tarjeta)", border: "none", borderRadius: 12,
             fontSize: 14, fontWeight: 900, cursor: "pointer",
             boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
           }}
@@ -209,10 +207,10 @@ export default function ConfigPremios({ onVolver }) {
                 background: "rgba(245, 158, 11, 0.06)",
                 borderRadius: 10, marginBottom: 4,
                 cursor: "pointer",
-                borderLeft: "3px solid #f59e0b",
+                borderLeft: "3px solid var(--est-atencion-borde)",
               }} onClick={() => { setAñoSel(Number(y)); setQSel(Number(q)); }}>
-                <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>Q{q} {y}</div>
-                <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginTop: 2 }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "var(--vk-titulo)" }}>Q{q} {y}</div>
+                <div style={{ fontSize: 11, color: "var(--vk-secundario)", fontWeight: 700, marginTop: 2 }}>
                   💰 {formatoPesos(cfg.montoBase)} base · 🌟 {formatoPesos(cfg.montoExtra)} extra
                 </div>
               </div>
@@ -221,7 +219,7 @@ export default function ConfigPremios({ onVolver }) {
         </div>
       )}
 
-      <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(168, 85, 247, 0.06)", borderRadius: 10, fontSize: 10, color: "#64748b", fontWeight: 700, lineHeight: 1.5 }}>
+      <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(168, 85, 247, 0.06)", borderRadius: 10, fontSize: 10, color: "var(--vk-secundario)", fontWeight: 700, lineHeight: 1.5 }}>
         📱 Estos valores aparecen en el Tab "❓ Cómo funciona" y en el Detalle Trimestre que ven las vendedoras. Se actualiza en vivo cuando guardas aquí.
       </div>
     </div>
@@ -229,13 +227,13 @@ export default function ConfigPremios({ onVolver }) {
 }
 
 const labelStyle = {
-  fontSize: 11, fontWeight: 900, color: "#475569",
+  fontSize: 11, fontWeight: 900, color: "var(--vk-secundario)",
   textTransform: "uppercase", letterSpacing: 1.2,
   marginBottom: 6, display: "block",
 };
 const inputStyle = {
   width: "100%", padding: "10px 12px", borderRadius: 10,
-  border: "1.5px solid #cbd5e1", fontSize: 14, fontFamily: "inherit",
-  fontWeight: 700, color: "#0f172a", background: "#fff",
+  border: "1.5px solid var(--est-sin-dato)", fontSize: 14, fontFamily: "inherit",
+  fontWeight: 700, color: "var(--vk-titulo)", background: "var(--vk-tarjeta)",
   boxSizing: "border-box",
 };

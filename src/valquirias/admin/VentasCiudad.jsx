@@ -24,18 +24,18 @@ const CIUDADES = [
   {
     id: "MED",
     titulo: "🟢 Team Valkyrias Medellín",
-    color: "#10b981",
-    borde: "#10b981",
-    tinte: "#047857",
-    bg: "linear-gradient(135deg, #ecfdf5, #d1fae5)",
+    color: "var(--vk-bien-texto)",
+    borde: "var(--vk-bien-texto)",
+    tinte: "var(--vk-bien)",
+    bg: "var(--vk-bien-fondo)",
   },
   {
     id: "BOG",
     titulo: "🟡 Team Valkyrias Bogotá",
-    color: "#f59e0b",
-    borde: "#f59e0b",
-    tinte: "#b45309",
-    bg: "linear-gradient(135deg, #fef3c7, #fde68a)",
+    color: "var(--est-atencion-borde)",
+    borde: "var(--est-atencion-borde)",
+    tinte: "var(--vk-metal-borde)",
+    bg: "var(--vk-noche)",
   },
 ];
 
@@ -53,8 +53,8 @@ function pctDe(valor, meta) {
 }
 
 function colorPct(pct, colorCiudad) {
-  if (pct >= 100) return "#059669";
-  if (pct >= 70) return "#d97706";
+  if (pct >= 100) return "var(--vk-bien-texto)";
+  if (pct >= 70) return "var(--est-atencion)";
   return colorCiudad;
 }
 
@@ -118,7 +118,7 @@ export default function VentasCiudad({ onVolver }) {
                 fontWeight: 800,
                 background: activo ? "var(--vk-titulo)" : "var(--vk-tarjeta)",
                 color: activo ? "var(--vk-sobre-tinta)" : "var(--vk-secundario)",
-                border: "1.5px solid " + (activo ? "transparent" : "#e2e8f0"),
+                border: "1.5px solid " + (activo ? "transparent" : "var(--vk-borde)"),
                 borderRadius: 8,
                 cursor: "pointer",
                 flexShrink: 0,
@@ -168,15 +168,15 @@ export default function VentasCiudad({ onVolver }) {
         <div style={{
           padding: "14px 16px",
           background: "rgba(239, 68, 68, 0.10)",
-          borderLeft: "4px solid #ef4444",
+          borderLeft: "4px solid var(--adm-alerta-borde)",
           borderRadius: 12,
           marginBottom: 10,
           lineHeight: 1.55,
         }}>
-          <div style={{ fontSize: 13, fontWeight: 900, color: "#991b1b" }}>
+          <div style={{ fontSize: 13, fontWeight: 900, color: "var(--adm-alerta)" }}>
             ⚠️ Este mes aún no tiene metas cargadas
           </div>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#b91c1c", marginTop: 4 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--adm-alerta)", marginTop: 4 }}>
             Sin meta de {MES_NOMBRES[selMes.mes - 1]} no se puede calcular el % de cumplimiento
             (todo se ve en 0%) ni la nota de ventas de las vendedoras.
             Cárgalas en <strong>Admin → 🎯 Metas del mes</strong>.
@@ -186,19 +186,19 @@ export default function VentasCiudad({ onVolver }) {
 
       {/* Mes cerrado */}
       {cerrado && (
-        <div style={{ padding: "10px 14px", background: "linear-gradient(135deg, #fef3c7, #fde68a)", borderRadius: 12, marginBottom: 10, fontSize: 12, fontWeight: 900, color: "#92400e" }}>
+        <div style={{ padding: "10px 14px", background: "var(--vk-noche)", borderRadius: 12, marginBottom: 10, fontSize: 12, fontWeight: 900, color: "var(--vk-noche-apoyo)" }}>
           🔒 Mes cerrado · datos finales
         </div>
       )}
 
       {/* Nota solo lectura */}
-      <div style={{ padding: "10px 12px", background: "rgba(59, 130, 246, 0.07)", borderLeft: "3px solid #3b82f6", borderRadius: 10, fontSize: 11, color: "#1e40af", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
+      <div style={{ padding: "10px 12px", background: "rgba(59, 130, 246, 0.07)", borderLeft: "3px solid var(--vk-secundario)", borderRadius: 10, fontSize: 11, color: "var(--vk-secundario)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
         📡 <strong>Vista de solo lectura.</strong> Las ventas se sincronizan desde systemlap cada 5 min.
         Las metas se cargan en <strong>Admin → 🎯 Metas del mes</strong>.
       </div>
 
       {!hayVendedoras && (
-        <div style={{ padding: "18px 16px", background: "rgba(148, 163, 184, 0.10)", border: "1.5px dashed #cbd5e1", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "#64748b", textAlign: "center", lineHeight: 1.55 }}>
+        <div style={{ padding: "18px 16px", background: "rgba(148, 163, 184, 0.10)", border: "1.5px dashed var(--est-sin-dato)", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "var(--vk-secundario)", textAlign: "center", lineHeight: 1.55 }}>
           Sin vendedoras sincronizadas — verifica el sync desde systemlap.
         </div>
       )}
@@ -237,23 +237,23 @@ function BloqueCiudad({ ciudad, meta, vendido, lista }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 900, color: ciudad.tinte }}>{ciudad.titulo}</div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: 9, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>Meta c/u</div>
-            <div style={{ fontSize: 12, fontWeight: 900, color: meta > 0 ? "#1e1b4b" : "#dc2626" }}>
+            <div style={{ fontSize: 9, fontWeight: 900, color: "var(--vk-secundario)", textTransform: "uppercase", letterSpacing: 1 }}>Meta c/u</div>
+            <div style={{ fontSize: 12, fontWeight: 900, color: meta > 0 ? "var(--vk-titulo)" : "var(--adm-alerta)" }}>
               {meta > 0 ? formatoPesos(meta) : "sin cargar"}
             </div>
           </div>
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 10 }}>
-          <span style={{ fontSize: 10, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>Vendido</span>
-          <span style={{ fontSize: 17, fontWeight: 900, color: "#1e1b4b", letterSpacing: -0.5 }}>
+          <span style={{ fontSize: 10, fontWeight: 900, color: "var(--vk-secundario)", textTransform: "uppercase", letterSpacing: 1 }}>Vendido</span>
+          <span style={{ fontSize: 17, fontWeight: 900, color: "var(--vk-titulo)", letterSpacing: -0.5 }}>
             {formatoPesos(vendido)}
           </span>
         </div>
 
         {/* Cuántas llegaron. No es una meta de ciudad inventada: es el conteo de
             un hecho que ya existe por persona. */}
-        <div style={{ fontSize: 11.5, fontWeight: 800, marginTop: 6, color: meta <= 0 ? "#b91c1c" : ciudad.tinte }}>
+        <div style={{ fontSize: 11.5, fontWeight: 800, marginTop: 6, color: meta <= 0 ? "var(--adm-alerta)" : ciudad.tinte }}>
           {meta <= 0
             ? `⚠️ Sin meta cargada para ${ciudad.id}`
             : `${cumplieron} de ${lista.length} llegaron a la meta`}
@@ -261,7 +261,7 @@ function BloqueCiudad({ ciudad, meta, vendido, lista }) {
       </div>
 
       {/* Vendedoras de la ciudad, ordenadas por ventas */}
-      <div style={{ fontSize: 9.5, fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, padding: "2px 12px 5px", display: "flex", justifyContent: "space-between" }}>
+      <div style={{ fontSize: 9.5, fontWeight: 900, color: "var(--vk-tenue)", textTransform: "uppercase", letterSpacing: 1, padding: "2px 12px 5px", display: "flex", justifyContent: "space-between" }}>
         <span>Vendedora</span>
         <span>Vendido · % de su meta</span>
       </div>
@@ -273,36 +273,36 @@ function BloqueCiudad({ ciudad, meta, vendido, lista }) {
           alignItems: "center",
           gap: 8,
           padding: "10px 12px",
-          background: "#fff",
+          background: "var(--vk-tarjeta)",
           borderRadius: 12,
           marginBottom: 4,
           boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-          borderLeft: "3px solid " + (v.real > 0 ? ciudad.borde : "#cbd5e1"),
+          borderLeft: "3px solid " + (v.real > 0 ? ciudad.borde : "var(--est-sin-dato)"),
           opacity: v.real > 0 ? 1 : 0.65,
         }}>
-          <div style={{ fontSize: 12, fontWeight: 900, color: i === 0 && v.real > 0 ? "#eab308" : "#94a3b8", width: 20, textAlign: "center" }}>
+          <div style={{ fontSize: 12, fontWeight: 900, color: i === 0 && v.real > 0 ? "var(--est-atencion-borde)" : "var(--vk-tenue)", width: 20, textAlign: "center" }}>
             {i === 0 && v.real > 0 ? "🥇" : i + 1}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: "var(--vk-titulo)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {v.nombre}
               {v.rolTienda === "admin" && (
                 <span style={{ marginLeft: 6, fontSize: 9, background: "var(--vk-noche)", color: "var(--vk-noche-apoyo)", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>Admin</span>
               )}
               {!v.activa && (
-                <span style={{ marginLeft: 6, fontSize: 9, background: "#f1f5f9", color: "#64748b", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>Inactiva</span>
+                <span style={{ marginLeft: 6, fontSize: 9, background: "var(--vk-fondo-hueco)", color: "var(--vk-secundario)", padding: "1px 6px", borderRadius: 4, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>Inactiva</span>
               )}
             </div>
             {/* Mini barra individual */}
-            <div style={{ background: "#eef2f7", borderRadius: 4, height: 5, overflow: "hidden", marginTop: 5 }}>
+            <div style={{ background: "var(--vk-borde)", borderRadius: 4, height: 5, overflow: "hidden", marginTop: 5 }}>
               <div style={{ height: "100%", width: Math.min(v.pct, 100) + "%", borderRadius: 4, background: colorPct(v.pct, ciudad.color) }} />
             </div>
           </div>
           <div style={{ textAlign: "right", flexShrink: 0, minWidth: 92 }}>
-            <div style={{ fontSize: 13, fontWeight: 900, color: v.pct >= 100 ? "#059669" : "#1e1b4b" }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: v.pct >= 100 ? "var(--vk-bien-texto)" : "var(--vk-titulo)" }}>
               {formatoPesos(v.real)}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: meta > 0 ? colorPct(v.pct, "#94a3b8") : "#cbd5e1", marginTop: 1 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: meta > 0 ? colorPct(v.pct, "var(--vk-tenue)") : "var(--est-sin-dato)", marginTop: 1 }}>
               {meta > 0 ? `${v.pct}%` : "sin meta"}
             </div>
           </div>

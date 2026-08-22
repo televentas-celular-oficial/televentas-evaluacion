@@ -379,12 +379,12 @@ export default function CerrarMes({ onVolver }) {
         <div style={{
           padding: "10px 14px", borderRadius: 10, marginBottom: 10,
           fontSize: 12, fontWeight: 800,
-          background: msg.tipo === "err" ? "#fee2e2" : "#d1fae5",
-          color: msg.tipo === "err" ? "#991b1b" : "#065f46",
+          background: msg.tipo === "err" ? "var(--adm-alerta-fondo)" : "var(--vk-bien-fondo)",
+          color: msg.tipo === "err" ? "var(--adm-alerta)" : "var(--vk-bien)",
         }}>{msg.txt}</div>
       )}
 
-      <div style={{ padding: "10px 12px", background: "rgba(220, 38, 38, 0.08)", borderLeft: "3px solid #dc2626", borderRadius: 10, fontSize: 11, color: "#991b1b", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
+      <div style={{ padding: "10px 12px", background: "rgba(220, 38, 38, 0.08)", borderLeft: "3px solid var(--adm-alerta)", borderRadius: 10, fontSize: 11, color: "var(--adm-alerta)", fontWeight: 700, marginBottom: 10, lineHeight: 1.55 }}>
         ⚠️ Cerrar un mes deja sus notas <strong>fijas para siempre</strong>. Después de cerrar, ni Carolina ni las vendedoras pueden modificar nada de ese mes. Solo cierra cuando todos los días estén llenos y la meta esté cargada.
       </div>
 
@@ -398,8 +398,8 @@ export default function CerrarMes({ onVolver }) {
             style={{
               width: "100%",
               padding: "14px",
-              background: (verificando || cerrando) ? "#94a3b8" : "linear-gradient(135deg, #dc2626, #b91c1c)",
-              color: "#fff", border: "none", borderRadius: 12,
+              background: (verificando || cerrando) ? "var(--vk-tenue)" : "var(--adm-alerta)",
+              color: "var(--vk-tarjeta)", border: "none", borderRadius: 12,
               fontSize: 15, fontWeight: 900,
               cursor: (verificando || cerrando) ? "default" : "pointer",
               boxShadow: (verificando || cerrando) ? "none" : "0 4px 12px rgba(220, 38, 38, 0.3)",
@@ -410,7 +410,7 @@ export default function CerrarMes({ onVolver }) {
               : `🔒 Cerrar ${MES_NAMES[mesAntMes - 1]} ${mesAntAño}`}
           </button>
         ) : (
-          <div style={{ padding: "14px", background: "linear-gradient(135deg, #fef3c7, #fde68a)", borderRadius: 12, fontSize: 14, fontWeight: 900, color: "#92400e", textAlign: "center" }}>
+          <div style={{ padding: "14px", background: "var(--vk-noche)", borderRadius: 12, fontSize: 14, fontWeight: 900, color: "var(--vk-noche-apoyo)", textAlign: "center" }}>
             ✅ {MES_NAMES[mesAntMes - 1]} {mesAntAño} ya está cerrado
           </div>
         )}
@@ -420,7 +420,7 @@ export default function CerrarMes({ onVolver }) {
       <div className="v-card">
         <div className="v-card-title">🔒 Meses cerrados</div>
         {cerrados.length === 0 ? (
-          <div style={{ padding: "12px", fontSize: 12, color: "#64748b", fontWeight: 700, textAlign: "center", fontStyle: "italic" }}>
+          <div style={{ padding: "12px", fontSize: 12, color: "var(--vk-secundario)", fontWeight: 700, textAlign: "center", fontStyle: "italic" }}>
             Aún no hay meses cerrados este año.
           </div>
         ) : (
@@ -428,17 +428,17 @@ export default function CerrarMes({ onVolver }) {
             {cerrados.map(c => (
               <div key={`${c.año}-${c.mes}`} style={{
                 display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "8px 10px", background: "#fef3c7", borderRadius: 8,
-                marginBottom: 3, fontSize: 12, fontWeight: 800, color: "#92400e",
+                padding: "8px 10px", background: "var(--est-atencion-fondo)", borderRadius: 8,
+                marginBottom: 3, fontSize: 12, fontWeight: 800, color: "var(--vk-noche-apoyo)",
               }}>
                 <span>🔒 {MES_NAMES[c.mes - 1]} {c.año}</span>
                 <button
                   onClick={() => setConfirmarAbrir({ año: c.año, mes: c.mes })}
-                  style={{ background: "transparent", border: "1px solid #dc2626", color: "#dc2626", padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, cursor: "pointer" }}
+                  style={{ background: "transparent", border: "1px solid var(--adm-alerta)", color: "var(--adm-alerta)", padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, cursor: "pointer" }}
                 >🔓 Abrir</button>
               </div>
             ))}
-            <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginTop: 6, fontStyle: "italic" }}>
+            <div style={{ fontSize: 10, color: "var(--vk-tenue)", fontWeight: 700, marginTop: 6, fontStyle: "italic" }}>
               ⚠️ Abrir un mes descongela sus notas — usa solo en emergencias.
             </div>
           </>
@@ -448,14 +448,14 @@ export default function CerrarMes({ onVolver }) {
       {/* Toggle avanzado */}
       <button
         onClick={() => setMostrarAvanzado(!mostrarAvanzado)}
-        style={{ background: "none", border: "none", color: "#7c3aed", textDecoration: "underline", cursor: "pointer", fontSize: 11, fontWeight: 700, padding: "8px 0", display: "block", margin: "0 auto" }}
+        style={{ background: "none", border: "none", color: "var(--vk-secundario)", textDecoration: "underline", cursor: "pointer", fontSize: 11, fontWeight: 700, padding: "8px 0", display: "block", margin: "0 auto" }}
       >
         {mostrarAvanzado ? "Ocultar opciones avanzadas" : "Cerrar otro mes / opciones avanzadas"}
       </button>
 
       {mostrarAvanzado && (
         <div className="v-card" style={{ background: "rgba(168, 85, 247, 0.04)", border: "1px dashed rgba(168, 85, 247, 0.3)" }}>
-          <div className="v-card-title" style={{ color: "#7c3aed" }}>🛠️ Cerrar mes específico</div>
+          <div className="v-card-title" style={{ color: "var(--vk-secundario)" }}>🛠️ Cerrar mes específico</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
             <select value={añoSel} onChange={e => setAñoSel(Number(e.target.value))} style={inputStyle}>
               {[hoy.año - 1, hoy.año].map(y => <option key={y} value={y}>{y}</option>)}
@@ -465,18 +465,18 @@ export default function CerrarMes({ onVolver }) {
             </select>
           </div>
           {!mesSelValido && (
-            <div style={{ fontSize: 11, color: "#dc2626", marginBottom: 6, fontWeight: 700 }}>⚠️ No puedes cerrar el mes en curso ni un mes futuro.</div>
+            <div style={{ fontSize: 11, color: "var(--adm-alerta)", marginBottom: 6, fontWeight: 700 }}>⚠️ No puedes cerrar el mes en curso ni un mes futuro.</div>
           )}
           {mesSelYaCerrado && (
-            <div style={{ fontSize: 11, color: "#92400e", marginBottom: 6, fontWeight: 700 }}>✅ Ese mes ya está cerrado.</div>
+            <div style={{ fontSize: 11, color: "var(--vk-noche-apoyo)", marginBottom: 6, fontWeight: 700 }}>✅ Ese mes ya está cerrado.</div>
           )}
           <button
             disabled={!mesSelValido || mesSelYaCerrado || verificando || cerrando}
             onClick={() => intentarCerrar(añoSel, mesSel)}
             style={{
               width: "100%", padding: "10px",
-              background: (mesSelValido && !mesSelYaCerrado && !verificando && !cerrando) ? "linear-gradient(135deg, #dc2626, #b91c1c)" : "#e2e8f0",
-              color: (mesSelValido && !mesSelYaCerrado && !verificando && !cerrando) ? "#fff" : "#94a3b8",
+              background: (mesSelValido && !mesSelYaCerrado && !verificando && !cerrando) ? "var(--adm-alerta)" : "var(--vk-borde)",
+              color: (mesSelValido && !mesSelYaCerrado && !verificando && !cerrando) ? "var(--vk-tarjeta)" : "var(--vk-tenue)",
               border: "none", borderRadius: 10, fontSize: 13, fontWeight: 800,
               cursor: (mesSelValido && !mesSelYaCerrado && !verificando && !cerrando) ? "pointer" : "not-allowed",
             }}
@@ -490,36 +490,36 @@ export default function CerrarMes({ onVolver }) {
       {confirmarCierre && (
         <div style={modalBackdrop} onClick={() => { if (!cerrando) setConfirmarCierre(null); }}>
           <div style={{ ...modalCard, maxHeight: "88vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 16, fontWeight: 900, color: "#dc2626", marginBottom: 8 }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: "var(--adm-alerta)", marginBottom: 8 }}>
               🔒 Cerrar {MES_NAMES[confirmarCierre.mes - 1]} {confirmarCierre.año}
             </div>
-            <div style={{ fontSize: 13, color: "#475569", marginBottom: 12, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, color: "var(--vk-secundario)", marginBottom: 12, lineHeight: 1.5 }}>
               Esta acción es <strong>IRREVERSIBLE</strong>. Las notas quedarán fijas para siempre.
             </div>
 
             {confirmarCierre.cambioDetectado && (
-              <div style={{ background: "#fef3c7", border: "2px solid #f59e0b", padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 11.5, color: "#92400e", fontWeight: 800, lineHeight: 1.5 }}>
+              <div style={{ background: "var(--est-atencion-fondo)", border: "2px solid var(--est-atencion-borde)", padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 11.5, color: "var(--vk-noche-apoyo)", fontWeight: 800, lineHeight: 1.5 }}>
                 🔄 Los datos del servidor cambiaron mientras esta ventana estaba abierta.
                 No se cerró nada. Abajo están los números nuevos — revísalos y confirma otra vez.
               </div>
             )}
 
             {/* Lo que se va a congelar, recalculado con el dato del servidor */}
-            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 10, marginBottom: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 900, color: "#334155", marginBottom: 2 }}>
+            <div style={{ background: "var(--vk-fondo)", border: "1px solid var(--vk-borde)", borderRadius: 10, padding: 10, marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 900, color: "var(--vk-secundario)", marginBottom: 2 }}>
                 📸 Esto es lo que se congela
               </div>
-              <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginBottom: 8 }}>
+              <div style={{ fontSize: 10, color: "var(--vk-secundario)", fontWeight: 700, marginBottom: 8 }}>
                 Leído del servidor a las {confirmarCierre.leidoEn.toLocaleTimeString("es-CO")} — no de esta pantalla.
                 Se vuelve a leer y a recalcular al confirmar.
               </div>
-              <div style={{ fontSize: 11.5, fontWeight: 800, color: "#0f172a", marginBottom: 6 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: "var(--vk-titulo)", marginBottom: 6 }}>
                 {confirmarCierre.resumen.conNota} nota(s) · promedio {fmtN(confirmarCierre.resumen.promedio)} ·
                 máximo {confirmarCierre.resumen.maxDias} día(s) contados
               </div>
               <div style={{ maxHeight: 150, overflowY: "auto" }}>
                 {confirmarCierre.resumen.filas.length === 0 && (
-                  <div style={{ fontSize: 11, color: "#991b1b", fontWeight: 800 }}>
+                  <div style={{ fontSize: 11, color: "var(--adm-alerta)", fontWeight: 800 }}>
                     ⚠️ No hay ninguna vendedora: el snapshot quedaría vacío.
                   </div>
                 )}
@@ -529,12 +529,12 @@ export default function CerrarMes({ onVolver }) {
                     <div key={f.id} style={{
                       display: "flex", justifyContent: "space-between", gap: 8,
                       padding: "3px 0", fontSize: 11, fontWeight: 700,
-                      color: pocosDias ? "#b45309" : "#475569",
-                      borderBottom: "1px solid #f1f5f9",
+                      color: pocosDias ? "var(--vk-metal-borde)" : "var(--vk-secundario)",
+                      borderBottom: "1px solid var(--vk-fondo-hueco)",
                     }}>
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre}</span>
                       <span style={{ flexShrink: 0, fontWeight: 900 }}>
-                        {fmtN(f.nota)} <span style={{ fontWeight: 700, color: pocosDias ? "#b45309" : "#94a3b8" }}>· {f.dias || 0} d</span>
+                        {fmtN(f.nota)} <span style={{ fontWeight: 700, color: pocosDias ? "var(--vk-metal-borde)" : "var(--vk-tenue)" }}>· {f.dias || 0} d</span>
                       </span>
                     </div>
                   );
@@ -543,13 +543,13 @@ export default function CerrarMes({ onVolver }) {
             </div>
 
             {confirmarCierre.faltantes.hay && (
-              <div style={{ background: "#fef3c7", border: "1px solid #fde68a", padding: 10, borderRadius: 8, marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 900, color: "#92400e", marginBottom: 6 }}>
+              <div style={{ background: "var(--est-atencion-fondo)", border: "1px solid var(--vk-metal)", padding: 10, borderRadius: 8, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 900, color: "var(--vk-noche-apoyo)", marginBottom: 6 }}>
                   ⚠️ Faltan datos — esto es exactamente a quién:
                 </div>
 
                 {confirmarCierre.faltantes.avisos.length > 0 && (
-                  <ul style={{ margin: "0 0 8px", padding: "0 0 0 16px", fontSize: 11, color: "#92400e", fontWeight: 800 }}>
+                  <ul style={{ margin: "0 0 8px", padding: "0 0 0 16px", fontSize: 11, color: "var(--vk-noche-apoyo)", fontWeight: 800 }}>
                     {confirmarCierre.faltantes.avisos.map((a, i) => <li key={i}>{a}</li>)}
                   </ul>
                 )}
@@ -561,18 +561,18 @@ export default function CerrarMes({ onVolver }) {
                   <div style={{ maxHeight: 260, overflowY: "auto", paddingRight: 2 }}>
                     {confirmarCierre.faltantes.personas.map(p => (
                       <div key={p.id} style={{
-                        background: "#fff", border: "1px solid #fcd34d", borderRadius: 8,
+                        background: "var(--vk-tarjeta)", border: "1px solid var(--vk-metal)", borderRadius: 8,
                         padding: "7px 9px", marginBottom: 6, lineHeight: 1.5,
                       }}>
-                        <div style={{ fontSize: 12, fontWeight: 900, color: "#7c2d12" }}>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: "var(--est-medio)" }}>
                           {p.nombre}{p.ciudad ? ` · ${p.ciudad}` : ""} — le faltan {p.dias.length} día{p.dias.length === 1 ? "" : "s"}: {p.rangos}
                         </div>
-                        <div style={{ fontSize: 10.5, fontWeight: 700, color: "#92400e", marginTop: 2 }}>
+                        <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--vk-noche-apoyo)", marginTop: 2 }}>
                           Días exactos: {p.dias.join(", ")}
                         </div>
 
                         {p.causa === "ingreso" && (
-                          <div style={{ fontSize: 10.5, fontWeight: 700, color: "#7c2d12", marginTop: 4, background: "#fffbeb", borderLeft: "3px solid #f59e0b", padding: "5px 7px", borderRadius: 5 }}>
+                          <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--est-medio)", marginTop: 4, background: "var(--vk-noche)", borderLeft: "3px solid var(--est-atencion-borde)", padding: "5px 7px", borderRadius: 5 }}>
                             📌 {p.fechaIngreso
                               ? <>Figura ingresando el <strong>{fechaLegible(p.fechaIngreso)}</strong></>
                               : <>No tiene <strong>fecha de ingreso registrada</strong>, así que se la espera desde el día 1</>}
@@ -584,7 +584,7 @@ export default function CerrarMes({ onVolver }) {
                           </div>
                         )}
                         {p.causa === "sin-registros" && (
-                          <div style={{ fontSize: 10.5, fontWeight: 700, color: "#7c2d12", marginTop: 4, background: "#fffbeb", borderLeft: "3px solid #f59e0b", padding: "5px 7px", borderRadius: 5 }}>
+                          <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--est-medio)", marginTop: 4, background: "var(--vk-noche)", borderLeft: "3px solid var(--est-atencion-borde)", padding: "5px 7px", borderRadius: 5 }}>
                             📌 No tiene <strong>ningún</strong> registro en todo el mes
                             {p.fechaIngreso ? <> (figura ingresando el {fechaLegible(p.fechaIngreso)})</> : null}.
                             O ya no trabaja y sigue marcada como activa, o su fecha de ingreso está mal.
@@ -592,7 +592,7 @@ export default function CerrarMes({ onVolver }) {
                           </div>
                         )}
                         {p.causa === "digitacion" && (
-                          <div style={{ fontSize: 10.5, fontWeight: 700, color: "#7c2d12", marginTop: 4, background: "#fffbeb", borderLeft: "3px solid #f59e0b", padding: "5px 7px", borderRadius: 5 }}>
+                          <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--est-medio)", marginTop: 4, background: "var(--vk-noche)", borderLeft: "3px solid var(--est-atencion-borde)", padding: "5px 7px", borderRadius: 5 }}>
                             📌 Son huecos <strong>en la mitad del mes</strong>, no un problema de fecha de
                             ingreso: esos días sí están sin digitar. Hay que ingresarlos en Ingreso diario
                             antes de cerrar.
@@ -604,7 +604,7 @@ export default function CerrarMes({ onVolver }) {
                 )}
 
                 {confirmarCierre.faltantes.sinVentas.length > 0 && (
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "#92400e", marginTop: 4 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-noche-apoyo)", marginTop: 4 }}>
                     💰 Sin ventas cargadas: {confirmarCierre.faltantes.sinVentas.map(v => v.nombre).join(", ")}
                   </div>
                 )}
@@ -612,12 +612,12 @@ export default function CerrarMes({ onVolver }) {
                 {/* Desglose por día, completo y sin cortar, por si hace falta */}
                 {confirmarCierre.faltantes.porDia.length > 0 && (
                   <details style={{ marginTop: 8 }}>
-                    <summary style={{ fontSize: 10.5, fontWeight: 800, color: "#92400e", cursor: "pointer" }}>
+                    <summary style={{ fontSize: 10.5, fontWeight: 800, color: "var(--vk-noche-apoyo)", cursor: "pointer" }}>
                       Ver el desglose día por día ({confirmarCierre.faltantes.porDia.length} día(s))
                     </summary>
                     <div style={{ maxHeight: 160, overflowY: "auto", marginTop: 4 }}>
                       {confirmarCierre.faltantes.porDia.map(d => (
-                        <div key={d.dia} style={{ fontSize: 10.5, color: "#92400e", fontWeight: 700, padding: "1px 0" }}>
+                        <div key={d.dia} style={{ fontSize: 10.5, color: "var(--vk-noche-apoyo)", fontWeight: 700, padding: "1px 0" }}>
                           Día {d.dia}: {d.nombres.join(", ")}
                         </div>
                       ))}
@@ -634,15 +634,15 @@ export default function CerrarMes({ onVolver }) {
                   <button
                     disabled={cerrando}
                     onClick={() => setConfirmarCierre(null)}
-                    style={{ flex: 1, padding: "10px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 800, cursor: cerrando ? "default" : "pointer" }}
+                    style={{ flex: 1, padding: "10px", background: "var(--vk-fondo-hueco)", color: "var(--vk-secundario)", border: "none", borderRadius: 8, fontWeight: 800, cursor: cerrando ? "default" : "pointer" }}
                   >Cancelar</button>
                   <button
                     disabled={inhabilitado}
                     onClick={() => ejecutarCierre(confirmarCierre.año, confirmarCierre.mes)}
                     style={{
                       flex: 1, padding: "10px",
-                      background: inhabilitado ? "#e2e8f0" : "linear-gradient(135deg, #dc2626, #b91c1c)",
-                      color: inhabilitado ? "#94a3b8" : "#fff",
+                      background: inhabilitado ? "var(--vk-borde)" : "var(--adm-alerta)",
+                      color: inhabilitado ? "var(--vk-tenue)" : "var(--vk-tarjeta)",
                       border: "none", borderRadius: 8, fontWeight: 800,
                       cursor: inhabilitado ? "not-allowed" : "pointer",
                     }}
@@ -653,18 +653,18 @@ export default function CerrarMes({ onVolver }) {
             })()}
             {confirmarCierre.faltantes.hay && (
               <>
-                <div style={{ marginTop: 8, fontSize: 10, color: "#991b1b", fontWeight: 700, textAlign: "center" }}>
+                <div style={{ marginTop: 8, fontSize: 10, color: "var(--adm-alerta)", fontWeight: 700, textAlign: "center" }}>
                   ⚠️ No se puede cerrar mientras haya datos faltantes.
                 </div>
                 {/* La advertencia tiene que decir exactamente qué pasa, sin rodeos:
                     forzar no "completa" nada, congela el mes incompleto — y ahora
                     dice CON NOMBRE PROPIO a quién le queda la nota hundida. */}
-                <div style={{ marginTop: 10, padding: "10px 12px", background: "#fee2e2", border: "2px solid #dc2626", borderRadius: 8, fontSize: 11, color: "#991b1b", fontWeight: 800, lineHeight: 1.55 }}>
+                <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--adm-alerta-fondo)", border: "2px solid var(--adm-alerta)", borderRadius: 8, fontSize: 11, color: "var(--adm-alerta)", fontWeight: 800, lineHeight: 1.55 }}>
                   🛑 Si fuerzas el cierre, los días que faltan <strong>NO se cuentan</strong>:
                   {confirmarCierre.faltantes.personas.length > 0 && (
                     <div style={{ margin: "6px 0" }}>
                       {confirmarCierre.faltantes.personas.map(p => (
-                        <div key={p.id} style={{ padding: "3px 0", borderBottom: "1px solid #fecaca" }}>
+                        <div key={p.id} style={{ padding: "3px 0", borderBottom: "1px solid var(--adm-alerta-borde)" }}>
                           A <strong>{p.nombre}</strong> se le contarán <strong>{p.dias.length} día
                           {p.dias.length === 1 ? "" : "s"} no trabajado{p.dias.length === 1 ? "" : "s"}</strong> y
                           su nota de {MES_NAMES[confirmarCierre.mes - 1]} {confirmarCierre.año} quedará fija
@@ -678,7 +678,7 @@ export default function CerrarMes({ onVolver }) {
                   Corregirlo después obliga a <strong>abrir el mes y volver a cerrarlo</strong>, y los
                   indicadores del día no se pueden recuperar: son la foto de ese día.
                 </div>
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 6, marginTop: 8, padding: "8px 10px", background: "rgba(124, 58, 237, 0.06)", border: "1px dashed rgba(124, 58, 237, 0.3)", borderRadius: 8, fontSize: 11, color: "#5b21b6", fontWeight: 800, cursor: "pointer", lineHeight: 1.5 }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 6, marginTop: 8, padding: "8px 10px", background: "rgba(124, 58, 237, 0.06)", border: "1px dashed rgba(124, 58, 237, 0.3)", borderRadius: 8, fontSize: 11, color: "var(--vk-secundario)", fontWeight: 800, cursor: "pointer", lineHeight: 1.5 }}>
                   <input
                     type="checkbox"
                     checked={forzarCierre}
@@ -703,20 +703,20 @@ export default function CerrarMes({ onVolver }) {
       {confirmarAbrir && (
         <div style={modalBackdrop} onClick={() => setConfirmarAbrir(null)}>
           <div style={modalCard} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 16, fontWeight: 900, color: "#dc2626", marginBottom: 8 }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: "var(--adm-alerta)", marginBottom: 8 }}>
               🔓 ¿Abrir {MES_NAMES[confirmarAbrir.mes - 1]} {confirmarAbrir.año}?
             </div>
-            <div style={{ fontSize: 13, color: "#475569", marginBottom: 12, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, color: "var(--vk-secundario)", marginBottom: 12, lineHeight: 1.5 }}>
               Descongelará el mes — Carolina podrá volver a modificar registros. Solo úsalo en emergencias reales.
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <button
                 onClick={() => setConfirmarAbrir(null)}
-                style={{ flex: 1, padding: "10px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 800, cursor: "pointer" }}
+                style={{ flex: 1, padding: "10px", background: "var(--vk-fondo-hueco)", color: "var(--vk-secundario)", border: "none", borderRadius: 8, fontWeight: 800, cursor: "pointer" }}
               >Cancelar</button>
               <button
                 onClick={() => ejecutarApertura(confirmarAbrir.año, confirmarAbrir.mes)}
-                style={{ flex: 1, padding: "10px", background: "linear-gradient(135deg, #dc2626, #b91c1c)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 800, cursor: "pointer" }}
+                style={{ flex: 1, padding: "10px", background: "var(--adm-alerta)", color: "var(--vk-tarjeta)", border: "none", borderRadius: 8, fontWeight: 800, cursor: "pointer" }}
               >🔓 Abrir</button>
             </div>
           </div>
@@ -728,8 +728,8 @@ export default function CerrarMes({ onVolver }) {
 
 const inputStyle = {
   width: "100%", padding: "10px 12px", borderRadius: 10,
-  border: "1.5px solid #cbd5e1", fontSize: 14, fontFamily: "inherit",
-  fontWeight: 700, color: "#0f172a", background: "#fff",
+  border: "1.5px solid var(--est-sin-dato)", fontSize: 14, fontFamily: "inherit",
+  fontWeight: 700, color: "var(--vk-titulo)", background: "var(--vk-tarjeta)",
 };
 const modalBackdrop = {
   position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
@@ -737,7 +737,7 @@ const modalBackdrop = {
   padding: 20, zIndex: 300,
 };
 const modalCard = {
-  background: "#fff", borderRadius: 16, padding: 20,
+  background: "var(--vk-tarjeta)", borderRadius: 16, padding: 20,
   maxWidth: 380, width: "100%",
   boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
 };
