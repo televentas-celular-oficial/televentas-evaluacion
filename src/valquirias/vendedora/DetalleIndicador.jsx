@@ -163,6 +163,16 @@ function BarraNota({ nota }) {
 // hay rojo: un día que ya pasó no se puede corregir, así que no es una alarma.
 // "grave" es el mismo hueco, con el borde más oscuro para que se note que pesó
 // más. Descanso y sin dato no son ni buenos ni malos: cada uno tiene su token.
+// El cuadrito de la tira. Tres estados, que son los que el sistema ya guarda:
+// bien, novedad leve y grave. Se distinguen por RELLENO, no sólo por tono —
+// un día grave es sólido y se ve de lejos aunque la tira tenga treinta días.
+function cuadroDia(estado) {
+  if (estado === "grave") return { background: "var(--est-grave)", border: "1px solid var(--est-grave)" };
+  if (estado === "mal") return { background: "var(--est-atencion-fondo)", border: "1px solid var(--est-atencion-borde)" };
+  if (estado === "sindato") return { background: "transparent", border: "1px dashed var(--est-sin-dato)" };
+  return { background: "var(--vk-bien-fondo)", border: "1px solid var(--vk-bien-texto)" };
+}
+
 function estiloDia(estado) {
   if (estado === "ok") return { background: "var(--vk-bien-fondo)", color: "var(--vk-bien-texto)" };
   if (estado === "grave") return { background: PAPEL, color: "var(--est-atencion)", boxShadow: "inset 0 0 0 1.5px var(--est-grave)" };
@@ -306,6 +316,8 @@ export default function DetalleIndicador({
   }
 
   const dias = !esTrim ? (ind.dias || []) : null;
+  // Los únicos días que llevan texto: los que tienen algo que corregir.
+  const novedades = (dias || []).filter(d => d.estado === "mal" || d.estado === "grave");
   const nombreMesMes = !esTrim
     ? ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
        "agosto", "septiembre", "octubre", "noviembre", "diciembre"][m - 1]
@@ -440,12 +452,60 @@ export default function DetalleIndicador({
             </div>
           ) : (
             <>
-              {dias.map(d => (
-                <div key={d.fecha} style={{ ...S.dia, ...estiloDia(d.estado) }}>
-                  <span>{d.etiqueta}</span>
-                  <span style={{ textAlign: "right" }}>{d.texto}</span>
+              {/* LA TIRA DEL MES.
+                  Antes esto era un renglón por día: veinticuatro líneas para
+                  decir que casi siempre estuvo bien, con la novedad enterrada
+                  entre veintidós días idénticos.
+                  Ahora los días buenos SE VEN y no se leen — un cuadrito verde
+                  cada uno — y sólo los días con novedad llevan su explicación,
+                  que es lo único que ella puede usar para corregir.
+                  La tira pinta EXACTAMENTE los días con registro: un día que no
+                  llegó, uno de descanso y uno que nadie llenó no se distinguen
+                  entre sí, así que no se inventa una casilla para ellos. */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 10 }}>
+                {dias.map(d => (
+                  <span
+                    key={d.fecha}
+                    title={`${d.etiqueta} · ${d.texto}`}
+                    style={{ width: 15, height: 15, borderRadius: 4, ...cuadroDia(d.estado) }}
+                  />
+                ))}
+              </div>
+
+              {/* "Días bien" sólo donde el día ES un veredicto.
+                  Reseñas no juzga el día: su nota es el ratio del mes, y por eso
+                  `diaDeIndicador` nunca le pone "mal" (derivar.js:350). Decir
+                  "24 días bien" en un indicador con nota 1.07 sería mentirle. */}
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: APOYO, marginBottom: novedades.length ? 8 : 0 }}>
+                {ind.id === "resenas" ? (
+                  <strong style={{ color: TINTA }}>{dias.length} días registrados</strong>
+                ) : (
+                  <>
+                    <strong style={{ color: TINTA }}>{dias.length - novedades.length} días bien</strong>
+                    {novedades.length > 0 && ` · ${novedades.length} con novedad`}
+                  </>
+                )}
+              </div>
+
+              {novedades.map((d, i, arr) => (
+                <div
+                  key={d.fecha}
+                  style={{
+                    display: "flex", alignItems: "baseline", gap: 8, padding: "7px 0",
+                    fontSize: 11.5,
+                    borderBottom: i === arr.length - 1 ? "none" : `1px dashed ${LINEA}`,
+                  }}
+                >
+                  <span style={{
+                    fontWeight: 800, width: 84, flexShrink: 0,
+                    color: d.estado === "grave" ? "var(--est-grave)" : "var(--est-atencion)",
+                  }}>{d.etiqueta}</span>
+                  <span style={{ flex: 1, color: APOYO, fontWeight: 700, textAlign: "right" }}>
+                    {d.texto}
+                  </span>
                 </div>
               ))}
+
               <div style={{ fontSize: 11.5, color: TENUE, marginTop: 8 }}>
                 {ind.cerrado
                   ? "Este mes ya cerró: su nota quedó fija."

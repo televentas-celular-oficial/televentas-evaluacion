@@ -577,7 +577,7 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
       {/* ------------------------------------------------------------------ */}
       {/* 3) MI PUESTO EN VENTAS                                              */}
       {/* ------------------------------------------------------------------ */}
-      <div style={S.card}>
+      <div className="v-full" style={S.card}>
         <div style={S.lbl}>Mi puesto en ventas · {ciudadTxt}</div>
 
         {!rk?.disponible || !rk.filas.length ? (
@@ -656,6 +656,8 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
         )}
       </div>
 
+      {/* Columna izquierda: su nota y de qué está hecha. */}
+      <div className="v-col">
       {/* ------------------------------------------------------------------ */}
       {/* 4) TU NOTA DE <MES>                                                 */}
       {/* ------------------------------------------------------------------ */}
@@ -739,6 +741,11 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
         />
       </div>
 
+      </div>{/* /col izquierda */}
+
+      {/* Columna derecha: los indicadores. Las dos columnas suman altura
+          parecida, así que ninguna queda con un hueco al lado. */}
+      <div className="v-col">
       {/* ------------------------------------------------------------------ */}
       {/* 6) LOS INDICADORES                                                  */}
       {/* ------------------------------------------------------------------ */}
@@ -768,6 +775,8 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
           ))}
         </div>
       )}
+
+      </div>{/* /col derecha */}
 
       </div>{/* /.v-cols */}
     </div>
