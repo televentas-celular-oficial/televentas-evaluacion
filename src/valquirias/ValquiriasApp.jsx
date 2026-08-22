@@ -139,26 +139,44 @@ function BarraMarca({ conSalir = true }) {
 // ---------------------------------------------------------------------------
 function BannerVerComo({ vendedora, onSalir }) {
   return (
-    <button
-      onClick={onSalir}
+    // El banner ENTERO era el botón, y eso traía dos problemas que Luis vio en
+    // el celular (22-ago-2026): nada decía dónde tocar —una franja verde no se
+    // lee como botón— y los dos textos peleaban por el mismo renglón, así que
+    // "Volver al panel" se partía en dos líneas y "· MED" se caía a la
+    // siguiente. Ahora el botón es una pastilla blanca de verdad, y el rótulo
+    // de contexto es texto. Si no caben en un renglón, la frase entera baja
+    // completa en vez de partirse por la mitad.
+    <div
       style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        width: "100%", gap: 10, padding: "11px 14px", marginBottom: 12,
-        border: "none", borderRadius: 12, cursor: "pointer",
+        flexWrap: "wrap", rowGap: 8,
+        width: "100%", gap: 10, padding: "10px 12px", marginBottom: 12,
+        borderRadius: 12,
         background: "var(--vk-banner)",
         // El banner es verde OSCURO. Llevaba `--vk-noche-texto`, que en la
         // paleta pastel es tinta casi negra: texto oscuro sobre fondo oscuro.
         // Es el mismo emparejamiento roto que ya apareció en las pestañas y en
         // el botón de Entrar. Todo fondo oscuro va con `--vk-sobre-tinta`.
-        color: "var(--vk-sobre-tinta)", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800,
-        textAlign: "left",
+        color: "var(--vk-sobre-tinta)", fontSize: 12.5, fontWeight: 800,
       }}
     >
-      {/* El volver va SIEMPRE a la izquierda, como en toda la app. Estaba al
-          revés: el nombre a la izquierda y el volver colgando a la derecha. */}
-      <span>‹ Volver al panel</span>
-      <span>🛡️ Viendo como {primerNombre(vendedora?.nombre)} · {vendedora?.ciudad || "—"}</span>
-    </button>
+      {/* El volver va SIEMPRE a la izquierda, como en toda la app. */}
+      <button
+        onClick={onSalir}
+        style={{
+          flexShrink: 0, whiteSpace: "nowrap",
+          padding: "7px 13px", borderRadius: 999, cursor: "pointer",
+          background: "var(--vk-sobre-tinta)",
+          color: "var(--vk-banner)",
+          border: "none", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800,
+        }}
+      >
+        ‹ Volver al panel
+      </button>
+      <span style={{ whiteSpace: "nowrap" }}>
+        🛡️ Viendo como {primerNombre(vendedora?.nombre)} · {vendedora?.ciudad || "—"}
+      </span>
+    </div>
   );
 }
 
