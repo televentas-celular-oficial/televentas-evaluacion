@@ -1,0 +1,469 @@
+<title>La puerta se enciende</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap">
+
+<style>
+:root{
+  --g:#EDE6DA; --g2:#E3DACB; --sf:#FBF7F1; --ink:#171310; --mut:#6E6355;
+  --acc:#B45309; --acc-soft:rgba(180,83,9,.14); --grn:#046C4E; --line:rgba(23,19,16,.14);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --g:#16130F; --g2:#1C1813; --sf:#211C16; --ink:#EFE8DC; --mut:#A29684;
+  --acc:#E9A94B; --acc-soft:rgba(233,169,75,.16); --grn:#34D399; --line:rgba(239,232,220,.16);
+}}
+:root[data-theme="dark"]{
+  --g:#16130F; --g2:#1C1813; --sf:#211C16; --ink:#EFE8DC; --mut:#A29684;
+  --acc:#E9A94B; --acc-soft:rgba(233,169,75,.16); --grn:#34D399; --line:rgba(239,232,220,.16);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--g);color:var(--ink);
+  font-family:Karla,ui-sans-serif,system-ui,sans-serif;font-size:17px;line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:clamp(28px,6vw,72px) clamp(18px,5vw,40px) 96px}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:600;text-wrap:balance;margin:0}
+h1{font-size:clamp(38px,7vw,64px);line-height:1.02;letter-spacing:-.022em}
+h2{font-size:clamp(24px,3.4vw,33px);line-height:1.12;letter-spacing:-.014em}
+h3{font-size:19px;line-height:1.3;font-weight:700}
+p{margin:0 0 1em;max-width:64ch}
+.lede{font-size:clamp(18px,2.2vw,21px);color:var(--mut);max-width:56ch;margin-top:20px}
+.eyebrow{font-family:Karla,sans-serif;font-size:11.5px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--acc);margin:0 0 10px}
+.rule{height:1px;background:var(--line);border:0;margin:0}
+section{margin-top:clamp(52px,7vw,88px)}
+.note{color:var(--mut);font-size:15.5px}
+.tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--acc);background:var(--acc-soft);
+  padding:4px 10px;border-radius:999px}
+
+/* ---- marco de celular ---- */
+.pares{display:grid;grid-template-columns:repeat(auto-fit,minmax(266px,1fr));
+  gap:clamp(18px,3vw,32px);align-items:start;margin-top:28px}
+.uno{display:flex;flex-direction:column;gap:12px;min-width:0}
+.cap{font-size:14px;color:var(--mut);line-height:1.45}
+.cap b{color:var(--ink);font-weight:700}
+.tel{background:#0E0B08;border-radius:30px;padding:9px;box-shadow:0 14px 34px rgba(0,0,0,.2)}
+.pantalla{background:linear-gradient(180deg,#FBF7F1 0%,#F1EADE 100%);border-radius:23px;
+  padding:14px 13px 18px;overflow:hidden;position:relative;
+  font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color:#0F172A;min-height:298px}
+.hdr{font-size:10.5px;font-weight:700;color:#475569;letter-spacing:.02em;margin-bottom:11px}
+
+/* ---- tarjetas de la app ---- */
+.card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:15px;padding:13px 12px}
+.card.oro{background:#FFFBEB;border-color:#FCD34D;border-left:4px solid #B45309}
+.rot{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#92400E}
+.rot.gris{color:#475569}
+.cifra{font-size:27px;font-weight:800;letter-spacing:-.03em;color:#0F172A;line-height:1.1;
+  margin-top:3px;font-variant-numeric:tabular-nums}
+.cifra.nota{font-size:33px}
+
+/* ---- la barra ---- */
+.riel{position:relative;height:10px;background:#F4F4F5;border-radius:6px;margin:13px 0 9px}
+.fill{position:absolute;inset:0 auto 0 0;background:#046C4E;border-radius:6px;width:0}
+.fill.anim{transition:width .9s cubic-bezier(.22,.9,.3,1)}
+.mk{position:absolute;top:-2px;width:2px;height:14px;border-radius:1px;background:#B45309;
+  transform:translateX(-1px)}
+.mk.pasada{background:#FFFFFF;width:3px}
+.pt{position:absolute;top:-9px;width:7px;height:7px;border-radius:50%;background:#046C4E;
+  transform:translateX(-3.5px) scale(0);box-shadow:0 0 0 0 rgba(252,211,77,0)}
+.pt.on{transform:translateX(-3.5px) scale(1)}
+.pt.late{animation:halo 1.2s ease-out .5s 1 forwards}
+@keyframes halo{
+  0%{transform:translateX(-3.5px) scale(0);box-shadow:0 0 0 0 rgba(252,211,77,.85)}
+  55%{transform:translateX(-3.5px) scale(1.25);box-shadow:0 0 0 11px rgba(252,211,77,.55)}
+  100%{transform:translateX(-3.5px) scale(1);box-shadow:0 0 0 16px rgba(252,211,77,0)}
+}
+.linea{font-size:11.5px;font-weight:600;color:#92400E;text-align:center;line-height:1.5}
+.linea.gris{color:#475569;font-weight:500}
+.gana{font-size:13px;font-weight:800;color:#0F172A;text-align:center;line-height:1.45;
+  margin-bottom:4px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.mini{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:13px;padding:10px 9px;text-align:center}
+.mini .v{font-size:17px;font-weight:800;color:#0F172A;margin-top:2px;font-variant-numeric:tabular-nums}
+.mini .v.salta{display:inline-block}
+.salto{animation:salto .55s cubic-bezier(.3,1.5,.5,1) .6s 1}
+@keyframes salto{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
+
+/* ---- confeti ---- */
+.conf{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+.pz{position:absolute;top:-16px;width:7px;height:10px;opacity:0}
+.pz.r{border-radius:50%;width:6px;height:6px}
+.pz.t{width:4px;height:12px}
+.caer .pz{animation:caer linear forwards}
+@keyframes caer{0%{transform:translateY(-16px) rotate(0);opacity:1}
+  100%{transform:translateY(330px) rotate(720deg);opacity:.25}}
+
+/* ---- botones del home ---- */
+.bg{display:flex;align-items:center;gap:10px;border-radius:16px;padding:11px 12px;
+  border:1px solid;margin-bottom:8px}
+.bg .glob{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:16px;
+  flex-shrink:0}
+.bg .tx{min-width:0}
+.bg .t{font-size:14.5px;font-weight:800;line-height:1.2}
+.bg .p{font-size:10.5px;font-weight:600;margin-top:2px;line-height:1.35}
+.bg.oroaviso{border-color:#B45309;border-width:1.5px}
+
+button.replay{font:inherit;font-size:13.5px;font-weight:700;color:var(--acc);
+  background:transparent;border:1px solid var(--acc);border-radius:999px;padding:6px 15px;
+  cursor:pointer;align-self:flex-start}
+button.replay:hover{background:var(--acc-soft)}
+button.replay:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+.leyenda{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:26px}
+.lg{background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:16px 17px}
+.lg .mini-riel{position:relative;height:10px;background:#F4F4F5;border-radius:6px;margin:12px 0 14px}
+.lg h3{margin-bottom:2px}
+
+ul.lista{margin:0;padding-left:0;list-style:none;max-width:64ch}
+ul.lista li{position:relative;padding-left:22px;margin-bottom:11px}
+ul.lista li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;
+  border-radius:50%;background:var(--acc)}
+.q{background:var(--sf);border:1px solid var(--line);border-left:3px solid var(--acc);
+  border-radius:0;padding:16px 20px;margin-top:18px}
+.q p:last-child{margin-bottom:0}
+@media (prefers-reduced-motion:reduce){
+  .fill.anim{transition:none}
+  .salto,.caer .pz{animation:none}
+  .pz{opacity:0}
+  /* El punto verde no se anima, pero SÍ tiene que quedar puesto: es el estado,
+     no el adorno. Sin esto la puerta cruzada se vería igual que la cerrada. */
+  .pt.late{animation:none;transform:translateX(-3.5px) scale(1)}
+}
+</style>
+
+<div class="wrap">
+
+<p class="eyebrow">Valkyrias · prototipo para aprobar</p>
+<h1>La puerta se enciende</h1>
+<p class="lede">Cómo se celebra cruzar un tramo de comisión y cruzar el 4.50 del trimestre. Nada de pantallas nuevas: se enciende la barra que ellas ya miran todos los días.</p>
+
+<section>
+<p class="eyebrow">La idea</p>
+<h2>Las rayas de la barra pasan a significar algo</h2>
+<p>Hoy las tres rayas doradas se ven iguales: la que ya cruzó y la que le falta. A partir de aquí la barra tiene dos estados, y eso solo ya cuenta la historia sin una palabra.</p>
+
+<div class="leyenda">
+  <div class="lg">
+    <h3>Puerta por abrir</h3>
+    <p class="note" style="margin:0">Raya dorada. Todavía no llega.</p>
+    <div class="mini-riel">
+      <div class="fill" style="width:38%"></div>
+      <div class="mk" style="left:62%"></div>
+    </div>
+  </div>
+  <div class="lg">
+    <h3>Puerta cruzada</h3>
+    <p class="note" style="margin:0">Muesca blanca y punto verde.</p>
+    <div class="mini-riel">
+      <div class="fill" style="width:74%"></div>
+      <div class="mk pasada" style="left:62%"></div>
+      <div class="pt on" style="left:62%"></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<hr class="rule" style="margin-top:56px">
+
+<section>
+<p class="eyebrow">Momento 1 · Medellín</p>
+<h2>Cruza el piso de $15.000.000</h2>
+<p>El día que de verdad empieza a ganar comisión. Hasta ese peso, en Medellín va en cero.</p>
+
+<div class="pares">
+  <div class="uno">
+    <p class="cap"><b>Antes.</b> Le faltan $1.600.000 y su comisión va en $0.</p>
+    <div class="tel"><div class="pantalla">
+      <div class="hdr">Agosto 2026 · día 19 de 31 · 🟢 Medellín</div>
+      <div class="card oro">
+        <div class="rot">Vendido en agosto</div>
+        <div class="cifra">$13.400.000</div>
+        <div class="riel">
+          <div class="fill" style="width:34%"></div>
+          <div class="mk" style="left:38%"></div>
+          <div class="mk" style="left:49%"></div>
+          <div class="mk" style="left:100%"></div>
+        </div>
+        <div class="linea gris">Te faltan $1.600.000 para el piso</div>
+      </div>
+      <div class="dos">
+        <div class="mini"><div class="rot gris">Ganas hoy</div><div class="v">$0</div></div>
+        <div class="mini"><div class="rot gris">Tu promedio</div><div class="v">$705.263</div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="uno">
+    <p class="cap"><b>Al cruzarlo.</b> El relleno arranca clavado en la raya del piso y barre hasta su cifra. Se ve pasar la puerta.</p>
+    <div class="tel"><div class="pantalla">
+      <div class="hdr">Agosto 2026 · día 21 de 31 · 🟢 Medellín</div>
+      <div class="card oro">
+        <div class="rot">Vendido en agosto</div>
+        <div class="cifra">$15.240.000</div>
+        <div class="riel">
+          <div class="fill anim" data-desde="38" data-hasta="39"></div>
+          <div class="mk pasada" style="left:38%"></div>
+          <div class="pt late" style="left:38%"></div>
+          <div class="mk" style="left:49%"></div>
+          <div class="mk" style="left:100%"></div>
+        </div>
+        <div class="gana">Pasaste el piso de $15.000.000. Desde aquí tu mes empieza a generar comisión.</div>
+        <div class="linea gris">Te faltan $4.038.643 para el tramo 2</div>
+      </div>
+      <div class="dos">
+        <div class="mini"><div class="rot gris">Ganas hoy</div><div class="v"><span class="salta">$152.400</span></div></div>
+        <div class="mini"><div class="rot gris">Tu promedio</div><div class="v">$725.714</div></div>
+      </div>
+    </div></div>
+    <button class="replay" type="button">Ver el momento otra vez</button>
+  </div>
+</div>
+</section>
+
+<hr class="rule" style="margin-top:56px">
+
+<section>
+<p class="eyebrow">Momento 2 · las dos ciudades</p>
+<h2>Entra al tramo 2, y al tramo 3</h2>
+<p>Mismo gesto, sin confeti. Es a propósito: cruzar tres escalones en un mes no puede cansar, y el confeti tiene que seguir significando algo.</p>
+
+<div class="pares">
+  <div class="uno">
+    <p class="cap"><b>Tramo 2.</b> El porcentaje sube y se aplica sobre todo lo vendido, no sobre el excedente. Por eso la cifra de abajo salta de golpe.</p>
+    <div class="tel"><div class="pantalla">
+      <div class="hdr">Agosto 2026 · día 24 de 31 · 🟡 Bogotá</div>
+      <div class="card oro">
+        <div class="rot">Vendido en agosto</div>
+        <div class="cifra">$19.402.900</div>
+        <div class="riel">
+          <div class="fill anim" data-desde="49" data-hasta="49.4"></div>
+          <div class="mk pasada" style="left:49%"></div>
+          <div class="pt late" style="left:49%"></div>
+          <div class="mk" style="left:100%"></div>
+        </div>
+        <div class="gana">Entraste al tramo 2. Tu porcentaje sube y se aplica sobre todo lo que llevas vendido en agosto.</div>
+        <div class="linea gris">Te faltan $19.906.258 para el tramo 3</div>
+      </div>
+      <div class="dos">
+        <div class="mini"><div class="rot gris">Ganas hoy</div><div class="v"><span class="salta">$388.058</span></div></div>
+        <div class="mini"><div class="rot gris">Tu promedio</div><div class="v">$808.454</div></div>
+      </div>
+    </div></div>
+    <button class="replay" type="button">Ver el momento otra vez</button>
+  </div>
+
+  <div class="uno">
+    <p class="cap"><b>Tramo 3.</b> No hay escalón por encima, así que la frase reemplaza la línea de siempre en vez de apilarse.</p>
+    <div class="tel"><div class="pantalla">
+      <div class="hdr">Agosto 2026 · día 28 de 31 · 🟢 Medellín</div>
+      <div class="card oro">
+        <div class="rot">Vendido en agosto</div>
+        <div class="cifra">$40.100.000</div>
+        <div class="riel">
+          <div class="fill anim" data-desde="98" data-hasta="100"></div>
+          <div class="mk pasada" style="left:37%"></div>
+          <div class="pt on" style="left:37%"></div>
+          <div class="mk pasada" style="left:48%"></div>
+          <div class="pt on" style="left:48%"></div>
+          <div class="mk pasada" style="left:98%"></div>
+          <div class="pt late" style="left:98%"></div>
+        </div>
+        <div class="gana">Entraste al tramo 3, el más alto. No hay escalón por encima: tu porcentaje queda en el máximo sobre todo lo vendido.</div>
+      </div>
+      <div class="dos">
+        <div class="mini"><div class="rot gris">Ganas hoy</div><div class="v"><span class="salta">$1.203.000</span></div></div>
+        <div class="mini"><div class="rot gris">Tu promedio</div><div class="v">$1.432.142</div></div>
+      </div>
+    </div></div>
+    <button class="replay" type="button">Ver el momento otra vez</button>
+  </div>
+</div>
+</section>
+
+<hr class="rule" style="margin-top:56px">
+
+<section>
+<p class="eyebrow">Momento 3 · el grande</p>
+<h2>Cruza el 4.50 del trimestre</h2>
+<p>Aquí sí cae el confeti — el mismo de los lunes, sin tocarle una línea. Pasa una vez por trimestre, y por eso significa algo. Hoy este momento se anuncia con un chulito.</p>
+
+<div class="pares">
+  <div class="uno">
+    <p class="cap"><b>Antes.</b> Tarjeta blanca, línea gris de 12px. Esto es todo lo que hay hoy.</p>
+    <div class="tel"><div class="pantalla">
+      <div class="hdr">Q3 2026 · jul · ago · sep · 🟢 Medellín</div>
+      <div class="card">
+        <div class="rot gris">Tu nota del trimestre</div>
+        <div class="cifra nota">4.43</div>
+        <div class="riel">
+          <div class="fill" style="width:85.7%"></div>
+          <div class="mk" style="left:87.5%"></div>
+        </div>
+        <div class="linea gris">Te faltan 0.07 y quedan 39 días.</div>
+      </div>
+      <div class="dos">
+        <div class="mini"><div class="rot gris">Mi puesto</div><div class="v">3.º</div></div>
+        <div class="mini"><div class="rot gris">En juego</div><div class="v">$1.000.000</div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="uno">
+    <p class="cap"><b>Al cruzarlo.</b> La tarjeta se pone crema con filo dorado, la barra pasa la raya por primera vez, la nota salta y cae el confeti.</p>
+    <div class="tel"><div class="pantalla" data-confeti>
+      <div class="conf"></div>
+      <div class="hdr">Q3 2026 · jul · ago · sep · 🟢 Medellín</div>
+      <div class="card oro">
+        <div class="rot">Tu nota del trimestre</div>
+        <div class="cifra nota"><span class="salta">4.52</span></div>
+        <div class="riel">
+          <div class="fill anim" data-desde="87.5" data-hasta="88"></div>
+          <div class="mk pasada" style="left:87.5%"></div>
+          <div class="pt late" style="left:87.5%"></div>
+        </div>
+        <div class="gana">Cruzaste el 4.50.</div>
+        <div class="linea">Hoy estás por encima de la vara del $1.000.000. Quedan 39 días y la nota se mueve todos los días.</div>
+      </div>
+      <div class="dos">
+        <div class="mini"><div class="rot gris">Mi puesto</div><div class="v">1.º</div></div>
+        <div class="mini"><div class="rot gris">En juego</div><div class="v">$1.000.000</div></div>
+      </div>
+    </div></div>
+    <button class="replay" type="button">Ver el momento otra vez</button>
+  </div>
+</div>
+
+<div class="q">
+  <p><span class="tag">Lo que no dice</span></p>
+  <p style="margin-bottom:0">No aparece «Ganaste $1.000.000», ni corona, ni check. Con 39 días por delante y una nota que se mueve todos los días, coronarla sería mentirle. Dice dónde está su nota hoy — que es verdad hoy y sigue siendo verdad mañana.</p>
+</div>
+</section>
+
+<hr class="rule" style="margin-top:56px">
+
+<section>
+<p class="eyebrow">Para que no se lo pierda</p>
+<h2>El Home lo avisa sin una tarjeta nueva</h2>
+<p>Si cruza un martes y solo abre Mi mes el jueves, el momento la espera. Mientras no haya entrado, el botón que ya existe se pone con filo dorado y su pie cambia de texto. Se apaga solo cuando entra.</p>
+
+<div class="pares">
+  <div class="uno">
+    <p class="cap"><b>Un día cualquiera.</b></p>
+    <div class="tel"><div class="pantalla" style="min-height:auto">
+      <div class="hdr">Hola, Marcela · 🟢 Team Valkyrias Medellín</div>
+      <div class="bg" style="background:#F0FDF9;border-color:#B6E6D5;color:#046C4E">
+        <div class="glob" style="background:#C7F0E0">💵</div>
+        <div class="tx"><div class="t">Mi cash semanal</div><div class="p">Llevas $1.840.000 · faltan $660.000</div></div>
+      </div>
+      <div class="bg" style="background:#FFF8F1;border-color:#F6D9BE;color:#9A4A12">
+        <div class="glob" style="background:#FBE3CD">📅</div>
+        <div class="tx"><div class="t">Mi mes</div><div class="p">Nota 4.12 · tramo 1 · llevas $152.400</div></div>
+      </div>
+      <div class="bg" style="background:#F7F4FF;border-color:#DDD3F5;color:#5B2EC4">
+        <div class="glob" style="background:#E6DCFB">💎</div>
+        <div class="tx"><div class="t">Mi trimestre</div><div class="p">Q3 en vivo · sube todos los días</div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="uno">
+    <p class="cap"><b>Con un cruce sin ver.</b> Filo dorado y el pie cambiado. Cero tarjetas, cero subtítulos.</p>
+    <div class="tel"><div class="pantalla" style="min-height:auto">
+      <div class="hdr">Hola, Marcela · 🟢 Team Valkyrias Medellín</div>
+      <div class="bg" style="background:#F0FDF9;border-color:#B6E6D5;color:#046C4E">
+        <div class="glob" style="background:#C7F0E0">💵</div>
+        <div class="tx"><div class="t">Mi cash semanal</div><div class="p">Llevas $1.840.000 · faltan $660.000</div></div>
+      </div>
+      <div class="bg oroaviso" style="background:#FFF8F1;color:#9A4A12">
+        <div class="glob" style="background:#FCD34D;box-shadow:0 0 0 3px rgba(252,211,77,.4)">📅</div>
+        <div class="tx"><div class="t">Mi mes</div><div class="p" style="color:#92400E">Entraste al tramo 2 · toca para verlo</div></div>
+      </div>
+      <div class="bg oroaviso" style="background:#F7F4FF;color:#5B2EC4">
+        <div class="glob" style="background:#FCD34D;box-shadow:0 0 0 3px rgba(252,211,77,.4)">💎</div>
+        <div class="tx"><div class="t">Mi trimestre</div><div class="p" style="color:#92400E">Tu nota pasó el 4.50 · toca para verlo</div></div>
+      </div>
+    </div></div>
+  </div>
+</div>
+</section>
+
+<hr class="rule" style="margin-top:56px">
+
+<section>
+<p class="eyebrow">Las reglas</p>
+<h2>Qué recuerda y qué no</h2>
+<ul class="lista">
+  <li><b>Se celebra una sola vez por escalón.</b> El teléfono guarda el escalón más alto que ya le festejó, con el mes o el trimestre metido adentro para que se recicle solo.</li>
+  <li><b>El primer día no celebra nadie.</b> La primera vez que abre, la app anota en silencio dónde está. Nadie recibe una fiesta por un tramo que cruzó hace tres semanas.</li>
+  <li><b>Si una devolución la baja, la app no dice nada.</b> La muesca vuelve a ser raya dorada y la línea vuelve a mostrar la distancia. Sin rojos, sin «perdiste».</li>
+  <li><b>Y si vuelve a subir, tampoco repite.</b> Celebrar dos veces el mismo escalón se leería como burla.</li>
+  <li><b>De paso se arregla el confeti de los lunes</b>, que hoy vuelve a caer cada vez que ella entra y sale del Home. Mismo mecanismo, cero código extra.</li>
+</ul>
+</section>
+
+<hr class="rule" style="margin-top:56px">
+
+<section>
+<p class="eyebrow">Antes de codear</p>
+<h2>Cuatro cosas que decides tú</h2>
+<ul class="lista">
+  <li><b>La frase del 4.50.</b> «Hoy estás por encima de la vara del $1.000.000.» Es el punto exacto donde esto se puede volver una promesa. Léela en voz alta y dime si la firmas palabra por palabra.</li>
+  <li><b>El pie del botón se pierde ese rato.</b> Mientras el aviso está encendido, «Mi mes» deja de mostrar «Nota 4.12 · tramo 1 · llevas $152.400». Vuelve apenas ella entra.</li>
+  <li><b>El botón Mi trimestre es morado</b> (<span style="font-variant-numeric:tabular-nums">#5B2EC4</span> sobre lavanda) y esa pantalla tiene dos 💜. Ya está así en producción, no lo trae este cambio. ¿Lo dejo o lo cambio?</li>
+  <li><b>El momento puede llegar tarde.</b> Si cruza el martes y abre el jueves, lo ve el jueves. Por eso ningún texto dice «hoy» en el Home.</li>
+</ul>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var COL=["#E0B01C","#0B5E2E","#8A6708","#2F3841","#E0B01C","#5B6472","#0B5E2E","#EBEDEF","#E0B01C","#12161C"];
+  function sembrarConfeti(box){
+    if(box.childElementCount) return;
+    for(var i=0;i<18;i++){
+      var d=document.createElement("div");
+      d.className="pz "+(i%3===0?"r":i%3===1?"t":"");
+      d.style.left=((i*5.5)%100)+"%";
+      d.style.background=COL[i%COL.length];
+      d.style.animationDelay=(((i*0.15)%2.5).toFixed(2))+"s";
+      d.style.animationDuration=(3+(i%4)*0.3).toFixed(1)+"s";
+      box.appendChild(d);
+    }
+  }
+  document.querySelectorAll(".conf").forEach(sembrarConfeti);
+
+  function correr(tel){
+    tel.querySelectorAll(".fill.anim").forEach(function(f){
+      var a=f.getAttribute("data-desde"), b=f.getAttribute("data-hasta");
+      f.style.transition="none"; f.style.width=a+"%";
+      void f.offsetWidth;
+      f.style.transition="";
+      requestAnimationFrame(function(){ f.style.width=b+"%"; });
+    });
+    tel.querySelectorAll(".pt.late, .salta").forEach(function(el){
+      var c=el.classList.contains("pt")?"late":"salto";
+      el.classList.remove(c); void el.offsetWidth; el.classList.add(c);
+    });
+    var box=tel.querySelector(".conf");
+    if(box){ box.classList.remove("caer"); void box.offsetWidth; box.classList.add("caer"); }
+  }
+
+  document.querySelectorAll(".salta").forEach(function(s){ s.classList.add("salto"); });
+
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ correr(e.target); io.unobserve(e.target); } });
+  },{threshold:.45});
+  document.querySelectorAll(".pantalla").forEach(function(p){
+    if(p.querySelector(".fill.anim")) io.observe(p);
+  });
+
+  document.querySelectorAll("button.replay").forEach(function(b){
+    b.addEventListener("click",function(){
+      var tel=b.parentElement.querySelector(".pantalla");
+      if(tel) correr(tel);
+    });
+  });
+})();
+</script>
