@@ -428,6 +428,8 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
           la primera cosa que tiene que ver, y compartir renglón la achica. */}
       <div className="v-cols">
 
+      {/* Columna izquierda: su nota y cómo va cada mes. */}
+      <div className="v-col">
       {/* ------------------------------------------------------------------ */}
       {/* 2) TU NOTA                                                          */}
       {/* ------------------------------------------------------------------ */}
@@ -481,37 +483,6 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
         </div>
         )}
       </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* 2b) VENTAS                                                          */}
-      {/* ------------------------------------------------------------------ */}
-      {/* Las ventas son el 60% de cada nota mensual — la mitad más pesada de la
-          nota del trimestre — y la pantalla sólo mostraba los cinco indicadores
-          de comportamiento, que son el 40% restante.
-          Va en tarjeta aparte, no dentro de la lista de indicadores: no es un
-          indicador más, pesa más que los cinco juntos.
-          Y va aquí, pegada a "Tu nota", porque las dos son cortas: en el
-          computador comparten renglón sin dejar un hueco al lado. */}
-      {trim.ventas && trim.ventas.promedio !== null && (
-        <div style={{ ...S.card, paddingTop: 12, paddingBottom: 6 }}>
-          <FilaDesplegable
-            emoji="💰"
-            nombre="Ventas"
-            nota={trim.ventas.promedio}
-            abierta={abierta === "ventas"}
-            onToggle={() => alternar("ventas")}
-            ultima
-            meses={trim.ventas.meses.map(f => ({
-              mes: f.mes,
-              nombre: f.nombre,
-              nota: f.nota,
-              // Lo vendido contra la meta DE ESE MES.
-              pct: f.pct === null || f.pct === undefined ? 0 : f.pct,
-              valor: f.real !== null && f.real !== undefined ? formatoPesos(f.real) : null,
-            }))}
-          />
-        </div>
-      )}
 
       {/* ------------------------------------------------------------------ */}
       {/* 3) MES A MES                                                        */}
@@ -575,6 +546,43 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
       </div>
 
 
+      </div>{/* /col izquierda */}
+
+      {/* Columna derecha: de qué está hecha esa nota — ventas (60%) y
+          comportamiento (40%). Las dos columnas suman altura parecida,
+          así que ninguna queda con un hueco al lado. */}
+      <div className="v-col">
+      {/* ------------------------------------------------------------------ */}
+      {/* 2b) VENTAS                                                          */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Las ventas son el 60% de cada nota mensual — la mitad más pesada de la
+          nota del trimestre — y la pantalla sólo mostraba los cinco indicadores
+          de comportamiento, que son el 40% restante.
+          Va en tarjeta aparte, no dentro de la lista de indicadores: no es un
+          indicador más, pesa más que los cinco juntos.
+          Y va aquí, pegada a "Tu nota", porque las dos son cortas: en el
+          computador comparten renglón sin dejar un hueco al lado. */}
+      {trim.ventas && trim.ventas.promedio !== null && (
+        <div style={{ ...S.card, paddingTop: 12, paddingBottom: 6 }}>
+          <FilaDesplegable
+            emoji="💰"
+            nombre="Ventas"
+            nota={trim.ventas.promedio}
+            abierta={abierta === "ventas"}
+            onToggle={() => alternar("ventas")}
+            ultima
+            meses={trim.ventas.meses.map(f => ({
+              mes: f.mes,
+              nombre: f.nombre,
+              nota: f.nota,
+              // Lo vendido contra la meta DE ESE MES.
+              pct: f.pct === null || f.pct === undefined ? 0 : f.pct,
+              valor: f.real !== null && f.real !== undefined ? formatoPesos(f.real) : null,
+            }))}
+          />
+        </div>
+      )}
+
       {/* ------------------------------------------------------------------ */}
       {/* 4) LOS INDICADORES DEL TRIMESTRE                                    */}
       {/* ------------------------------------------------------------------ */}
@@ -613,6 +621,8 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
           ))
         )}
       </div>
+
+      </div>{/* /col derecha */}
 
       {/* ------------------------------------------------------------------ */}
       {/* 5) MI PUESTO · <CIUDAD>                                             */}

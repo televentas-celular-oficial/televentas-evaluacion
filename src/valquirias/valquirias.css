@@ -175,6 +175,19 @@ body {
      completo. Sin esto quedaban embutidas en media pantalla con un hueco
      enorme al lado. */
   .v-cols > .v-full { grid-column: 1 / -1; }
+
+  /* CADA COLUMNA SE EMPACA SOLA.
+     Con la rejilla a secas, las tarjetas se alinean por FILAS: una corta al
+     lado de una alta deja un hueco muerto, y la siguiente de esa columna tiene
+     que esperar a que la fila entera termine. Metiendo las tarjetas en dos
+     columnas de verdad, cada una apila sus tarjetas pegadas y el hueco
+     desaparece. */
+  .v-cols > .v-col { display: flex; flex-direction: column; }
+}
+/* En el celular las columnas no existen: `display: contents` las disuelve y
+   las tarjetas vuelven a ser hijas directas, en una sola fila vertical. */
+@media (max-width: 899px) {
+  .v-cols > .v-col { display: contents; }
 }
 
 /* Todos los hijos directos ocupan el mismo ancho consistente */
