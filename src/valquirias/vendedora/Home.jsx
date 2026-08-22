@@ -132,7 +132,9 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
     notaDesempate, gane, premio, umbral, desde, hasta } = semana;
   // Con doble empate no hay `lider` único, pero sí varias que se llevan el
   // EXTRA — por eso esto se mide contra el conjunto y no contra `lider`.
-  const estoyEnElExtra = ganadorasExtra.some(g => String(g.id) === String(vendedora?.id));
+  // Mismo conjunto que usa MiCash.jsx:261 para marcar la fila con corona.
+  const idsExtra = new Set(ganadorasExtra.map(g => String(g.id)));
+  const estoyEnElExtra = idsExtra.has(String(vendedora?.id));
   const nombresExtra = ganadorasExtra.map(g => primerNombre(g.nombre)).join(" y ");
 
   if (!clubCount) {
@@ -159,7 +161,7 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
   const fondoFilaYo = gane ? "rgba(var(--vk-metal-rgb),.12)" : V.tarjeta;
   const lineaNota = gane ? "rgba(var(--vk-velo-rgb),.18)" : "rgba(var(--vk-sombra-rgb),.10)";
   const titulo = gane
-    ? (hayExtra && soyLiderDelClub ? "Te llevaste los dos premios 🎉" : `Ganaste tus ${peso(premio)} 🎉`)
+    ? (hayExtra && estoyEnElExtra ? "Te llevaste los dos premios 🎉" : `Ganaste tus ${peso(premio)} 🎉`)
     : "Ganaron el premio de la semana";
   const rango = rangoCorto(desde, hasta);
 
@@ -172,10 +174,10 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
       {club.map((f, i) => {
         const esYo = String(f.id) === String(vendedora?.id);
         // El EXTRA sólo existe si 2+ llegaron al umbral (regla real de
-        // calcPremios) Y no hay empate arriba: con empate `lider` viene null y
-        // nadie cobra doble.
-        const esLider = !!(idLider && String(f.id) === idLider);
-        const monto = hayExtra && esLider ? premio * 2 : premio;
+        // calcPremios). Con doble empate lo ganan TODAS las empatadas, así que
+        // se mide contra el conjunto `ganadorasExtra` y no contra "la primera".
+        const llevaExtra = idsExtra.has(String(f.id));
+        const monto = hayExtra && llevaExtra ? premio * 2 : premio;
         return (
           <div
             key={f.id}
@@ -186,7 +188,7 @@ function TarjetaLunes({ semana, vendedora, onCerrar }) {
             }}
           >
             <span style={{ fontSize: 16, width: 20, textAlign: "center", flexShrink: 0 }}>
-              {hayExtra && esLider ? "👑" : "💵"}
+              {hayExtra && llevaExtra ? "👑" : "💵"}
             </span>
             <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 800 }}>
               {nombreDeFila(f, esYo, vendedora)}
