@@ -25,11 +25,11 @@ import {
 } from "../data/derivar.js";
 import { getIndicadores } from "../../lib/constantes.js";
 import { fmtN, colorN, bgN } from "../../lib/calculos.js";
-import { formatoPesos, formatoK, hoyColombia } from "../lib/helpers.js";
+import { formatoPesos, hoyColombia } from "../lib/helpers.js";
 
 const MES_NOMBRES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const CIUDAD_LABEL = { MED: "🟢 MED", BOG: "🟡 BOG" };
-const CIUDAD_COLOR = { MED: "#10b981", BOG: "#f59e0b" };
+const CIUDAD_COLOR = { MED: "var(--vk-bien-texto)", BOG: "var(--est-atencion-borde)" };
 
 // Normaliza para buscar sin tildes ni mayúsculas
 const norm = (s) => (s || "")
@@ -184,9 +184,9 @@ export default function VistaTodas({ onVolver }) {
               onClick={() => setSelMes(m)}
               style={{
                 padding: "6px 10px", fontSize: 11, fontWeight: 800,
-                background: activo ? "linear-gradient(135deg, #7c3aed, #ec4899)" : "#fff",
-                color: activo ? "#fff" : "#7c3aed",
-                border: "1.5px solid " + (activo ? "transparent" : "#e2e8f0"),
+                background: activo ? "var(--vk-titulo)" : "var(--vk-tarjeta)",
+                color: activo ? "var(--vk-sobre-tinta)" : "var(--vk-secundario)",
+                border: "1.5px solid " + (activo ? "transparent" : "var(--vk-borde)"),
                 borderRadius: 8, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
               }}
             >{MES_NOMBRES[m.mes - 1].slice(0, 3)} {m.año}</button>
@@ -196,22 +196,22 @@ export default function VistaTodas({ onVolver }) {
 
       {/* HERO resumen */}
       <div style={{
-        background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%)",
-        color: "#fff", padding: "18px 20px", borderRadius: 20, marginBottom: 10,
-        boxShadow: "0 12px 28px rgba(124, 58, 237, 0.32)",
+        background: "var(--vk-noche)",
+        border: "1px solid var(--vk-metal)",
+        color: "var(--vk-noche-texto)", padding: "18px 20px", borderRadius: 20, marginBottom: 10,
+        boxShadow: "0 2px 10px rgba(var(--vk-metal-rgb), 0.25)",
         position: "relative", overflow: "hidden", textAlign: "center",
       }}>
-        <div style={{ position: "absolute", top: "-50%", right: "-30%", width: 260, height: 260, background: "radial-gradient(circle, rgba(255,255,255,0.22), transparent 60%)", borderRadius: "50%", pointerEvents: "none" }} />
-        <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 2, opacity: 0.95, marginBottom: 4, position: "relative" }}>
+        <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 2, color: "var(--vk-noche-apoyo)", marginBottom: 4, position: "relative" }}>
           📊 {MES_NOMBRES[selMes.mes - 1]} {selMes.año} · {filas.length} vendedora{filas.length === 1 ? "" : "s"}
         </div>
-        <div style={{ fontSize: 34, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1, position: "relative", textShadow: "0 2px 6px rgba(0,0,0,0.15)" }}>
+        <div style={{ fontSize: 34, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1, position: "relative" }}>
           {promedio === null ? "—" : fmtN(promedio)}
         </div>
-        <div style={{ fontSize: 11, marginTop: 4, opacity: 0.95, fontWeight: 700, position: "relative" }}>
+        <div style={{ fontSize: 11, marginTop: 4, fontWeight: 700, position: "relative" }}>
           nota promedio del grupo
         </div>
-        <div style={{ fontSize: 12, marginTop: 8, opacity: 0.95, fontWeight: 800, position: "relative" }}>
+        <div style={{ fontSize: 12, marginTop: 8, fontWeight: 800, position: "relative" }}>
           💰 {formatoPesos(totalVentas)} · ⏰ {totalDiasTarde} días tarde · {totalMin} min
         </div>
         {(mesCerrado || version) && (
@@ -233,9 +233,9 @@ export default function VistaTodas({ onVolver }) {
               onClick={() => setFiltroCiudad(c)}
               style={{
                 flex: 1, padding: "8px 6px", fontSize: 11, fontWeight: 900,
-                background: activo ? "linear-gradient(135deg, #7c3aed, #ec4899)" : "#fff",
-                color: activo ? "#fff" : "#7c3aed",
-                border: "1.5px solid " + (activo ? "transparent" : "#e2e8f0"),
+                background: activo ? "var(--vk-titulo)" : "var(--vk-tarjeta)",
+                color: activo ? "var(--vk-sobre-tinta)" : "var(--vk-secundario)",
+                border: "1.5px solid " + (activo ? "transparent" : "var(--vk-borde)"),
                 borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
               }}
             >{label}</button>
@@ -250,24 +250,24 @@ export default function VistaTodas({ onVolver }) {
           placeholder="🔍 Buscar por nombre…"
           style={{
             flex: 1, padding: "9px 12px", fontSize: 13, fontWeight: 700,
-            border: "1.5px solid #e2e8f0", borderRadius: 10, fontFamily: "inherit",
-            color: "#1e1b4b", background: "#fff", minWidth: 0,
+            border: "1.5px solid var(--vk-borde)", borderRadius: 10, fontFamily: "inherit",
+            color: "var(--vk-titulo)", background: "var(--vk-tarjeta)", minWidth: 0,
           }}
         />
         {busqueda && (
           <button
             onClick={() => setBusqueda("")}
-            style={{ padding: "9px 10px", fontSize: 12, fontWeight: 900, background: "#fff", color: "#7c3aed", border: "1.5px solid #e2e8f0", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
+            style={{ padding: "9px 10px", fontSize: 12, fontWeight: 900, background: "var(--vk-tarjeta)", color: "var(--vk-secundario)", border: "1.5px solid var(--vk-borde)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
           >✕</button>
         )}
       </div>
 
-      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 8, cursor: "pointer" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: "var(--vk-secundario)", marginBottom: 8, cursor: "pointer" }}>
         <input
           type="checkbox"
           checked={incluirInactivas}
           onChange={e => setIncluirInactivas(e.target.checked)}
-          style={{ width: 15, height: 15, accentColor: "#7c3aed", cursor: "pointer" }}
+          style={{ width: 15, height: 15, accentColor: "var(--vk-secundario)", cursor: "pointer" }}
         />
         Incluir inactivas (histórico)
       </label>
@@ -277,13 +277,13 @@ export default function VistaTodas({ onVolver }) {
           esta pantalla. */}
 
       {roster.length === 0 && (
-        <div style={{ padding: "18px 16px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid #ef4444", borderRadius: 10, fontSize: 12, color: "#991b1b", fontWeight: 700, textAlign: "center", lineHeight: 1.55 }}>
+        <div style={{ padding: "18px 16px", background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid var(--adm-alerta-borde)", borderRadius: 10, fontSize: 12, color: "var(--adm-alerta)", fontWeight: 700, textAlign: "center", lineHeight: 1.55 }}>
           🚫 Sin vendedoras sincronizadas — verifica el sync desde systemlap.
         </div>
       )}
 
       {roster.length > 0 && filas.length === 0 && (
-        <div style={{ padding: "18px 16px", background: "rgba(245, 158, 11, 0.10)", borderLeft: "3px solid #f59e0b", borderRadius: 10, fontSize: 12, color: "#92400e", fontWeight: 700, textAlign: "center", lineHeight: 1.55 }}>
+        <div style={{ padding: "18px 16px", background: "rgba(245, 158, 11, 0.10)", borderLeft: "3px solid var(--est-atencion-borde)", borderRadius: 10, fontSize: 12, color: "var(--vk-noche-apoyo)", fontWeight: 700, textAlign: "center", lineHeight: 1.55 }}>
           🔍 Ninguna vendedora coincide con el filtro.
         </div>
       )}
@@ -293,7 +293,7 @@ export default function VistaTodas({ onVolver }) {
         <div style={{
           overflowX: "auto",
           WebkitOverflowScrolling: "touch",
-          background: "#fff",
+          background: "var(--vk-tarjeta)",
           borderRadius: 14,
           boxShadow: "0 2px 10px rgba(124, 58, 237, 0.10)",
           border: "1px solid rgba(168, 85, 247, 0.12)",
@@ -320,13 +320,13 @@ export default function VistaTodas({ onVolver }) {
                     color={ind.color}
                   />
                 ))}
-                <Th col="retDias" label="⏰ Días tarde" orden={orden} onOrdenar={ordenarPor} color="#3b82f6" />
-                <Th col="retMin" label="⏰ Min acum." orden={orden} onOrdenar={ordenarPor} color="#3b82f6" />
+                <Th col="retDias" label="⏰ Días tarde" orden={orden} onOrdenar={ordenarPor} color="var(--vk-secundario)" />
+                <Th col="retMin" label="⏰ Min acum." orden={orden} onOrdenar={ordenarPor} color="var(--vk-secundario)" />
               </tr>
             </thead>
             <tbody>
               {filas.map((f, i) => {
-                const zebra = i % 2 === 1 ? "#faf9ff" : "#fff";
+                const zebra = i % 2 === 1 ? "var(--vk-fondo)" : "var(--vk-tarjeta)";
                 const inactiva = f.v.activa === false;
                 return (
                   <tr
@@ -338,19 +338,19 @@ export default function VistaTodas({ onVolver }) {
                     <td style={{
                       ...tdBase, position: "sticky", left: 0, zIndex: 1,
                       background: zebra, textAlign: "left",
-                      borderRight: "1px solid #ede9fe", minWidth: 132, maxWidth: 148,
+                      borderRight: "1px solid var(--vk-borde)", minWidth: 132, maxWidth: 148,
                       boxShadow: "2px 0 4px rgba(0,0,0,0.03)",
                     }}>
-                      <div style={{ fontWeight: 900, color: "#1e1b4b", fontSize: 12, lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontWeight: 900, color: "var(--vk-titulo)", fontSize: 12, lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {f.v.nombre}
                       </div>
-                      <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 800, marginTop: 1 }}>
+                      <div style={{ fontSize: 9, color: "var(--vk-tenue)", fontWeight: 800, marginTop: 1 }}>
                         {f.mes.diasTrabajados} días{f.mes.cerrado ? " · 🔒" : ""}{inactiva ? " · inactiva" : ""}
                       </div>
                     </td>
 
                     <td style={{ ...tdBase, background: zebra }}>
-                      <span style={{ fontWeight: 900, fontSize: 10, color: CIUDAD_COLOR[f.v.ciudad] || "#64748b" }}>
+                      <span style={{ fontWeight: 900, fontSize: 10, color: CIUDAD_COLOR[f.v.ciudad] || "var(--vk-secundario)" }}>
                         {CIUDAD_LABEL[f.v.ciudad] || f.v.ciudad || "—"}
                       </span>
                     </td>
@@ -359,23 +359,25 @@ export default function VistaTodas({ onVolver }) {
                       <span style={{
                         fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.4,
                         padding: "2px 6px", borderRadius: 4,
-                        background: f.rol === "admin" ? "#faf5ff" : "#f0fdf4",
-                        color: f.rol === "admin" ? "#7c3aed" : "#047857",
+                        background: f.rol === "admin" ? "var(--vk-noche)" : "var(--vk-bien-fondo)",
+                        color: f.rol === "admin" ? "var(--vk-secundario)" : "var(--vk-bien)",
                       }}>{f.rol === "admin" ? "Admin" : "Asesora"}</span>
                     </td>
 
-                    <td style={{ ...tdBase, background: zebra, textAlign: "right", fontWeight: 900, color: "#1e1b4b", fontSize: 11 }}>
-                      {formatoK(f.mes.ventas)}
+                    {/* Cifra COMPLETA, no "$19.39M". Es la regla del dueño y se
+                        estaba rompiendo justo en la pantalla donde mira la plata. */}
+                    <td style={{ ...tdBase, background: zebra, textAlign: "right", fontWeight: 900, color: "var(--vk-titulo)", fontSize: 11, whiteSpace: "nowrap" }}>
+                      {formatoPesos(f.mes.ventas)}
                     </td>
 
-                    <td style={{ ...tdBase, background: zebra, textAlign: "right", fontWeight: 900, fontSize: 11, color: f.mes.meta > 0 ? (f.mes.pctMeta >= 100 ? "#059669" : f.mes.pctMeta >= 70 ? "#d97706" : "#dc2626") : "#94a3b8" }}>
+                    <td style={{ ...tdBase, background: zebra, textAlign: "right", fontWeight: 900, fontSize: 11, color: f.mes.meta > 0 ? (f.mes.pctMeta >= 100 ? "var(--vk-bien-texto)" : f.mes.pctMeta >= 70 ? "var(--est-atencion)" : "var(--adm-alerta)") : "var(--vk-tenue)" }}>
                       {f.mes.meta > 0 ? `${f.mes.pctMeta}%` : "—"}
                     </td>
 
                     <td style={{ ...tdBase, background: zebra }}>
                       <Nota n={f.mes.nota} grande />
                       {f.mes.bono > 0 && (
-                        <div style={{ fontSize: 8, fontWeight: 900, color: "#059669", marginTop: 1 }}>+{f.mes.bono.toFixed(1)} bono</div>
+                        <div style={{ fontSize: 8, fontWeight: 900, color: "var(--vk-bien-texto)", marginTop: 1 }}>+{f.mes.bono.toFixed(1)} bono</div>
                       )}
                     </td>
 
@@ -388,17 +390,17 @@ export default function VistaTodas({ onVolver }) {
                       </td>
                     ))}
 
-                    <td style={{ ...tdBase, background: zebra, fontWeight: 900, fontSize: 11, color: f.ret.dias > 0 ? "#dc2626" : "#059669" }}>
+                    <td style={{ ...tdBase, background: zebra, fontWeight: 900, fontSize: 11, color: f.ret.dias > 0 ? "var(--adm-alerta)" : "var(--vk-bien-texto)" }}>
                       {f.ret.dias}
                       {f.ret.diasGraves > 0 && (
-                        <div style={{ fontSize: 8, fontWeight: 900, color: "#dc2626" }}>{f.ret.diasGraves} grave{f.ret.diasGraves === 1 ? "" : "s"}</div>
+                        <div style={{ fontSize: 8, fontWeight: 900, color: "var(--adm-alerta)" }}>{f.ret.diasGraves} grave{f.ret.diasGraves === 1 ? "" : "s"}</div>
                       )}
                     </td>
 
-                    <td style={{ ...tdBase, background: zebra, fontWeight: 900, fontSize: 11, color: f.ret.minutos > 0 ? "#dc2626" : "#059669" }}>
+                    <td style={{ ...tdBase, background: zebra, fontWeight: 900, fontSize: 11, color: f.ret.minutos > 0 ? "var(--adm-alerta)" : "var(--vk-bien-texto)" }}>
                       {f.ret.minutos}
                       {f.ret.minutos > 0 && (
-                        <div style={{ fontSize: 8, fontWeight: 800, color: "#94a3b8" }}>{f.ret.promedioMin}/día</div>
+                        <div style={{ fontSize: 8, fontWeight: 800, color: "var(--vk-tenue)" }}>{f.ret.promedioMin}/día</div>
                       )}
                     </td>
                   </tr>
@@ -409,7 +411,7 @@ export default function VistaTodas({ onVolver }) {
         </div>
       )}
 
-      <div style={{ marginTop: 12, textAlign: "center", fontSize: 10, color: "#94a3b8", fontWeight: 700, lineHeight: 1.5 }}>
+      <div style={{ marginTop: 12, textAlign: "center", fontSize: 10, color: "var(--vk-tenue)", fontWeight: 700, lineHeight: 1.5 }}>
         Ordenado por <strong>{etiquetaOrden(orden.col, indicadores)}</strong> {orden.dir === -1 ? "↓ mayor a menor" : "↑ menor a mayor"}
         <br />Generado el {hoy.iso} · datos en vivo desde Firestore
       </div>
@@ -424,7 +426,7 @@ export default function VistaTodas({ onVolver }) {
 const tdBase = {
   padding: "8px 8px",
   textAlign: "center",
-  borderTop: "1px solid #f1f5f9",
+  borderTop: "1px solid var(--vk-fondo-hueco)",
   whiteSpace: "nowrap",
   verticalAlign: "middle",
 };
@@ -439,14 +441,14 @@ function Th({ col, label, sub, orden, onOrdenar, align = "center", sticky = fals
         textAlign: align,
         fontSize: 10,
         fontWeight: 900,
-        color: activo ? "#fff" : (color || "#5b21b6"),
+        color: activo ? "var(--vk-sobre-tinta)" : (color || "var(--vk-secundario)"),
         background: activo
-          ? "linear-gradient(135deg, #7c3aed, #ec4899)"
-          : (destacado ? "#f5f3ff" : "#faf5ff"),
+          ? "var(--vk-titulo)"
+          : (destacado ? "var(--vk-noche)" : "var(--vk-fondo)"),
         cursor: "pointer",
         userSelect: "none",
         whiteSpace: "nowrap",
-        borderBottom: "2px solid #ede9fe",
+        borderBottom: "2px solid var(--vk-borde)",
         position: sticky ? "sticky" : "static",
         left: sticky ? 0 : undefined,
         zIndex: sticky ? 3 : 2,
@@ -473,8 +475,8 @@ function Nota({ n, grande = false }) {
       borderRadius: 7,
       fontSize: grande ? 12 : 11,
       fontWeight: 900,
-      color: vacio ? "#94a3b8" : colorN(n),
-      background: vacio ? "#f8fafc" : bgN(n),
+      color: vacio ? "var(--vk-tenue)" : colorN(n),
+      background: vacio ? "var(--vk-fondo)" : bgN(n),
     }}>{fmtN(n)}</span>
   );
 }
@@ -513,19 +515,19 @@ function DetalleVendedoraMes({ datos, vendedora, año, mes, onVolver }) {
 
       {/* HERO nota */}
       <div style={{
-        background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%)",
-        color: "#fff", padding: "20px", borderRadius: 20, marginBottom: 10,
-        boxShadow: "0 12px 28px rgba(124, 58, 237, 0.32)",
+        background: "var(--vk-noche)",
+        border: "1px solid var(--vk-metal)",
+        color: "var(--vk-noche-texto)", padding: "20px", borderRadius: 20, marginBottom: 10,
+        boxShadow: "0 2px 10px rgba(var(--vk-metal-rgb), 0.25)",
         position: "relative", overflow: "hidden", textAlign: "center",
       }}>
-        <div style={{ position: "absolute", top: "-50%", right: "-30%", width: 240, height: 240, background: "radial-gradient(circle, rgba(255,255,255,0.22), transparent 60%)", borderRadius: "50%", pointerEvents: "none" }} />
-        <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 1.6, opacity: 0.95, position: "relative" }}>
+        <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 1.6, color: "var(--vk-noche-apoyo)", position: "relative" }}>
           {d.nombreMes} {d.año} · {CIUDAD_LABEL[vendedora.ciudad] || vendedora.ciudad} · {d.version?.toUpperCase()}
         </div>
-        <div style={{ fontSize: 48, fontWeight: 900, letterSpacing: -2, lineHeight: 1.1, position: "relative", textShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
+        <div style={{ fontSize: 48, fontWeight: 900, letterSpacing: -2, lineHeight: 1.1, position: "relative" }}>
           {fmtN(d.notaFinal)}
         </div>
-        <div style={{ fontSize: 12, fontWeight: 800, opacity: 0.95, position: "relative" }}>
+        <div style={{ fontSize: 12, fontWeight: 800, position: "relative" }}>
           /5.00 · {d.cerrado ? "🔒 mes cerrado" : "⏳ en vivo"}
           {d.posicionCiudad ? ` · #${d.posicionCiudad} de ${d.totalCiudad}` : ""}
         </div>
@@ -542,38 +544,38 @@ function DetalleVendedoraMes({ datos, vendedora, año, mes, onVolver }) {
           <Caja label="Vendido" valor={formatoPesos(d.ventas.real)} />
           <Caja label="Meta" valor={d.ventas.meta > 0 ? formatoPesos(d.ventas.meta) : "sin meta"} />
         </div>
-        <div style={{ background: "#f1f5f9", height: 9, borderRadius: 5, overflow: "hidden", marginBottom: 6 }}>
+        <div style={{ background: "var(--vk-fondo-hueco)", height: 9, borderRadius: 5, overflow: "hidden", marginBottom: 6 }}>
           <div style={{
             height: "100%",
             width: `${Math.min(100, d.ventas.pct || 0)}%`,
-            background: (d.ventas.pct || 0) >= 100 ? "#10b981" : (d.ventas.pct || 0) >= 70 ? "#f59e0b" : "#f97316",
+            background: (d.ventas.pct || 0) >= 100 ? "var(--vk-bien-texto)" : (d.ventas.pct || 0) >= 70 ? "var(--est-atencion-borde)" : "var(--est-medio)",
             borderRadius: 5,
           }} />
         </div>
-        <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-secundario)" }}>
           {d.ventas.meta > 0 ? `${d.ventas.pct}% de la meta` : "Meta del mes no cargada"}
           {d.ventas.tramo ? ` · tramo ${d.ventas.tramo}` : ""}
         </div>
-        <div style={{ fontSize: 11, fontWeight: 800, color: "#047857", marginTop: 4 }}>
-          Comisión estimada: {formatoPesos(d.ventas.comision)} <span style={{ color: "#94a3b8", fontWeight: 700 }}>· {d.ventas.comisionDetalle}</span>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-bien)", marginTop: 4 }}>
+          Comisión estimada: {formatoPesos(d.ventas.comision)} <span style={{ color: "var(--vk-tenue)", fontWeight: 700 }}>· {d.ventas.comisionDetalle}</span>
         </div>
       </Card>
 
       {/* Indicadores */}
       <Card titulo={`📋 Indicadores · ${d.diasTrabajados} días trabajados`}>
         {d.indicadores.map(ind => (
-          <div key={ind.id} style={{ padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+          <div key={ind.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--vk-fondo-hueco)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 900, color: "#1e1b4b" }}>
+              <div style={{ fontSize: 12, fontWeight: 900, color: "var(--vk-titulo)" }}>
                 {ind.emoji} {ind.nombre}
-                <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 800, marginLeft: 5 }}>Peso {ind.peso}%</span>
+                <span style={{ fontSize: 9, color: "var(--vk-tenue)", fontWeight: 800, marginLeft: 5 }}>Peso {ind.peso}%</span>
               </div>
               <Nota n={ind.nota} grande />
             </div>
-            <div style={{ background: "#f1f5f9", height: 6, borderRadius: 3, overflow: "hidden", margin: "5px 0 4px" }}>
+            <div style={{ background: "var(--vk-fondo-hueco)", height: 6, borderRadius: 3, overflow: "hidden", margin: "5px 0 4px" }}>
               <div style={{ height: "100%", width: `${((ind.nota ?? 0) / 5) * 100}%`, background: ind.color, borderRadius: 3 }} />
             </div>
-            <div style={{ fontSize: 10.5, color: "#64748b", fontWeight: 700 }}>{ind.detalle}</div>
+            <div style={{ fontSize: 10.5, color: "var(--vk-secundario)", fontWeight: 700 }}>{ind.detalle}</div>
           </div>
         ))}
       </Card>
@@ -581,16 +583,16 @@ function DetalleVendedoraMes({ datos, vendedora, año, mes, onVolver }) {
       {/* Retardos día por día */}
       <Card titulo="⏰ Retardos día por día">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 8 }}>
-          <Caja label="Días tarde" valor={String(d.retardos.dias)} color={d.retardos.dias > 0 ? "#dc2626" : "#059669"} />
-          <Caja label="Min acum." valor={String(d.retardos.minutos)} color={d.retardos.minutos > 0 ? "#dc2626" : "#059669"} />
-          <Caja label="Graves ≥10" valor={String(d.retardos.diasGraves)} color={d.retardos.diasGraves > 0 ? "#dc2626" : "#059669"} />
+          <Caja label="Días tarde" valor={String(d.retardos.dias)} color={d.retardos.dias > 0 ? "var(--adm-alerta)" : "var(--vk-bien-texto)"} />
+          <Caja label="Min acum." valor={String(d.retardos.minutos)} color={d.retardos.minutos > 0 ? "var(--adm-alerta)" : "var(--vk-bien-texto)"} />
+          <Caja label="Graves ≥10" valor={String(d.retardos.diasGraves)} color={d.retardos.diasGraves > 0 ? "var(--adm-alerta)" : "var(--vk-bien-texto)"} />
         </div>
-        <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-secundario)", marginBottom: 8 }}>
           {d.retardos.resumen} · promedio {d.retardos.promedioMin} min/día
         </div>
 
         {d.retardos.detallePorDia.length === 0 && (
-          <div style={{ padding: "10px 12px", background: "rgba(16, 185, 129, 0.08)", borderLeft: "3px solid #10b981", borderRadius: 8, fontSize: 11, color: "#047857", fontWeight: 800 }}>
+          <div style={{ padding: "10px 12px", background: "rgba(16, 185, 129, 0.08)", borderLeft: "3px solid var(--vk-bien-texto)", borderRadius: 8, fontSize: 11, color: "var(--vk-bien)", fontWeight: 800 }}>
             ✅ Ni un solo retardo este mes.
           </div>
         )}
@@ -600,14 +602,14 @@ function DetalleVendedoraMes({ datos, vendedora, año, mes, onVolver }) {
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "7px 10px", borderRadius: 8, marginBottom: 4,
             background: dia.grave ? "rgba(239, 68, 68, 0.08)" : "rgba(245, 158, 11, 0.08)",
-            borderLeft: `3px solid ${dia.grave ? "#dc2626" : "#f59e0b"}`,
+            borderLeft: `3px solid ${dia.grave ? "var(--adm-alerta)" : "var(--est-atencion-borde)"}`,
           }}>
-            <div style={{ fontSize: 11.5, fontWeight: 900, color: "#1e1b4b" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 900, color: "var(--vk-titulo)" }}>
               {dia.fechaBonita}
-              {dia.grave && <span style={{ fontSize: 9, fontWeight: 900, color: "#dc2626", marginLeft: 6 }}>GRAVE</span>}
+              {dia.grave && <span style={{ fontSize: 9, fontWeight: 900, color: "var(--adm-alerta)", marginLeft: 6 }}>GRAVE</span>}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 900, color: dia.grave ? "#dc2626" : "#b45309" }}>{dia.minutos} min</span>
+              <span style={{ fontSize: 12, fontWeight: 900, color: dia.grave ? "var(--adm-alerta)" : "var(--vk-metal-borde)" }}>{dia.minutos} min</span>
               <Nota n={dia.nota} />
             </div>
           </div>
@@ -616,26 +618,26 @@ function DetalleVendedoraMes({ datos, vendedora, año, mes, onVolver }) {
 
       {/* Días del mes */}
       <Card titulo={`📅 Días registrados (${d.diasRegistrados})`}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-secundario)", marginBottom: 8 }}>
           {d.diasTrabajados} trabajados · {d.diasDescanso} de descanso
         </div>
 
         {d.registros.length === 0 && (
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8" }}>Sin registros este mes.</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--vk-tenue)" }}>Sin registros este mes.</div>
         )}
 
         {(verTodosLosDias ? d.registros : d.registros.slice(0, 10)).map(r => (
           <div key={r.fecha} style={{
             display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
-            padding: "6px 0", borderBottom: "1px solid #f1f5f9", opacity: r.descanso ? 0.55 : 1,
+            padding: "6px 0", borderBottom: "1px solid var(--vk-fondo-hueco)", opacity: r.descanso ? 0.55 : 1,
           }}>
             <div style={{ minWidth: 82 }}>
-              <div style={{ fontSize: 11.5, fontWeight: 900, color: "#1e1b4b" }}>{r.fechaBonita}</div>
+              <div style={{ fontSize: 11.5, fontWeight: 900, color: "var(--vk-titulo)" }}>{r.fechaBonita}</div>
               {r.actitudNota && (
-                <div style={{ fontSize: 9.5, color: "#b45309", fontWeight: 700, maxWidth: 180, whiteSpace: "normal" }}>📝 {r.actitudNota}</div>
+                <div style={{ fontSize: 9.5, color: "var(--vk-metal-borde)", fontWeight: 700, maxWidth: 180, whiteSpace: "normal" }}>📝 {r.actitudNota}</div>
               )}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: "#64748b", flex: 1, textAlign: "right" }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: "var(--vk-secundario)", flex: 1, textAlign: "right" }}>
               {r.descanso ? "😴 descanso" : [
                 r.minutos > 0 ? `⏰ ${r.minutos}m` : null,
                 r.resenas > 0 ? `⭐ ${r.resenas}` : null,
@@ -651,7 +653,7 @@ function DetalleVendedoraMes({ datos, vendedora, año, mes, onVolver }) {
         {d.registros.length > 10 && (
           <button
             onClick={() => setVerTodosLosDias(v => !v)}
-            style={{ marginTop: 8, width: "100%", padding: "8px", fontSize: 11, fontWeight: 900, color: "#7c3aed", background: "rgba(168, 85, 247, 0.1)", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}
+            style={{ marginTop: 8, width: "100%", padding: "8px", fontSize: 11, fontWeight: 900, color: "var(--vk-secundario)", background: "var(--vk-neutro)", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}
           >
             {verTodosLosDias ? "▲ Ver menos" : `▼ Ver los ${d.registros.length} días`}
           </button>
@@ -664,11 +666,11 @@ function DetalleVendedoraMes({ datos, vendedora, año, mes, onVolver }) {
 function Card({ titulo, children }) {
   return (
     <div style={{
-      background: "#fff", borderRadius: 16, padding: "14px 14px", marginBottom: 10,
+      background: "var(--vk-tarjeta)", borderRadius: 16, padding: "14px 14px", marginBottom: 10,
       boxShadow: "0 2px 10px rgba(124, 58, 237, 0.08)",
       border: "1px solid rgba(168, 85, 247, 0.12)",
     }}>
-      <div style={{ fontSize: 12, fontWeight: 900, color: "#5b21b6", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 900, color: "var(--vk-secundario)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
         {titulo}
       </div>
       {children}
@@ -678,9 +680,9 @@ function Card({ titulo, children }) {
 
 function Caja({ label, valor, color }) {
   return (
-    <div style={{ background: "#f8fafc", borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
-      <div style={{ fontSize: 9, fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 900, color: color || "#1e1b4b", marginTop: 2 }}>{valor}</div>
+    <div style={{ background: "var(--vk-fondo)", borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
+      <div style={{ fontSize: 9, fontWeight: 900, color: "var(--vk-tenue)", textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</div>
+      <div style={{ fontSize: 14, fontWeight: 900, color: color || "var(--vk-titulo)", marginTop: 2 }}>{valor}</div>
     </div>
   );
 }

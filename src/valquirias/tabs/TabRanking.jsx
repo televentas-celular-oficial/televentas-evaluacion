@@ -181,7 +181,7 @@ export default function TabRanking({
       nombre: v.nombre,
       valor: v.notaTrim,
       rolLabel: etiquetaRol(v.id) + (v.completo ? "" : ` · Q${qVista} en curso`),
-      subValor: v.realTrim > 0 ? `${formatoK(v.realTrim)} vendido` : "",
+      subValor: v.realTrim > 0 ? `${formatoPesos(v.realTrim)} vendido` : "",
     }));
   }, [datos, vendedoraVista, vendedora, añoVista, qVista, rolPorId]);
 
@@ -416,7 +416,7 @@ export default function TabRanking({
                   ? (typeof r.valor === "number" ? r.valor.toFixed(2) : "—")
                   : subTab === "sem"
                     ? formatoPesos(r.valor)
-                    : formatoK(r.valor)}
+                    : formatoPesos(r.valor)}
               </div>
               {r.subValor && <div className="g">{r.subValor}</div>}
             </div>

@@ -35,6 +35,14 @@
   --vk-tenue: #94A3B8;            /* sin dato y letra chica                   */
   --vk-medio: #3F3F46;            /* texto sobre gris y acentos de borde      */
   --vk-sobre-tinta: #FFFFFF;      /* texto sobre --vk-titulo (pestaña activa) */
+
+  /* --- Rojo: SÓLO panel e ingreso diario --------------------------------- */
+  /* Regla del dueño: cero rojo en lo que ve la vendedora — un día que ya pasó
+     no se corrige, así que una alarma ahí no sirve de nada. En el panel sí:
+     ahí el rojo señala algo que Luis todavía puede arreglar.                */
+  --adm-alerta: #B91C1C;          /* texto de alerta                          */
+  --adm-alerta-borde: #EF4444;    /* filo y borde de alerta                   */
+  --adm-alerta-fondo: #FEE2E2;    /* fondo suave de alerta                    */
   /* ↑ Existe porque la paleta pastel no tiene superficies oscuras, pero los
      controles segmentados sí usan la tinta como fondo del botón activo. Sin
      este token se usaba --vk-noche-texto, que en la paleta pastel vale el

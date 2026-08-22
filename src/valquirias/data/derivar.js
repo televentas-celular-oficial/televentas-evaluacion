@@ -390,7 +390,8 @@ export function textoRankingIndicador(indId, detalle, extra = {}) {
   if (indId === "resenas") return `${d.totalResenas || 0} reseñas totales`;
   if (indId === "general") return `${extra.dias || 0} días trabajados`;
   if (indId === "ventas") {
-    return `${formatoK(extra.real || 0)} de ${formatoK(extra.meta || 0)} (${extra.pct || 0}%)`;
+    // Cifras completas: la regla del dueño no tiene excepción por espacio.
+    return `${formatoPesos(extra.real || 0)} de ${formatoPesos(extra.meta || 0)} (${extra.pct || 0}%)`;
   }
   return `${d.novedades || 0} días con novedad`;
 }
@@ -432,7 +433,7 @@ export function derivarRankingMes(datos, ciudad, año, mes, miId) {
   return filas.map((f, i) => ({
     ...f,
     n: i + 1,
-    gap: i > 0 ? `-${formatoK(filas[i - 1].valor - f.valor)}` : null,
+    gap: i > 0 ? `-${formatoPesos(filas[i - 1].valor - f.valor)}` : null,
     esYo: f.id === miId,
     medal: f.id === miId ? "⭐" : "",
   }));
