@@ -43,6 +43,7 @@ import {
   derivarTrimestreEnVivo,
   derivarIndicadoresTrimestre,
   derivarRankingTrimestreCiudad,
+  derivarRankingIndicadorTrimestre,
 } from "../data/derivar.js";
 import { formatoPesos, hoyColombia } from "../lib/helpers.js";
 import { fmtN, fechaLarga } from "../../lib/calculos.js";
@@ -120,7 +121,7 @@ function Vacio({ onVolver, mensaje }) {
 // La barra significa cosas distintas según la fila, y por eso viene calculada
 // de afuera: en Ventas es lo vendido contra la meta de ese mes; en un indicador
 // es la nota sobre la escala 1.00–5.00.
-function FilaDesplegable({ emoji, nombre, nota, abierta, onToggle, meses, ultima }) {
+function FilaDesplegable({ emoji, nombre, nota, abierta, onToggle, meses, ultima, ranking = null, ciudad = null }) {
   const sinBorde = ultima && !abierta;
   return (
     <>
@@ -183,6 +184,41 @@ function FilaDesplegable({ emoji, nombre, nota, abierta, onToggle, meses, ultima
               </div>
             );
           })}
+
+          {/* EL RANKING DE ESE INDICADOR EN EL TRIMESTRE.
+              Los indicadores del MES ya lo tenían; los del trimestre no, y ella
+              no podía saber cómo va en puntualidad contra las demás en el Q.
+              No es una regla nueva: es el mismo promedio ponderado que ya se le
+              calcula a ella, aplicado a cada participante. */}
+          {ranking && ranking.disponible && (
+            <div style={{ marginTop: 10, paddingTop: 9, borderTop: `1px solid ${LINEA}` }}>
+              <div style={{ ...S.lbl, fontSize: 10, color: TENUE, marginBottom: 6 }}>
+                Mi puesto{ciudad ? ` · ${ciudad}` : ""}
+              </div>
+              {ranking.filas.map(f => (
+                <div key={f.id} style={{ ...S.mini, ...(f.esYo ? S.miniYo : null), fontSize: 11.5 }}>
+                  <span style={{
+                    width: 18, textAlign: "center", fontWeight: 800, flexShrink: 0,
+                    fontSize: f.medalla ? 11 : 11.5,
+                    color: f.medalla ? VERDE : TENUE,
+                  }}>{f.medalla || f.n}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontWeight: 700, color: TINTA }}>
+                    {f.esYo ? `TÚ · ${f.nombreCorto}` : f.nombreCorto}
+                  </span>
+                  <span style={{ fontWeight: 800, whiteSpace: "nowrap", color: colorNota(f.nota) }}>
+                    {fmtN(f.nota)}
+                  </span>
+                </div>
+              ))}
+              {ranking.esPrimera ? (
+                <div style={{ ...S.pieCard, fontSize: 11 }}>Vas de primera en este indicador. 🏆</div>
+              ) : ranking.arriba && ranking.faltaParaSubir !== null ? (
+                <div style={{ ...S.pieCard, fontSize: 11 }}>
+                  Con <strong style={{ color: CIFRA }}>{fmtN(ranking.faltaParaSubir)}</strong> más pasas a {ranking.arriba.nombreCorto}.
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
       )}
     </>
@@ -214,6 +250,14 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
     () => (vendedora ? derivarRankingTrimestreCiudad(datos, vendedora, añoQ, qNum) : null),
     [datos, vendedora, añoQ, qNum]
   );
+
+  // El ranking del indicador se calcula SÓLO para el que está abierto: recorrer
+  // 13 personas × 3 meses por cada uno de los cinco sería trabajo para algo que
+  // nadie está mirando. `abierta` cambia → se recalcula el que toca.
+  const rankingInd = useMemo(() => {
+    if (!vendedora || !abierta || abierta === "ventas") return null;
+    return derivarRankingIndicadorTrimestre(datos, abierta, vendedora.ciudad, añoQ, qNum, vendedora.id);
+  }, [datos, vendedora, abierta, añoQ, qNum]);
 
   const premios = datos?.config?.premiosTrim?.[`${añoQ}_Q${qNum}`] || {};
   const montoBase = Number(premios.montoBase) > 0 ? Number(premios.montoBase) : 1_000_000;
@@ -607,6 +651,8 @@ export default function MiTrimestre({ vendedora, onVolver, onIndicador, año, q 
               abierta={abierta === ind.id}
               onToggle={() => alternar(ind.id)}
               ultima={i === arr.length - 1}
+              ciudad={ciudadLarga}
+              ranking={abierta === ind.id ? rankingInd : null}
               meses={(indTrim.meses || []).map((mm, j) => ({
                 mes: mm.mes,
                 nombre: mm.nombre,

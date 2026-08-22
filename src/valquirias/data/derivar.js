@@ -361,7 +361,9 @@ function diaDeIndicador(indId, reg) {
   }
   if (indId === "planilla") {
     const ok = (reg.planilla || "bien") === "bien";
-    return { texto: ok ? "Al día" : "Sin llenar", estado: ok ? "ok" : "mal" };
+    // "Sin llenar" era falso: casi siempre SÍ se llenó, pero quedó mal
+    // diligenciado. Lo que se marca es una novedad, no una ausencia.
+    return { texto: ok ? "Al día" : "Novedad", estado: ok ? "ok" : "mal" };
   }
   if (indId === "actitud") {
     const a = reg.actitud || "bien";
@@ -2059,6 +2061,80 @@ export function derivarRankingTrimestreCiudad(datos, vendedora, año, q) {
     // no mostrarle una tabla donde no está; el motivo exacto lo trae
     // `derivarTrimestreEnVivo().motivoNoCompite`.
     yoAparezco: !!(yo || sinNota.find(f => f.esYo)),
+  };
+}
+
+// ============================================================================
+// RANKING DE UN INDICADOR EN EL TRIMESTRE
+// ============================================================================
+// Los indicadores del MES ya tenían ranking (`derivarRankingPorIndicador`); los
+// del trimestre no, y la vendedora no podía saber cómo va en puntualidad contra
+// las demás en el Q. (Regla del dueño, 22-ago-2026: misma dinámica que el mes.)
+//
+// NO se inventa una regla nueva: la nota trimestral de UN indicador es el mismo
+// promedio ponderado que ya calcula `derivarIndicadoresTrimestre` para ella
+// —suma(nota_mes × peso) / suma(pesos con dato)— aplicado a cada participante.
+//
+// El universo es el MISMO que el del ranking trimestral general
+// (`derivarRankingTrimestreCiudad` → `participantes()`), así que quien no
+// compite en el trimestre tampoco aparece aquí. Dos pantallas no pueden nombrar
+// participantes distintos.
+export function derivarRankingIndicadorTrimestre(datos, indicadorId, ciudad, año, q, miId = null) {
+  const hoy = hoyColombia();
+  const añoQ = año || hoy.año;
+  const qNum = q || Math.ceil(hoy.mes / 3);
+  const meses = mesesTrimestre(qNum);
+
+  // Quiénes compiten: exactamente los del ranking trimestral de esa ciudad.
+  const base = derivarRankingTrimestreCiudad(datos, { id: null, ciudad }, añoQ, qNum);
+  const universo = [...(base.filas || []), ...(base.sinNota || [])];
+  if (!universo.length) return { disponible: false, filas: [] };
+
+  const fichas = new Map(rosterCompleto(datos).map(v => [String(v.id), v]));
+
+  const crudas = universo.map(f => {
+    const ficha = fichas.get(String(f.id)) || { id: f.id, nombre: f.nombre, ciudad: f.ciudad };
+    const t = calcTrimestre(
+      datos?.registros || {}, datos?.metas || {}, ficha.id, añoQ, qNum,
+      datos?.snapshots || {}, rosterCompleto(datos)
+    );
+    // La nota de ESE indicador en cada mes, ponderada igual que el trimestre.
+    let suma = 0, pesos = 0;
+    meses.forEach((_, i) => {
+      const n = t.datosMes?.[i]?.porInd?.[indicadorId];
+      if (n !== null && n !== undefined) { suma += n * PESOS_TRIMESTRE[i]; pesos += PESOS_TRIMESTRE[i]; }
+    });
+    return {
+      id: ficha.id,
+      nombre: ficha.nombre,
+      nombreCorto: primerNombre(ficha.nombre),
+      nota: pesos ? dosDec(suma / pesos) : null,
+    };
+  });
+
+  const conNota = crudas.filter(f => f.nota !== null)
+    .sort((x, y) => (y.nota - x.nota) || String(x.nombre).localeCompare(String(y.nombre)));
+
+  const filas = conNota.map((f, i) => ({
+    ...f,
+    n: i + 1,
+    esYo: miId !== null && String(f.id) === String(miId),
+    medalla: i < 3 ? ["🥇", "🥈", "🥉"][i] : null,
+  }));
+
+  const yo = filas.find(f => f.esYo) || null;
+  const arriba = yo && yo.n > 1 ? filas[yo.n - 2] : null;
+
+  return {
+    disponible: filas.length > 0,
+    filas,
+    miPosicion: yo ? yo.n : null,
+    miNota: yo ? yo.nota : null,
+    total: filas.length,
+    arriba,
+    // "Con 0.12 más pasas a Laura" — el mismo criterio que el ranking del mes.
+    faltaParaSubir: arriba && yo ? dosDec(arriba.nota - yo.nota) : null,
+    esPrimera: !!(yo && yo.n === 1),
   };
 }
 

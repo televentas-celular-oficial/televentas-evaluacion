@@ -63,7 +63,9 @@ const anilloNota = (n) => (n >= 3.5 && n < 4.5 ? "inset 0 0 0 1.5px var(--est-at
 const CONSEJOS = {
   puntualidad: "Cada día que llegas a tiempo suma. Un retardo de 10 minutos o más pesa mucho más que uno de 2.",
   tienda: "Se revisan tres cosas cada día: orden, uniforme y depósito.",
-  planilla: "La planilla se llena el mismo día. Un día que no se llenó queda así — lo que sí está en tus manos son los días que vienen.",
+  // "Planilla" son los SISTEMAS: systemlap y el de facturación de tu tienda.
+  // No se nombra la marca del facturador a propósito — cambia según la tienda.
+  planilla: "Se revisa que systemlap y el sistema de facturación queden al día y bien diligenciados. De ahí sale todo lo que se mide: si eso falla, ningún otro dato cuadra.",
   actitud: "Solo se marca cuando hay algo puntual que anotar, y siempre con la explicación de qué pasó.",
   resenas: "Cada reseña que dejan tus clientas suma. Pedirlas al cerrar la venta es lo que mejor funciona.",
   // V1 (abril 2026 y antes)

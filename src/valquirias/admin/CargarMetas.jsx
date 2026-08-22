@@ -34,6 +34,13 @@ export default function CargarMetas({ onVolver }) {
     }
   }
 
+  // Estado del guardado, EN EL BOTÓN. El mensaje de `flash` se pinta arriba del
+  // todo y en el celular queda fuera de la pantalla cuando uno está abajo: se
+  // tocaba Guardar y parecía que no pasaba nada. Ahora el botón mismo dice qué
+  // está haciendo, y el error se queda hasta que se vuelva a intentar.
+  const [estado, setEstado] = useState("listo");   // listo | guardando | ok | error
+  const [detalleError, setDetalleError] = useState(null);
+
   const refMED = useRef(null);
   const refBOG = useRef(null);
 
@@ -46,9 +53,12 @@ export default function CargarMetas({ onVolver }) {
     const medVal = leerPesos(refMED);
     const bogVal = leerPesos(refBOG);
     if (medVal <= 0 && bogVal <= 0) {
-      flash("⚠️ Ingresa al menos una meta", "err");
+      setEstado("error");
+      setDetalleError("Escribe al menos una de las dos metas.");
       return;
     }
+    setEstado("guardando");
+    setDetalleError(null);
     // Parche de UNA clave (este mes). Los demás meses ni se mencionan, así que
     // es imposible pisarlos con una copia vieja de `metas`.
     const prev = datos.metas?.[clave] || { vendidas: {} };
@@ -57,11 +67,15 @@ export default function CargarMetas({ onVolver }) {
         [clave]: { ...prev, meta: { MED: medVal, BOG: bogVal } },
       });
     } catch (e) {
-      console.error(e);
-      flash(`❌ NO se guardó la meta: ${e?.message || "error guardando"}`, "err");
+      console.error("Falló el guardado de la meta", clave, e);
+      setEstado("error");
+      // El motivo exacto, sin recortar: si es un permiso denegado hay que verlo.
+      setDetalleError(e?.message || String(e));
       return;
     }
+    setEstado("ok");
     flash(`✅ Meta de ${MES_NAMES[mesSel - 1]} ${añoSel} guardada`);
+    setTimeout(() => setEstado("listo"), 2500);
   }
 
   // Lista de metas ya cargadas
@@ -145,21 +159,38 @@ export default function CargarMetas({ onVolver }) {
             </div>
             <button
               onClick={handleGuardar}
+              disabled={estado === "guardando"}
               style={{
                 width: "100%",
                 padding: "12px",
-                background: "var(--est-atencion)",
-                color: "var(--vk-tarjeta)",
+                background: estado === "ok" ? "var(--vk-bien)"
+                          : estado === "guardando" ? "var(--vk-tenue)"
+                          : "var(--est-atencion)",
+                color: "var(--vk-sobre-tinta)",
                 border: "none",
                 borderRadius: 12,
                 fontSize: 14,
                 fontWeight: 900,
-                cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(249, 115, 22, 0.3)",
+                cursor: estado === "guardando" ? "default" : "pointer",
               }}
             >
-              💾 Guardar meta de {MES_NAMES[mesSel - 1]} {añoSel}
-            </button>
+              {estado === "guardando" ? "⏳ Guardando…"
+                : estado === "ok" ? "✅ Guardada"
+                : `💾 Guardar meta de ${MES_NAMES[mesSel - 1]} ${añoSel}`}            </button>
+
+            {/* El motivo del fallo va PEGADO al botón y NO se va solo: si el
+                guardado no pasó, hay que poder leer por qué. */}
+            {estado === "error" && detalleError && (
+              <div style={{
+                marginTop: 10, padding: "10px 12px", borderRadius: 10,
+                background: "var(--adm-alerta-fondo)",
+                borderLeft: "3px solid var(--adm-alerta-borde)",
+                fontSize: 12, fontWeight: 700, color: "var(--adm-alerta)",
+                lineHeight: 1.5,
+              }}>
+                ❌ No se guardó. {detalleError}
+              </div>
+            )}
           </>
         )}
       </div>
