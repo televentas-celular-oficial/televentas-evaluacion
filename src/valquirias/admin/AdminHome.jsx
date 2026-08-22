@@ -177,17 +177,15 @@ function ConVolver({ onVolver, children }) {
   return (
     <div>
       <div style={{
-        position: "sticky", top: 0, zIndex: 30, padding: "10px 12px",
+        position: "sticky", top: 0, zIndex: 30,
         background: "var(--vk-tarjeta)", borderBottom: `1px solid ${LINEA}`,
       }}>
-        <button
-          onClick={onVolver}
-          style={{
-            background: "var(--vk-tarjeta)", border: `1px solid ${LINEA}`, color: APOYO,
-            fontWeight: 800, fontSize: 13, borderRadius: 10, padding: "8px 14px",
-            cursor: "pointer", fontFamily: "inherit",
-          }}
-        >‹ Volver al panel</button>
+        {/* El botón se alinea con el contenido de abajo, no con el borde de la
+            pantalla: mismo ancho y mismo margen que `.v-app.v-ancho`. Antes la
+            barra ocupaba todo el ancho y el botón quedaba suelto en el medio. */}
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "10px 14px", textAlign: "left" }}>
+          <button className="v-back-btn" onClick={onVolver}>‹ Volver al panel</button>
+        </div>
       </div>
       {children}
     </div>
@@ -235,7 +233,7 @@ function SelectorVerComo({ activas, onVolver, onElegir }) {
 
   return (
     <div className="v-app v-ancho">
-      <button style={S.volver} onClick={onVolver}>‹ Volver al panel</button>
+      <button className="v-back-btn" onClick={onVolver}>‹ Volver al panel</button>
       <div style={{ ...S.titulo, fontSize: 19 }}>👁️ Ver como vendedora</div>
 
       {med.length > 0 && (
@@ -272,7 +270,7 @@ function MenuRankings({ onVolver, onIr }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
   return (
     <div className="v-app v-ancho">
-      <button style={S.volver} onClick={onVolver}>‹ Volver al panel</button>
+      <button className="v-back-btn" onClick={onVolver}>‹ Volver al panel</button>
       <div style={{ ...S.titulo, fontSize: 19, marginBottom: 14 }}>🏅 Rankings</div>
       {RANKINGS.map(r => (
         <button

@@ -453,13 +453,15 @@ const CSS = `
 .vk-volver:focus-visible{outline:2px solid ${TITULO};outline-offset:2px}
 `;
 
+// Misma píldora que en el resto de la app (`.v-back-btn`).
 function Volver({ onVolver }) {
   return (
-    <button className="vk-volver" onClick={() => onVolver?.()}>
-      ‹ Volver
-    </button>
+    <div style={{ padding: "0 0 12px" }}>
+      <button className="v-back-btn" onClick={onVolver}>‹ Volver</button>
+    </div>
   );
 }
+
 
 function Encabezado({ subtitulo, nota }) {
   return (

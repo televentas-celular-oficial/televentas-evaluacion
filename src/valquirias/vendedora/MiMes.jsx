@@ -123,28 +123,17 @@ const S = {
   },
 };
 
+// El botón de volver es UNO SOLO en toda la app: `.v-back-btn`. Aquí vivía una
+// copia con su propio aspecto — texto gris sin fondo — que se veía distinta de
+// la píldora gris del resto.
 function BotonVolver({ onVolver }) {
   return (
-    <button
-      onClick={onVolver}
-      style={{
-        background: "none",
-        border: "none",
-        font: "inherit",
-        fontSize: 14,
-        fontWeight: 700,
-        color: APOYO,
-        cursor: "pointer",
-        padding: "0 0 12px",
-        display: "flex",
-        alignItems: "center",
-        gap: 5,
-      }}
-    >
-      ‹ Volver
-    </button>
+    <div style={{ padding: "0 0 12px" }}>
+      <button className="v-back-btn" onClick={onVolver}>‹ Volver</button>
+    </div>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // BARRA CON MARCAS

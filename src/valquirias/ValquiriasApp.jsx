@@ -155,7 +155,11 @@ function BannerVerComo({ vendedora, onSalir }) {
         width: "100%", gap: 10, padding: "11px 14px", marginBottom: 12,
         border: "none", borderRadius: 12, cursor: "pointer",
         background: "var(--vk-banner)",
-        color: "var(--vk-noche-texto)", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800,
+        // El banner es verde OSCURO. Llevaba `--vk-noche-texto`, que en la
+        // paleta pastel es tinta casi negra: texto oscuro sobre fondo oscuro.
+        // Es el mismo emparejamiento roto que ya apareció en las pestañas y en
+        // el botón de Entrar. Todo fondo oscuro va con `--vk-sobre-tinta`.
+        color: "var(--vk-sobre-tinta)", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800,
         textAlign: "left",
       }}
     >

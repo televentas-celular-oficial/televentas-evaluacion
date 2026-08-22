@@ -113,29 +113,18 @@ export const S_BASE = {
   },
 };
 
-export function BotonVolver({ onVolver }) {
-  if (!onVolver) return null;
+// EL botón de volver de toda la app. Un solo aspecto: la píldora gris de
+// `.v-back-btn` en valquirias.css. Antes había CINCO implementaciones distintas
+// —esta, una copia en MiMes, otra en MiCash, otra en el panel y otra en el
+// ingreso diario— y se veían todas diferentes.
+export function BotonVolver({ onVolver, texto = "‹ Volver" }) {
   return (
-    <button
-      onClick={onVolver}
-      style={{
-        background: "none",
-        border: "none",
-        font: "inherit",
-        fontSize: 14,
-        fontWeight: 700,
-        color: APOYO,
-        cursor: "pointer",
-        padding: "0 0 12px",
-        display: "flex",
-        alignItems: "center",
-        gap: 5,
-      }}
-    >
-      ‹ Volver
-    </button>
+    <div style={{ padding: "0 0 12px" }}>
+      <button className="v-back-btn" onClick={onVolver}>{texto}</button>
+    </div>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // BARRA CON MARCAS
