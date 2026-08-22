@@ -74,13 +74,13 @@ const PUEDE_SER_CUENTA_NUEVA = new Set([
 
 const linkTxt = {
   background: "none", border: "none", font: "inherit", fontSize: 12.5,
-  fontWeight: 700, color: "#7c3aed", cursor: "pointer",
+  fontWeight: 700, color: "var(--vk-secundario)", cursor: "pointer",
   textDecoration: "underline", padding: 0,
 };
 
 const cajaNota = {
-  fontSize: 12.5, color: "#475569", fontWeight: 600, lineHeight: 1.6,
-  textAlign: "left", background: "#f8fafc", borderRadius: 10,
+  fontSize: 12.5, color: "var(--vk-secundario)", fontWeight: 600, lineHeight: 1.6,
+  textAlign: "left", background: "var(--vk-fondo)", borderRadius: 10,
   padding: "11px 13px", marginBottom: 16,
 };
 
@@ -364,14 +364,14 @@ export default function IngresoClave({ onLoggedIn }) {
               recuperación que nunca le va a llegar (no tiene cuenta). No es un
               camino aparte: es la instrucción del mismo botón Entrar. */}
           {!msg && (
-            <div style={{ marginTop: 14, fontSize: 12, color: "#64748b", fontWeight: 600, lineHeight: 1.55 }}>
+            <div style={{ marginTop: 14, fontSize: 12, color: "var(--vk-secundario)", fontWeight: 600, lineHeight: 1.55 }}>
               ¿Todavía no tienes contraseña? Escribe la que quieras: esa te queda.
             </div>
           )}
 
           <div style={{ marginTop: 20 }}>
             <button
-              style={{ ...linkTxt, color: "#94a3b8", fontSize: 11.5 }}
+              style={{ ...linkTxt, color: "var(--vk-tenue)", fontSize: 11.5 }}
               onClick={() => cambiarVista("olvide")}
             >
               Olvidé mi contraseña

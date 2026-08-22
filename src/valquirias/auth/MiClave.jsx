@@ -23,7 +23,7 @@ import { CLAVE_MINIMA, normalizaEmail, mensajeDeError } from "./acceso.js";
 
 const linkTxt = {
   background: "none", border: "none", font: "inherit", fontSize: 12.5,
-  fontWeight: 700, color: "#7c3aed", cursor: "pointer",
+  fontWeight: 700, color: "var(--vk-secundario)", cursor: "pointer",
   textDecoration: "underline", padding: 0,
 };
 
@@ -99,8 +99,8 @@ export default function MiClave({ user, onCerrar }) {
           <div className="v-login-sub">{correo || "—"}</div>
 
           <div style={{
-            fontSize: 12.5, color: "#475569", fontWeight: 600, lineHeight: 1.6,
-            textAlign: "left", background: "#f8fafc", borderRadius: 10,
+            fontSize: 12.5, color: "var(--vk-secundario)", fontWeight: 600, lineHeight: 1.6,
+            textAlign: "left", background: "var(--vk-fondo)", borderRadius: 10,
             padding: "11px 13px", marginBottom: 16,
           }}>
             Escribe aquí la contraseña con la que quieres entrar de ahora en adelante.
@@ -143,7 +143,7 @@ export default function MiClave({ user, onCerrar }) {
               {listo ? "← Volver a la app" : "← Volver sin cambiar nada"}
             </button>
             <button
-              style={{ ...linkTxt, color: "#94a3b8", fontSize: 11.5 }}
+              style={{ ...linkTxt, color: "var(--vk-tenue)", fontSize: 11.5 }}
               onClick={() => signOut(auth)}
             >
               Cerrar sesión

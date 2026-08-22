@@ -224,9 +224,9 @@ function chipStyle(activo) {
     padding: "6px 10px",
     fontSize: 11,
     fontWeight: 800,
-    background: activo ? "linear-gradient(135deg, #7c3aed, #ec4899)" : "#fff",
-    color: activo ? "#fff" : "#7c3aed",
-    border: "1.5px solid " + (activo ? "transparent" : "#e2e8f0"),
+    background: activo ? "var(--vk-noche)" : "var(--vk-tarjeta)",
+    color: activo ? "var(--vk-tarjeta)" : "var(--vk-secundario)",
+    border: "1.5px solid " + (activo ? "transparent" : "var(--vk-borde)"),
     borderRadius: 8,
     cursor: "pointer",
     flexShrink: 0,
@@ -238,21 +238,21 @@ const tabsGrid = { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 
 
 // Aviso honesto cuando la vendedora no aparece en el ranking de ese indicador
 const sinNota = {
-  background: "#f8fafc",
-  border: "1px dashed #cbd5e1",
+  background: "var(--vk-fondo)",
+  border: "1px dashed var(--est-sin-dato)",
   borderRadius: 8,
   padding: "7px 9px",
   marginBottom: 8,
   fontSize: 11,
   fontWeight: 700,
-  color: "#64748b",
+  color: "var(--vk-secundario)",
 };
 
 const estrella = {
   fontSize: 10,
   fontWeight: 900,
-  color: "#854d0e",
-  background: "#fef9c3",
+  color: "var(--est-grave)",
+  background: "var(--vk-noche)",
   borderRadius: 6,
   padding: "1px 5px",
   marginLeft: 6,
@@ -262,7 +262,7 @@ const estrella = {
 const pie = {
   fontSize: 11,
   fontWeight: 700,
-  color: "#94a3b8",
+  color: "var(--vk-tenue)",
   textAlign: "center",
   padding: "2px 10px 8px",
   lineHeight: 1.5,
