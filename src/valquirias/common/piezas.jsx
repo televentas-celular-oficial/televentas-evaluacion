@@ -134,7 +134,10 @@ export function BotonVolver({ onVolver, texto = "‹ Volver" }) {
 // y su etiqueta debajo. `fila` reparte las etiquetas en dos alturas cuando dos
 // marcas quedan tan cerca que sus textos se pisarían.
 export function BarraMarcada({ pct, marcas = [], alto = 10, relleno = VERDE, riel = NEUTRO }) {
-  const filas = marcas.length ? Math.max(...marcas.map((m) => m.fila || 0)) + 1 : 0;
+  // Sólo se reserva alto para etiquetas si alguna marca TRAE etiqueta. Sin esto,
+  // una barra de marcas sin texto dejaba una franja vacía debajo.
+  const conTexto = marcas.filter((m) => m.texto);
+  const filas = conTexto.length ? Math.max(...conTexto.map((m) => m.fila || 0)) + 1 : 0;
   return (
     <div>
       <div style={{ position: "relative", height: alto, marginTop: 12 }}>
@@ -175,7 +178,7 @@ export function BarraMarcada({ pct, marcas = [], alto = 10, relleno = VERDE, rie
       </div>
       {filas > 0 && (
         <div style={{ position: "relative", height: filas * 15, marginTop: 6 }}>
-          {marcas.map((m) => (
+          {conTexto.map((m) => (
             <span
               key={m.clave}
               style={{

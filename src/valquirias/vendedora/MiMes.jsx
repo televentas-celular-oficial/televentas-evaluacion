@@ -143,7 +143,10 @@ function BotonVolver({ onVolver }) {
 // y su etiqueta debajo. `fila` reparte las etiquetas en dos alturas cuando dos
 // marcas quedan tan cerca que sus textos se pisarían.
 function BarraMarcada({ pct, marcas = [], alto = 10, relleno = VERDE, riel = NEUTRO }) {
-  const filas = marcas.length ? Math.max(...marcas.map((m) => m.fila || 0)) + 1 : 0;
+  // Sólo se reserva alto para etiquetas si alguna marca TRAE etiqueta. Sin esto,
+  // una barra de marcas sin texto dejaba una franja vacía debajo.
+  const conTexto = marcas.filter((m) => m.texto);
+  const filas = conTexto.length ? Math.max(...conTexto.map((m) => m.fila || 0)) + 1 : 0;
   return (
     <div>
       <div style={{ position: "relative", height: alto, marginTop: 12 }}>
@@ -184,7 +187,7 @@ function BarraMarcada({ pct, marcas = [], alto = 10, relleno = VERDE, riel = NEU
       </div>
       {filas > 0 && (
         <div style={{ position: "relative", height: filas * 15, marginTop: 6 }}>
-          {marcas.map((m) => (
+          {conTexto.map((m) => (
             <span
               key={m.clave}
               style={{
@@ -406,29 +409,19 @@ export default function MiMes({ vendedora, onVolver, onIndicador }) {
   const escala = hayVentas ? Math.max(topeTramos, ventas) : topeTramos;
   const pctDe = (v) => Math.max(0, Math.min(100, (v / escala) * 100));
 
+  // LAS MARCAS VAN SIN ETIQUETA (regla del dueño, 21-ago-2026).
+  // Tres cifras apiladas bajo la barra —piso, tramo 2, tramo 3— se veían
+  // amontonadas y le quitaban a la barra lo que la hace útil: que se entienda
+  // de un vistazo. Ellas ya saben qué son los tramos; para eso están las rayas.
+  // La línea de "te faltan X para el tramo 3" se queda: esa sí dice algo que la
+  // barra no puede decir.
   const marcasTramos = [];
   // El piso SÓLO existe en Medellín (`piso.aplica` es `ciudad === "MED"`).
   if (piso.aplica && piso.monto > 0) {
-    marcasTramos.push({
-      clave: "piso",
-      pct: pctDe(piso.monto),
-      fila: 0,
-      texto: `${formatoPesos(piso.monto)} piso`,
-    });
+    marcasTramos.push({ clave: "piso", pct: pctDe(piso.monto) });
   }
-  marcasTramos.push({
-    clave: "t2",
-    pct: pctDe(TRAMOS_2026[1].min),
-    // Con piso, las dos marcas quedan a 11 puntos: sus etiquetas se pisarían.
-    fila: piso.aplica ? 1 : 0,
-    texto: `${formatoPesos(TRAMOS_2026[1].min)} tramo 2`,
-  });
-  marcasTramos.push({
-    clave: "t3",
-    pct: pctDe(TRAMOS_2026[2].min),
-    fila: 0,
-    texto: `${formatoPesos(TRAMOS_2026[2].min)} tramo 3`,
-  });
+  marcasTramos.push({ clave: "t2", pct: pctDe(TRAMOS_2026[1].min) });
+  marcasTramos.push({ clave: "t3", pct: pctDe(TRAMOS_2026[2].min) });
 
   // La única línea bajo la barra. Todas las cifras vienen del motor.
   const lineaFalta = !hayVentas
